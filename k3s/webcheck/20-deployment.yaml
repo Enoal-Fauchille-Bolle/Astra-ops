@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webcheck
+  namespace: utilities
+  labels:
+    app: webcheck
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: webcheck
+  template:
+    metadata:
+      labels:
+        app: webcheck
+    spec:
+      containers:
+        - name: webcheck
+          image: lissy93/web-check
+          ports:
+            - containerPort: 3000
+              protocol: TCP
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "10m"
+            limits:
+              memory: "256Mi"
+              cpu: "100m"
