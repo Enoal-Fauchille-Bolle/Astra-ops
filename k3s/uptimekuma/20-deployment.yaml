@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: uptimekuma
+  namespace: monitoring
+  labels:
+    app: uptimekuma
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate # Better for SQLite/Single file config
+  selector:
+    matchLabels:
+      app: uptimekuma
+  template:
+    metadata:
+      labels:
+        app: uptimekuma
+    spec:
+      containers:
+        - name: uptimekuma
+          image: louislam/uptime-kuma:2
+          ports:
+            - containerPort: 3001
+              protocol: TCP
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "10m"
+            limits:
+              memory: "512Mi"
+              cpu: "100m"
+          volumeMounts:
+            - mountPath: /app/data
+              name: data-vol
+      volumes:
+        - name: data-vol
+          hostPath:
+            path: /opt/k3s-data/uptimekuma
+            type: DirectoryOrCreate
