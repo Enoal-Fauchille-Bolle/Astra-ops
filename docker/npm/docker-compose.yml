@@ -1,0 +1,18 @@
+services:
+  app:
+    image: 'jc21/nginx-proxy-manager:latest'
+    container_name: nginx-proxy-manager
+    restart: unless-stopped
+    environment:
+      TZ: "Europe/Paris"
+    ports:
+      - '80:80'    # HTTP Entry (Public)
+      - '443:443'  # HTTPS Entry (Public)
+      - '81:81'    # Admin Web Interface
+    volumes:
+      - /opt/docker-data/npm/data:/data
+      - /opt/docker-data/npm/letsencrypt:/etc/letsencrypt
+    healthcheck:
+      test: ["CMD", "/usr/bin/check-health"]
+      interval: 10s
+      timeout: 3s
