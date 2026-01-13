@@ -1,0 +1,17 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: azerdev-discord-ingress
+  namespace: redirects
+spec:
+  rules:
+    - host: azerdev-discord.lan
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: azerdev-discord-svc
+                port:
+                  number: 80

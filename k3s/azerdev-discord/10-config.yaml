@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: azerdev-discord-config
+  namespace: redirects
+data:
+  REDIRECT_URL: "https://discord.gg/AfwMAQMwKj"
