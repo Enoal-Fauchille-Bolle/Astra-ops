@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: botenoal-svc
+  namespace: bots
+spec:
+  selector:
+    app: botenoal
+  ports:
+    - name: http
+      port: 80
+      targetPort: 3000
