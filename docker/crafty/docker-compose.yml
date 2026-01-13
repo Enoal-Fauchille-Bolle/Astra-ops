@@ -16,3 +16,14 @@ services:
       - /mnt/data/docker-volumes/crafty/servers:/crafty/servers
       - /mnt/data/docker-volumes/crafty/config:/crafty/app/config
       - /mnt/data/docker-volumes/crafty/import:/crafty/import
+
+  watcher:
+    build: ./watcher
+    container_name: crafty_watcher
+    restart: always
+    ports:
+      - "25500:25500" # Le portier écoute le port officiel
+    env_file:
+      - .env
+    networks:
+      default: # S'assure qu'il peut parler à Crafty
