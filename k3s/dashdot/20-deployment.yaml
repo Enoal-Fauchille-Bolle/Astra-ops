@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dashdot
+  namespace: monitoring
+  labels:
+    app: dashdot
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dashdot
+  template:
+    metadata:
+      labels:
+        app: dashdot
+    spec:
+      containers:
+        - name: dashdot
+          image: mauricenino/dashdot
+          ports:
+            - containerPort: 3001
+              protocol: TCP
+          securityContext:
+            privileged: true
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "10m"
+            limits:
+              memory: "256Mi"
+              cpu: "500m"
+          volumeMounts:
+            - mountPath: /mnt/host
+              name: host-root
+              readOnly: true
+      volumes:
+        - name: host-root
+          hostPath:
+            path: /
