@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: zerobyte
+  namespace: backups
+  labels:
+    app: zerobyte
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: zerobyte
+  template:
+    metadata:
+      labels:
+        app: zerobyte
+    spec:
+      containers:
+        - name: zerobyte
+          image: ghcr.io/nicotsx/zerobyte:v0.21
+          securityContext:
+            privileged: true
+          ports:
+            - containerPort: 4096
+              protocol: TCP
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "10m"
+            limits:
+              memory: "512Mi"
+              cpu: "100m"
+          volumeMounts:
+            - mountPath: /var/lib/zerobyte
+              name: data-vol
+            - name: localtime-vol
+              mountPath: /etc/localtime
+              readOnly: true
+            - name: rclone-config
+              mountPath: /root/.config/rclone
+            - name: host-k3s-data
+              mountPath: /opt/k3s-data
+      volumes:
+        - name: data-vol
+          hostPath:
+            path: /opt/k3s-data/zerobyte
+            type: DirectoryOrCreate
+        - name: localtime-vol
+          hostPath:
+            path: /etc/localtime
+            type: File
+        - name: rclone-config
+          hostPath:
+            path: /var/lib/zerobyte/config/rclone
+            type: Directory
+        - name: host-k3s-data
+          hostPath:
+            path: /opt/k3s-data
+            type: Directory
+
