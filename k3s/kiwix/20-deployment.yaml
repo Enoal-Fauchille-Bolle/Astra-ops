@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kiwix
+  namespace: utilities
+  labels:
+    app: kiwix
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+    # type: RollingUpdate
+    # rollingUpdate:
+    #   maxUnavailable: 0
+    #   maxSurge: 1
+  selector:
+    matchLabels:
+      app: kiwix
+  template:
+    metadata:
+      labels:
+        app: kiwix
+    spec:
+      containers:
+        - name: kiwix
+          image: ghcr.io/kiwix/kiwix-serve
+          args:
+            - "/data/*.zim"
+          ports:
+            - containerPort: 8080
+              protocol: TCP
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "10m"
+            limits:
+              memory: "256Mi"
+              cpu: "100m"
+          volumeMounts:
+            - mountPath: /data
+              name: data-vol
+      volumes:
+        - name: data-vol
+          hostPath:
+            path: /mnt/data/k3s-pvc/kiwix
+            type: Directory
