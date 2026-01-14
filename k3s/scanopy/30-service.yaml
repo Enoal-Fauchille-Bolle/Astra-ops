@@ -1,0 +1,38 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: scanopy-postgres
+  namespace: utilities
+spec:
+  selector:
+    app: scanopy-postgres
+  ports:
+    - protocol: TCP
+      port: 5432
+      targetPort: 5432
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: scanopy-daemon
+  namespace: utilities
+spec:
+  selector:
+    app: scanopy-daemon
+  ports:
+    - protocol: TCP
+      port: 60073
+      targetPort: 60073
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: scanopy-server
+  namespace: utilities
+spec:
+  selector:
+    app: scanopy-server
+  ports:
+    - protocol: TCP
+      port: 60072
+      targetPort: 60072

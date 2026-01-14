@@ -1,0 +1,27 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: scanopy-ingress
+  namespace: utilities
+spec:
+  rules:
+    - host: scanopy.enoal.fr
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: scanopy-server
+                port:
+                  number: 60072
+    - host: scanopy.lan
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: scanopy-server
+                port:
+                  number: 60072
