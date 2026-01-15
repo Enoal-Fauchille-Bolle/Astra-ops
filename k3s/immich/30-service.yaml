@@ -1,0 +1,52 @@
+# Service interne pour Redis
+apiVersion: v1
+kind: Service
+metadata:
+  name: immich-redis
+  namespace: media
+spec:
+  selector:
+    app: immich-redis
+  ports:
+    - port: 6379
+      targetPort: 6379
+---
+# Service interne pour Postgres
+apiVersion: v1
+kind: Service
+metadata:
+  name: immich-postgres
+  namespace: media
+spec:
+  selector:
+    app: immich-postgres
+  ports:
+    - port: 5432
+      targetPort: 5432
+---
+# Service interne pour ML
+apiVersion: v1
+kind: Service
+metadata:
+  name: immich-machine-learning
+  namespace: media
+spec:
+  selector:
+    app: immich-machine-learning
+  ports:
+    - port: 3003
+      targetPort: 3003
+---
+# Service exposé pour le Web/API
+apiVersion: v1
+kind: Service
+metadata:
+  name: immich-server
+  namespace: media
+spec:
+  selector:
+    app: immich-server
+  ports:
+    - name: http
+      port: 2283
+      targetPort: 2283

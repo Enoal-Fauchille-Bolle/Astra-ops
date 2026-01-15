@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: immich-config
+  namespace: media
+data:
+  # Configuration Application
+  IMMICH_VERSION: "release"
+
+  # Configuration Base de données (Pointe vers le Service K8s)
+  DB_HOSTNAME: "immich-postgres"
+
+  # Configuration Redis (Pointe vers le Service K8s)
+  REDIS_HOSTNAME: "immich-redis"
