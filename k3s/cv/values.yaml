@@ -19,7 +19,7 @@ service:
 
 ingress:
   enabled: true
-  host: cv-astra2.enoal.fr
+  host: cv-astra.enoal.fr
 
 resources:
   limits:
