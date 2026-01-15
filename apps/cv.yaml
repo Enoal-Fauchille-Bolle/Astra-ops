@@ -1,0 +1,20 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cv
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/enoal-fauchille-bolle/astra-ops.git
+    targetRevision: HEAD
+    path: k3s/cv
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: web
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
