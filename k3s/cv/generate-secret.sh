@@ -3,7 +3,7 @@
 # --- CONFIGURATION ---
 NAMESPACE="web"
 SECRET_NAME="regcred-cv"
-OUTPUT_FILE="10-regcred.yaml"
+OUTPUT_FILE="regcred.yaml"
 # ---------------------
 
 # --- PERMISSION CHECK ---
