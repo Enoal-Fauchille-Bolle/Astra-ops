@@ -19,7 +19,8 @@ service:
 
 ingress:
   enabled: true
-  host: portfolio.enoal.fr
+  hosts:
+    - portfolio.enoal.fr
 
 resources:
   requests:

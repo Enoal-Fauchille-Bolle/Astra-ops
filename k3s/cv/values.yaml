@@ -19,7 +19,8 @@ service:
 
 ingress:
   enabled: true
-  host: cv-astra.enoal.fr
+  hosts:
+    - cv-astra.enoal.fr
 
 resources:
   requests:
