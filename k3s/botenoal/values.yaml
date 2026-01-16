@@ -12,7 +12,6 @@ service:
 ingress:
   hosts:
     - botenoal.lan
-  annotations: {}
 
 probes:
   liveness:
@@ -27,7 +26,7 @@ probes:
 resources:
   requests:
     cpu: 10m
-    memory: 64Mi
+    memory: 70Mi
   limits:
     cpu: 100m
     memory: 256Mi
