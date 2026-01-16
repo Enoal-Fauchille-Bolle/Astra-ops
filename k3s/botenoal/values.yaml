@@ -1,0 +1,36 @@
+image:
+  repository: ghcr.io/enoal-fauchille-bolle/botenoal
+  tag: latest
+  pullPolicy: Always
+
+replicaCount: 1
+
+service:
+  port: 80
+  targetPort: 3000
+
+ingress:
+  hosts:
+    - botenoal.lan
+  annotations: {}
+
+probes:
+  liveness:
+    path: /status
+    initialDelaySeconds: 10
+    periodSeconds: 10
+  readiness:
+    path: /status
+    initialDelaySeconds: 5
+    periodSeconds: 5
+
+resources:
+  requests:
+    cpu: 10m
+    memory: 64Mi
+  limits:
+    cpu: 100m
+    memory: 256Mi
+
+imagePullSecrets:
+  - name: regcred-botenoal
