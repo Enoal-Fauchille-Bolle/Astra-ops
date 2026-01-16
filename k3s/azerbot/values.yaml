@@ -12,17 +12,14 @@ service:
 ingress:
   hosts:
     - azerbot.lan
-  annotations:
-    {}
+  annotations: {}
 
 probes:
   liveness:
-    enabled: true
     path: /status
     initialDelaySeconds: 10
     periodSeconds: 10
   readiness:
-    enabled: true
     path: /status
     initialDelaySeconds: 5
     periodSeconds: 5
