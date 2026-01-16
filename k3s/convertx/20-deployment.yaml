@@ -33,10 +33,10 @@ spec:
               value: "/tmp/.cache"
           resources:
             requests:
-              memory: "256Mi"
+              memory: "512Mi"
               cpu: "10m"
             limits:
-              memory: "2048Mi"
+              memory: "2Gi"
               cpu: "400m"
           volumeMounts:
             - mountPath: /app/data

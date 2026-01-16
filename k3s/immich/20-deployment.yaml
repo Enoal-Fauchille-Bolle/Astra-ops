@@ -97,11 +97,11 @@ spec:
               mountPath: /cache
           resources:
             requests:
-              memory: "256Mi"
+              memory: "512Mi"
               cpu: "100m"
             limits:
               memory: "2Gi"
-              cpu: "300m"
+              cpu: "512m"
       volumes:
         - name: model-cache
           hostPath:
@@ -145,7 +145,7 @@ spec:
               readOnly: true
           resources:
             requests:
-              memory: "512Mi"
+              memory: "1Gi"
               cpu: "200m"
             limits:
               memory: "2Gi"

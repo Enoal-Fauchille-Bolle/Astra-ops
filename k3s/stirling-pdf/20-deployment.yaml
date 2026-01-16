@@ -31,5 +31,5 @@ spec:
               memory: "256Mi"
               cpu: "10m"
             limits:
-              memory: "1024Mi"
+              memory: "1Gi"
               cpu: "800m"
