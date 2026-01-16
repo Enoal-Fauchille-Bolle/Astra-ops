@@ -15,6 +15,16 @@ ingress:
   hosts:
     - cv-astra.enoal.fr
 
+probes:
+  liveness:
+    path: /
+    initialDelaySeconds: 10
+    periodSeconds: 10
+  readiness:
+    path: /
+    initialDelaySeconds: 5
+    periodSeconds: 5
+
 resources:
   requests:
     cpu: 10m
