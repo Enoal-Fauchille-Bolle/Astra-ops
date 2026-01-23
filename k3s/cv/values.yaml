@@ -27,10 +27,10 @@ probes:
 
 resources:
   requests:
-    cpu: 10m
+    cpu: 50m
     memory: 128Mi
   limits:
-    cpu: 100m
+    cpu: 500m
     memory: 256Mi
 
 imagePullSecrets:
