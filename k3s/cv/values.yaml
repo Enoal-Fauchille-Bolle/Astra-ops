@@ -38,8 +38,8 @@ imagePullSecrets:
 
 autoscaling:
   minReplicas: 1
-  maxReplicas: 3
-  targetCPUUtilizationPercentage: 80
-  scaleUpStabilizationSeconds: 30
-  scaleUpMaxPods: 1
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 75
+  scaleUpStabilizationSeconds: 0
+  scaleUpMaxPods: 4
   scaleDownStabilizationSeconds: 300
