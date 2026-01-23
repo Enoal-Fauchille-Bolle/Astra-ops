@@ -26,7 +26,7 @@ spec:
         - name: azerdev-discord
           image: ghcr.io/enoal-fauchille-bolle/redirector:latest
           ports:
-            - containerPort: 3000
+            - containerPort: 80
               protocol: TCP
           envFrom:
             - configMapRef:
