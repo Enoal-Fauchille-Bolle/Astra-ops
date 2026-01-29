@@ -15,13 +15,13 @@ spec:
   maxReplicas: {{ .Values.autoscaling.maxReplicas }}
   behavior:
     scaleUp:
-      stabilizationWindowSeconds: {{ .Values.autoscaling.scaleUpStabilizationSeconds | default 60 }}
+      stabilizationWindowSeconds: {{ .Values.autoscaling.scaleUpStabilizationSeconds }}
       policies:
         - type: Pods
           value: {{ .Values.autoscaling.scaleUpMaxPods | default 1 }}
-          periodSeconds: 60
+          periodSeconds: 15
     scaleDown:
-      stabilizationWindowSeconds: {{ .Values.autoscaling.scaleDownStabilizationSeconds | default 300 }}
+      stabilizationWindowSeconds: {{ .Values.autoscaling.scaleDownStabilizationSeconds }}
   metrics:
     {{- if .Values.autoscaling.targetCPUUtilizationPercentage }}
     - type: Resource
