@@ -1,0 +1,46 @@
+namespace: web
+
+image:
+  repository: ghcr.io/enoal-fauchille-bolle/valentines-day
+  tag: latest
+  pullPolicy: Always
+
+replicaCount: 1
+
+service:
+  port: 80
+  targetPort: 80
+
+ingress:
+  hosts:
+    - valentines-day.enoal.fr
+    - valentines-day.lan
+
+probes:
+  liveness:
+    path: /
+    initialDelaySeconds: 10
+    periodSeconds: 10
+  readiness:
+    path: /
+    initialDelaySeconds: 5
+    periodSeconds: 5
+
+resources:
+  requests:
+    cpu: 10m
+    memory: 10Mi
+  limits:
+    # cpu: 200m
+    memory: 200Mi
+
+imagePullSecrets:
+  - name: regcred-valentines-day
+
+autoscaling:
+  minReplicas: 1
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 75
+  scaleUpStabilizationSeconds: 0
+  scaleUpMaxPods: 4
+  scaleDownStabilizationSeconds: 300
