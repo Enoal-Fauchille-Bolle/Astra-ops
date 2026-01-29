@@ -9,7 +9,7 @@ replicaCount: 1
 
 service:
   port: 80
-  targetPort: 50021
+  targetPort: 80
 
 ingress:
   hosts:
