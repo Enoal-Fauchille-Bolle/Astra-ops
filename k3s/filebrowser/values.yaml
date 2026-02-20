@@ -27,6 +27,9 @@ volumes:
     hostPath: /opt/k3s-data/filebrowser
     mountPath: /database
 
+securityContext:
+  runAsUser: 0
+
 resources:
   requests:
     cpu: 10m
