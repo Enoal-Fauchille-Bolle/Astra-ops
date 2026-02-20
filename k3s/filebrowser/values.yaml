@@ -17,7 +17,8 @@ service:
 ingress:
   enabled: true
   hosts:
-    - filebrowser.enoal.fr
+    - drive.enoal.fr
+    - filebrowser.lan
 
 volumes:
   data:
