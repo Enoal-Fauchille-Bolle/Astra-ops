@@ -1,0 +1,49 @@
+namespace: monitoring
+
+image:
+  repository: docker.io/crazymax/diun
+  tag: latest
+  pullPolicy: Always
+
+replicaCount: 1
+
+strategy:
+  type: Recreate
+
+serviceAccountName: diun
+
+args:
+  - "serve"
+
+env:
+  - name: TZ
+    value: "Europe/Paris"
+  - name: LOG_LEVEL
+    value: "info"
+  - name: LOG_JSON
+    value: "false"
+
+envFrom:
+  - secretRef:
+      name: diun-secrets
+
+volumes:
+  data:
+    hostPath: /opt/k3s-data/diun
+    mountPath: /data
+  docker-sock:
+    hostPath: /var/run/docker.sock
+    mountPath: /var/run/docker.sock
+    readOnly: true
+    hostPathType: Socket
+  config:
+    configMap: diun-config
+    mountPath: /etc/diun
+
+resources:
+  requests:
+    cpu: 10m
+    memory: 32Mi
+  limits:
+    cpu: 100m
+    memory: 64Mi
