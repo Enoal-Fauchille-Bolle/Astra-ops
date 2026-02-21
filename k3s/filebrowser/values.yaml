@@ -23,10 +23,10 @@ ingress:
 volumes:
   files:
     hostPath: /mnt/data/k3s-pvc/filebrowser
-    mountPath: /srv/files
+    mountPath: /srv/Files
   media:
     hostPath: /mnt/data/media
-    mountPath: /srv/media
+    mountPath: /srv/Media
   db:
     hostPath: /opt/k3s-data/filebrowser
     mountPath: /database
