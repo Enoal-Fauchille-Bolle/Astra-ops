@@ -1,0 +1,44 @@
+namespace: media
+
+image:
+  repository: docker.io/drakkan/sftpgo
+  tag: v2.7.0
+  pullPolicy: IfNotPresent
+
+replicaCount: 1
+
+strategy:
+  type: Recreate
+
+service:
+  web:
+    port: 8080
+    targetPort: 8080
+  sftp:
+    port: 2022
+    targetPort: 2022
+    nodePort: 2222
+
+ingress:
+  enabled: true
+  hosts:
+    - sftpgo.lan
+
+volumes:
+  media:
+    hostPath: /mnt/data/media
+    mountPath: /data/media
+  filebrowser:
+    hostPath: /mnt/data/k3s-pvc/filebrowser
+    mountPath: /data/filebrowser
+  data:
+    hostPath: /opt/k3s-data/sftpgo
+    mountPath: /var/lib/sftpgo
+
+resources:
+  requests:
+    cpu: 10m
+    memory: 32Mi
+  limits:
+    cpu: 200m
+    memory: 128Mi

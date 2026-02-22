@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Chart.Name }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: {{ .Chart.Name }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  {{- if .Values.strategy }}
+  strategy:
+    {{- toYaml .Values.strategy | nindent 4 }}
+  {{- end }}
+  selector:
+    matchLabels:
+      app: {{ .Chart.Name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Chart.Name }}
+    spec:
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          {{- if .Values.env }}
+          env:
+            {{- toYaml .Values.env | nindent 12 }}
+          {{- end }}
+          ports:
+            - name: web
+              containerPort: {{ .Values.service.web.targetPort }}
+              protocol: TCP
+            - name: sftp
+              containerPort: {{ .Values.service.sftp.targetPort }}
+              protocol: TCP
+          {{- if .Values.volumes }}
+          volumeMounts:
+            {{- range $name, $vol := .Values.volumes }}
+            - mountPath: {{ $vol.mountPath }}
+              name: {{ $name }}-vol
+              {{- if $vol.readOnly }}
+              readOnly: {{ $vol.readOnly }}
+              {{- end }}
+            {{- end }}
+          {{- end }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      {{- if .Values.volumes }}
+      volumes:
+        {{- range $name, $vol := .Values.volumes }}
+        - name: {{ $name }}-vol
+          hostPath:
+            path: {{ $vol.hostPath }}
+            type: DirectoryOrCreate
+        {{- end }}
+      {{- end }}
