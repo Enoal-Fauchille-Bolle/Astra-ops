@@ -17,7 +17,7 @@ service:
   sftp:
     port: 2022
     targetPort: 2022
-    nodePort: 2222
+    nodePort: 30022
 
 ingress:
   enabled: true
@@ -34,6 +34,9 @@ volumes:
   data:
     hostPath: /opt/k3s-data/sftpgo
     mountPath: /var/lib/sftpgo
+
+securityContext:
+  runAsUser: 0
 
 resources:
   requests:
