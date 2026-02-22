@@ -22,7 +22,7 @@ spec:
     spec:
       containers:
         - name: docker-registry
-          image: registry:2
+          image: registry:2.8.3
           imagePullPolicy: IfNotPresent
           ports:
             - name: http

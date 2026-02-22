@@ -1,13 +1,13 @@
 services:
   crafty:
     container_name: crafty
-    image: registry.gitlab.com/crafty-controller/crafty-4:latest
+    image: registry.gitlab.com/crafty-controller/crafty-4:4.9.0
     restart: always
     environment:
       - TZ=Europe/Paris
     ports:
-      - "8443:8443"       # Interface Web HTTPS (Admin)
-      - "8123:8123"       # Dynmap (Cartes web)
+      - "8443:8443" # Interface Web HTTPS (Admin)
+      - "8123:8123" # Dynmap (Cartes web)
       - "19132:19132/udp" # Bedrock par défaut
       - "25501-25510:25501-25510" # Plage pour 11 serveurs Java (dont le 25500)
     volumes:

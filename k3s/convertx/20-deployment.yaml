@@ -22,7 +22,7 @@ spec:
     spec:
       containers:
         - name: convertx
-          image: ghcr.io/c4illin/convertx
+          image: ghcr.io/c4illin/convertx:v0.17.0
           ports:
             - containerPort: 3000
               protocol: TCP

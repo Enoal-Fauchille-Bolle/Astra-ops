@@ -22,7 +22,7 @@ spec:
     spec:
       containers:
         - name: homer
-          image: b4bz/homer
+          image: b4bz/homer:v25.11.1
           env:
             - name: INIT_ASSETS
               value: "1" # Force creation of default config if empty

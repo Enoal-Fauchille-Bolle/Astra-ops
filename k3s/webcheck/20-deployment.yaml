@@ -22,7 +22,7 @@ spec:
     spec:
       containers:
         - name: webcheck
-          image: lissy93/web-check
+          image: lissy93/web-check:latest
           ports:
             - containerPort: 3000
               protocol: TCP

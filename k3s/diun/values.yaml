@@ -2,7 +2,7 @@ namespace: monitoring
 
 image:
   repository: docker.io/crazymax/diun
-  tag: latest
+  tag: 4.31.0
   pullPolicy: Always
 
 replicaCount: 1

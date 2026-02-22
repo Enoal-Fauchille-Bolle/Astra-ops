@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: redis
-          image: docker.io/valkey/valkey:9
+          image: docker.io/valkey/valkey:9.0
           args: ["--save", "60", "1"]
           resources:
             requests:
@@ -86,7 +86,7 @@ spec:
     spec:
       containers:
         - name: immich-machine-learning
-          image: ghcr.io/immich-app/immich-machine-learning:release
+          image: ghcr.io/immich-app/immich-machine-learning:v2.5.0
           envFrom:
             - secretRef:
                 name: immich-secrets
@@ -126,7 +126,7 @@ spec:
     spec:
       containers:
         - name: immich-server
-          image: ghcr.io/immich-app/immich-server:release
+          image: ghcr.io/immich-app/immich-server:v2.5.0
           envFrom:
             - secretRef:
                 name: immich-secrets
