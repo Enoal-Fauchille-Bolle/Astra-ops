@@ -10,25 +10,25 @@
             "matchDatasources": [
                 "docker"
             ],
-            "matchPackagePatterns": [
-                "ghcr\\.io/enoal-fauchille-bolle/.*"
-            ],
-            "enabled": false
+            "enabled": false,
+            "matchPackageNames": [
+                "/ghcr\\.io/enoal-fauchille-bolle/.*/"
+            ]
         }
     ],
     "docker-compose": {
-        "fileMatch": [
-            "docker/.*/docker-compose\\.yml$"
+        "managerFilePatterns": [
+            "/docker/.*/docker-compose\\.yml$/"
         ]
     },
     "helm-values": {
-        "fileMatch": [
-            "k3s/.*/values\\.yaml$"
+        "managerFilePatterns": [
+            "/k3s/.*/values\\.yaml$/"
         ]
     },
     "kubernetes": {
-        "fileMatch": [
-            "k3s/.*\\.(yaml|yml)$"
+        "managerFilePatterns": [
+            "/k3s/.*\\.(yaml|yml)$/"
         ]
     }
 }
