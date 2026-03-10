@@ -2,7 +2,7 @@ namespace: web
 
 image:
   repository: ghcr.io/enoal-fauchille-bolle/cv
-  tag: latest
+  tag: 2.3.0
   pullPolicy: Always
 
 replicaCount: 1
