@@ -2,7 +2,7 @@ namespace: media
 
 image:
   repository: docker.io/drakkan/sftpgo
-  tag: v2.7.0
+  tag: v2.7.1
   pullPolicy: IfNotPresent
 
 replicaCount: 1
