@@ -28,6 +28,9 @@ volumes:
   media:
     hostPath: /mnt/data/media
     mountPath: /data/media
+  backups:
+    hostPath: /mnt/data/backups
+    mountPath: /data/backups
   filebrowser:
     hostPath: /mnt/data/k3s-pvc/filebrowser
     mountPath: /data/filebrowser

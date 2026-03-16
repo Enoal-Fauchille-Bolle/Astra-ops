@@ -27,6 +27,9 @@ volumes:
   media:
     hostPath: /mnt/data/media
     mountPath: /srv/Media
+  backups:
+    hostPath: /mnt/data/backups
+    mountPath: /srv/Backups
   db:
     hostPath: /opt/k3s-data/filebrowser
     mountPath: /database
