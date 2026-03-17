@@ -1,0 +1,43 @@
+name: Discord Renovate PR Notification
+
+on:
+  pull_request:
+    types: [opened]
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    if: startsWith(github.event.pull_request.head.ref, 'renovate/')
+    steps:
+      - name: Send Discord Message
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+          REF: ${{ github.event.pull_request.head.ref }}
+          URL: ${{ github.event.pull_request.html_url }}
+          WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: |
+          MESSAGE=$(jq -n \
+            --arg title "$TITLE" \
+            --arg ref "\`$REF\`" \
+            --arg url "$URL" \
+            '{
+              "embeds": [{
+                "author": {
+                  "name": "Renovate",
+                  "icon_url": "https://docs.renovatebot.com/assets/images/logo.png"
+                },
+                "title": "🤖 New Renovate PR",
+                "description": "An automated update has been proposed.",
+                "color": 3447003,
+                "fields": [
+                  { "name": "Title", "value": $title, "inline": false },
+                  { "name": "Branch", "value": $ref, "inline": true },
+                  { "name": "Link", "value": ("[View Pull Request](" + $url + ")"), "inline": false }
+                ]
+              }]
+            }')
+
+          curl -H "Content-Type: application/json" \
+            -X POST \
+            -d "$MESSAGE" \
+            "$WEBHOOK_URL"
