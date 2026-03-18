@@ -1,0 +1,45 @@
+namespace: media
+
+image:
+  repository: gtstef/filebrowser
+  tag: 1.2.2-stable
+  pullPolicy: Always
+
+replicaCount: 1
+
+strategy:
+  type: Recreate
+
+service:
+  port: 80
+  targetPort: 80
+
+ingress:
+  enabled: true
+  hosts:
+    - filebrowser-quantum.lan
+
+volumes:
+  files:
+    hostPath: /mnt/data/k3s-pvc/filebrowser
+    mountPath: /srv/files
+  media:
+    hostPath: /mnt/data/media
+    mountPath: /srv/Media
+  backups:
+    hostPath: /mnt/data/backups
+    mountPath: /srv/Backups
+  db:
+    hostPath: /opt/k3s-data/filebrowser-quantum
+    mountPath: /home/filebrowser/data/
+
+securityContext:
+  runAsUser: 0
+
+resources:
+  requests:
+    cpu: 10m
+    memory: 32Mi
+  limits:
+    cpu: 200m
+    memory: 512Mi
