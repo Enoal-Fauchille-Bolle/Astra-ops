@@ -22,7 +22,7 @@ spec:
         - name: controllerServiceAccount.namespace
           value: "github-runners"
         - name: controllerServiceAccount.name
-          value: "arc-gha-rs-controller"
+          value: "arc-controller-gha-rs-controller"
   destination:
     server: https://kubernetes.default.svc
     namespace: github-runners
