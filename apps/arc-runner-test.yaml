@@ -1,0 +1,28 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: arc-runner-mon-repo
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: ghcr.io/actions/actions-runner-controller-charts
+    chart: gha-runner-scale-set
+    targetRevision: 0.13.1
+    helm:
+      parameters:
+        - name: githubConfigUrl
+          value: "https://github.com/Enoal-Fauchille-Bolle/Astra-ops"
+        - name: githubConfigSecret
+          value: "github-runner-secret"
+        - name: runnerScaleSetName
+          value: "pulsar-runner"
+        - name: containerMode.type
+          value: "dind"
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: github-runners
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
