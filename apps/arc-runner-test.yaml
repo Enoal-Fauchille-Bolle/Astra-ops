@@ -19,6 +19,10 @@ spec:
           value: "pulsar-runner"
         - name: containerMode.type
           value: "dind"
+        - name: controllerServiceAccount.namespace
+          value: "github-runners"
+        - name: controllerServiceAccount.name
+          value: "arc-gha-rs-controller"
   destination:
     server: https://kubernetes.default.svc
     namespace: github-runners
