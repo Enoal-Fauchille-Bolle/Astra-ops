@@ -21,11 +21,9 @@ jobs:
             --arg ref "\`$REF\`" \
             --arg url "$URL" \
             '{
+              "username": "Renovate",
+              "avatar_url": "https://docs.renovatebot.com/assets/images/logo.png",
               "embeds": [{
-                "author": {
-                  "name": "Renovate",
-                  "icon_url": "https://docs.renovatebot.com/assets/images/logo.png"
-                },
                 "title": "🤖 New Renovate PR",
                 "description": "An automated update has been proposed.",
                 "color": 3447003,
