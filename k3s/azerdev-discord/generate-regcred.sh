@@ -5,7 +5,7 @@
 # --- CONFIGURATION ---
 NAMESPACE="redirects"
 SECRET_NAME="regcred-azerdev-discord"
-OUTPUT_FILE="10-regcred.yaml"
+OUTPUT_FILE="15-regcred.yaml"
 # ---------------------
 
 # --- PERMISSION CHECK ---
