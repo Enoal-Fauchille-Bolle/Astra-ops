@@ -1,4 +1,6 @@
 #!/bin/bash
+# This script generates a Kubernetes secret to access the GitHub Container Registry.
+# It is used to deploy private images from the registry to the cluster.
 
 # --- CONFIGURATION ---
 NAMESPACE="web"
