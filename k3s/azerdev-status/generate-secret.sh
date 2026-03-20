@@ -3,8 +3,8 @@
 # It is used to deploy private images from the registry to the cluster.
 
 # --- CONFIGURATION ---
-NAMESPACE="web"
-SECRET_NAME="regcred-cv"
+NAMESPACE="redirects"
+SECRET_NAME="regcred-azerdev-status"
 OUTPUT_FILE="10-regcred.yaml"
 # ---------------------
 

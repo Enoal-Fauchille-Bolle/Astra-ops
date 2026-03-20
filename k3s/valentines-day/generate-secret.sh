@@ -4,7 +4,7 @@
 
 # --- CONFIGURATION ---
 NAMESPACE="web"
-SECRET_NAME="regcred-cv"
+SECRET_NAME="regcred-valentines-day"
 OUTPUT_FILE="regcred.yaml"
 # ---------------------
 

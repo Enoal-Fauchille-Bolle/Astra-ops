@@ -3,8 +3,8 @@
 # It is used to deploy private images from the registry to the cluster.
 
 # --- CONFIGURATION ---
-NAMESPACE="web"
-SECRET_NAME="regcred-portfolio"
+NAMESPACE="bots"
+SECRET_NAME="regcred-azerbot"
 OUTPUT_FILE="regcred.yaml"
 # ---------------------
 
