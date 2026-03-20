@@ -13,6 +13,10 @@ ingress:
   hosts:
     - azerbot.lan
 
+envFrom:
+  - secretRef:
+      name: azerbot-secrets
+
 probes:
   liveness:
     path: /status
