@@ -1,0 +1,18 @@
+services:
+  crowdsec:
+    image: crowdsecurity/crowdsec:v1.7.6
+    container_name: crowdsec
+    restart: unless-stopped
+    environment:
+      GID: "1000"
+      COLLECTIONS: "crowdsecurity/nginx-proxy-manager"
+    volumes:
+      # Crowdsec persistence
+      - /opt/docker-data/crowdsec/config:/etc/crowdsec
+      - /opt/docker-data/crowdsec/data:/var/lib/crowdsec/data
+      # Mount NPM data directory to Crowdsec
+      - /opt/docker-data/npm/data/logs:/var/log/npm:ro
+    ports:
+      - "8080:8080"
+    security_opt:
+      - no-new-privileges:true
