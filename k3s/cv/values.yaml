@@ -13,8 +13,6 @@ service:
 
 ingress:
   hosts:
-    - cv-astra.enoal.fr
-    - cv-astra2.lan
     - cv.enoal.fr
 
 probes:
