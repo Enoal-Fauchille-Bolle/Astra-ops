@@ -21,7 +21,9 @@ ingress:
   enabled: true
   hosts:
     - homer.lan
+    - home.lan
     - homer.enoal.fr
+    - home.enoal.fr
 
 env:
   - name: INIT_ASSETS
