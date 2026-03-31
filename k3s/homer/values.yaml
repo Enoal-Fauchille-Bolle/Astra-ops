@@ -1,0 +1,42 @@
+namespace: dashboard
+
+image:
+  repository: docker.io/b4bz/homer
+  tag: v25.11.1
+  pullPolicy: Always
+
+replicaCount: 1
+
+strategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxUnavailable: 0
+    maxSurge: 1
+
+service:
+  port: 80
+  targetPort: 8080
+
+ingress:
+  enabled: true
+  hosts:
+    - homer.lan
+    - homer.enoal.fr
+
+env:
+  - name: INIT_ASSETS
+    value: "1"
+
+volumes:
+  assets:
+    hostPath: /mnt/data/k3s-pvc/homer
+    mountPath: /www/assets
+    hostPathType: Directory
+
+resources:
+  requests:
+    cpu: 10m
+    memory: 10Mi
+  limits:
+    cpu: 100m
+    memory: 64Mi
