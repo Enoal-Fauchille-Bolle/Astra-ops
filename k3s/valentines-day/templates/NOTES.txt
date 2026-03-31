@@ -1,8 +1,0 @@
-1. Get the application URL by running:
-{{- if .Values.ingress.hosts }}
-{{- range .Values.ingress.hosts }}
-  http://{{ . }}
-{{- end }}
-{{- else }}
-  kubectl port-forward svc/{{ include "chart.fullname" . }}-svc {{ .Values.service.port }}:{{ .Values.service.port }} -n {{ .Release.Namespace }}
-{{- end }}
