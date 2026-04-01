@@ -1,0 +1,41 @@
+namespace: monitoring
+
+image:
+  repository: mauricenino/dashdot
+  tag: 6.3.4
+  pullPolicy: Always
+
+replicaCount: 1
+
+strategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxUnavailable: 0
+    maxSurge: 1
+
+service:
+  port: 80
+  targetPort: 3001
+
+ingress:
+  enabled: true
+  hosts:
+    - dashdot.lan
+
+securityContext:
+  privileged: true
+
+volumes:
+  host-root:
+    hostPath: /
+    mountPath: /mnt/host
+    readOnly: true
+    hostPathType: Directory
+
+resources:
+  requests:
+    cpu: 10m
+    memory: 128Mi
+  limits:
+    cpu: 100m
+    memory: 256Mi
