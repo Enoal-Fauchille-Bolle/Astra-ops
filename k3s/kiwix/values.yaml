@@ -1,0 +1,37 @@
+namespace: media
+
+image:
+  repository: ghcr.io/kiwix/kiwix-serve
+  tag: 3.8.2
+  pullPolicy: IfNotPresent
+
+args:
+  - "/data/*.zim"
+
+replicaCount: 1
+
+strategy:
+  type: Recreate
+
+service:
+  port: 80
+  targetPort: 8080
+
+ingress:
+  enabled: true
+  hosts:
+    - kiwix.lan
+
+volumes:
+  data:
+    hostPath: /mnt/data/k3s-pvc/kiwix
+    mountPath: /data
+    hostPathType: Directory
+
+resources:
+  requests:
+    cpu: 10m
+    memory: 256Mi
+  limits:
+    cpu: 100m
+    memory: 768Mi
