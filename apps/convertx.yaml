@@ -1,0 +1,20 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: convertx
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/enoal-fauchille-bolle/astra-ops.git
+    targetRevision: HEAD
+    path: k3s/convertx
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: utilities
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
