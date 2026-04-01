@@ -1,0 +1,31 @@
+namespace: utilities
+
+image:
+  repository: lissy93/web-check
+  tag: 1.0.0
+  pullPolicy: IfNotPresent
+
+replicaCount: 1
+
+strategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxUnavailable: 0
+    maxSurge: 1
+
+service:
+  port: 80
+  targetPort: 3000
+
+ingress:
+  enabled: true
+  hosts:
+    - webcheck.lan
+
+resources:
+  requests:
+    cpu: 10m
+    memory: 256Mi
+  limits:
+    cpu: 100m
+    memory: 512Mi

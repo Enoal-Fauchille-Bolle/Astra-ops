@@ -1,0 +1,6 @@
+apiVersion: v2
+name: webcheck
+description: Webcheck - OSINT tool
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
