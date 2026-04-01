@@ -1,0 +1,52 @@
+namespace: security
+
+image:
+  repository: vaultwarden/server
+  tag: 1.35.4
+  pullPolicy: IfNotPresent
+
+replicaCount: 1
+
+strategy:
+  type: Recreate
+
+service:
+  port: 80
+  targetPort: 80
+
+ingress:
+  enabled: true
+  hosts:
+    - vault.enoal.fr
+
+env:
+  - name: DOMAIN
+    value: "https://vault.enoal.fr"
+  - name: SIGNUPS_ALLOWED
+    value: "false"
+  - name: WEBSOCKET_ENABLED
+    value: "true"
+
+envFrom:
+  - secretRef:
+      name: vaultwarden-secrets
+
+volumes:
+  data:
+    hostPath: /opt/k3s-data/vaultwarden
+    mountPath: /data/
+
+resources:
+  requests:
+    cpu: 10m
+    memory: 128Mi
+  limits:
+    cpu: 100m
+    memory: 256Mi
+
+readinessProbe:
+  httpGet:
+    path: /
+    port: 80
+  initialDelaySeconds: 10
+  periodSeconds: 5
