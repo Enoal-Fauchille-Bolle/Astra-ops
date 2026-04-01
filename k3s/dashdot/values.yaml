@@ -3,7 +3,7 @@ namespace: monitoring
 image:
   repository: mauricenino/dashdot
   tag: 6.3.4
-  pullPolicy: Always
+  pullPolicy: IfNotPresent
 
 replicaCount: 1
 
