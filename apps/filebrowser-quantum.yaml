@@ -3,6 +3,8 @@ kind: Application
 metadata:
   name: filebrowser-quantum
   namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
 spec:
   project: default
   source:
