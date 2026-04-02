@@ -3,6 +3,8 @@ services:
     container_name: portainer
     image: portainer/portainer-ee:lts
     restart: always
+    environment:
+      - TRUSTED_ORIGINS=http://portainer.lan
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - /var/run/docker.sock:/var/run/docker.sock
