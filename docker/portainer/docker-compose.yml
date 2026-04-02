@@ -11,7 +11,7 @@ services:
       - /opt/docker-data/portainer:/data
     ports:
       - 9444:9443
-      - 8000:8000  # Remove if you do not intend to use Edge Agents
+      # - 8000:8000  # Remove if you do not intend to use Edge Agents
 
 networks:
   default:
