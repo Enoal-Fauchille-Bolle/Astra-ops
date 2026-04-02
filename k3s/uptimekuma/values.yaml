@@ -1,0 +1,33 @@
+namespace: monitoring
+
+image:
+  repository: louislam/uptime-kuma
+  tag: 2.2.1
+  pullPolicy: IfNotPresent
+
+replicaCount: 1
+
+strategy:
+  type: Recreate
+
+service:
+  port: 80
+  targetPort: 3001
+
+ingress:
+  enabled: true
+  hosts:
+    - uptime.enoal.fr
+
+volumes:
+  data:
+    hostPath: /opt/k3s-data/uptimekuma
+    mountPath: /app/data
+
+resources:
+  requests:
+    cpu: 10m
+    memory: 256Mi
+  limits:
+    cpu: 100m
+    memory: 512Mi
