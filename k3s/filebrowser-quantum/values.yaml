@@ -2,7 +2,7 @@ namespace: media
 
 image:
   repository: gtstef/filebrowser
-  tag: 1.2.3-stable
+  tag: 1.2.4-stable
   pullPolicy: IfNotPresent
 
 replicaCount: 1
