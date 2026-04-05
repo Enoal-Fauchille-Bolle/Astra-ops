@@ -1,0 +1,22 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: criteri-fresque
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/enoal-fauchille-bolle/astra-ops.git
+    targetRevision: HEAD
+    path: k3s/criteri-fresque
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: web
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

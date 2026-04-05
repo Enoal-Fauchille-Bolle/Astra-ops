@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: criteri-fresque-backend
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: criteri-fresque-backend
+    {{- include "chart.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.backend.replicaCount }}
+  {{- if .Values.backend.strategy }}
+  strategy:
+    {{- toYaml .Values.backend.strategy | nindent 4 }}
+  {{- end }}
+  selector:
+    matchLabels:
+      app: criteri-fresque-backend
+  template:
+    metadata:
+      labels:
+        app: criteri-fresque-backend
+    spec:
+      {{- with .Values.backend.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: criteri-fresque-backend
+          image: "{{ .Values.backend.image.repository }}:{{ .Values.backend.image.tag }}"
+          imagePullPolicy: {{ .Values.backend.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.backend.service.targetPort }}
+              protocol: TCP
+          {{- if .Values.backend.env }}
+          env:
+            {{- toYaml .Values.backend.env | nindent 12 }}
+          {{- end }}
+          {{- if .Values.backend.envFrom }}
+          envFrom:
+            {{- toYaml .Values.backend.envFrom | nindent 12 }}
+          {{- end }}
+          {{- if .Values.backend.volumes }}
+          volumeMounts:
+            {{- include "chart.volumeMounts" .Values.backend.volumes | nindent 12 }}
+          {{- end }}
+          {{- if .Values.backend.probes }}
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.backend.probes.readiness.path }}
+              port: {{ .Values.backend.service.targetPort }}
+            initialDelaySeconds: {{ .Values.backend.probes.readiness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.backend.probes.readiness.periodSeconds }}
+          {{- end }}
+          resources:
+            {{- toYaml .Values.backend.resources | nindent 12 }}
+      {{- if .Values.backend.volumes }}
+      volumes:
+        {{- include "chart.volumeDefs" .Values.backend.volumes | nindent 8 }}
+      {{- end }}

@@ -1,0 +1,53 @@
+######################################## Logging ########################################
+
+logging:
+  # Whether to enable logging, this does not disable the console output
+  enable_logging: true
+  # The log level: debug, info, warn, error
+  log_level: debug
+  # The directory where logs will be stored
+  log_dir: "logs"
+  # Whether to use colors in the console output
+  colors: true
+  # Limit of log file size in MB
+  max_size: 1
+  # Limit of request response time in milliseconds before logging a warning
+  max_request_response_time: 15000
+
+################################### Resource Monitoring ###################################
+
+resource_monitoring:
+  # Whether to send a NTFY notification when the memory or CPU usage exceeds the threshold
+  notify: false
+  memory:
+    # Whether to enable memory usage monitoring
+    enable_memory_monitoring: true
+    # Percentage of memory usage at which a warning is issued
+    warning_threshold: 85
+    # Interval between memory checks in milliseconds
+    check_interval: 60000
+  cpu:
+    # Whether to enable CPU usage monitoring
+    enable_cpu_monitoring: true
+    # Percentage of CPU usage at which a warning is issued
+    warning_threshold: 75
+    # Interval between CPU checks in milliseconds
+    check_interval: 60000
+
+###################################### Rate Limiting ######################################
+
+rate_limiting:
+  # Whether to enable rate limiting
+  enable_rate_limiting: true
+  # only_ip: true/false
+  # The maximum number of requests a user can make in a given time window
+  max_requests: 10
+  # The time window in seconds
+  time_window: 60
+
+################################### Account Security ###################################
+
+# General security settings
+general_security:
+  # Whether to check the presence of a user-agent in the request header
+  check_user_agent: true

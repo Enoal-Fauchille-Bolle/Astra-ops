@@ -1,0 +1,23 @@
+# Shared ConfigMap: root config.yaml (read by both frontend and backend)
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: criteri-fresque-config-shared
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+data:
+  config.yaml: |
+    {{- .Files.Get "config.yaml" | nindent 4 }}
+---
+# Backend ConfigMap: backend-specific config.yaml (logging, rate-limiting, etc.)
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: criteri-fresque-config-backend
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+data:
+  config.yaml: |
+    {{- .Files.Get "config-backend.yaml" | nindent 4 }}

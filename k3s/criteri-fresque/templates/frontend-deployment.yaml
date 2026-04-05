@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: criteri-fresque-frontend
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: criteri-fresque-frontend
+    {{- include "chart.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.frontend.replicaCount }}
+  {{- if .Values.frontend.strategy }}
+  strategy:
+    {{- toYaml .Values.frontend.strategy | nindent 4 }}
+  {{- end }}
+  selector:
+    matchLabels:
+      app: criteri-fresque-frontend
+  template:
+    metadata:
+      labels:
+        app: criteri-fresque-frontend
+    spec:
+      {{- with .Values.frontend.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: criteri-fresque-frontend
+          image: "{{ .Values.frontend.image.repository }}:{{ .Values.frontend.image.tag }}"
+          imagePullPolicy: {{ .Values.frontend.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.frontend.service.targetPort }}
+              protocol: TCP
+          {{- if .Values.frontend.volumes }}
+          volumeMounts:
+            {{- include "chart.volumeMounts" .Values.frontend.volumes | nindent 12 }}
+          {{- end }}
+          resources:
+            {{- toYaml .Values.frontend.resources | nindent 12 }}
+      {{- if .Values.frontend.volumes }}
+      volumes:
+        {{- include "chart.volumeDefs" .Values.frontend.volumes | nindent 8 }}
+      {{- end }}

@@ -1,0 +1,30 @@
+{{- if .Values.ingress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: criteri-fresque-ingress
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+spec:
+  rules:
+    - host: {{ .Values.ingress.host }}
+      http:
+        paths:
+          # /api → backend
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: criteri-fresque-backend-svc
+                port:
+                  number: {{ .Values.backend.service.port }}
+          # / → frontend
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: criteri-fresque-frontend-svc
+                port:
+                  number: {{ .Values.frontend.service.port }}
+{{- end }}

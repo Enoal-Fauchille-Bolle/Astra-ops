@@ -1,0 +1,202 @@
+# Global configuration of the Criteri'Fresque project
+app:
+  name: "Critéri'Fresque"
+  version: "1.2.0"
+  beta: true
+
+maxIconSizeKB: 200
+
+api:
+  baseUrl: "https://beta.criterifresque.lesfresques.info"
+
+# Descriptive texts
+## Variables:
+## {{version}}: version de l'application
+## {{status}}: état de la version (beta ou stable)
+## {{date}}: date
+## {{fullname}}: nom complet
+## {{organization}}: organisation
+texts:
+  description: |
+    Auto-évaluez vous pour générer le score de maturité de votre atelier-fresque
+
+  title: |
+    Cette page permet de générer le score de maturité d'un atelier-fresque selon la méthode CritériFresque.
+    (La version actuelle de l'outil est en phase de test et l'ensemble des scores générés permettra d'améliorer l'outil)
+
+    Un score se compose en deux éléments :
+    - un graphique synthétique présentant les notes attribuées a chaque critères
+    - un tableau d'arguments permettant de d'expliquer/justifier la note que le déclarant s'est attribuée.
+
+    La génération du score se déroule en deux temps :
+    1. Générer l'apercu : Permet d'avoir une première idée du score et de le modfifier si besoin
+    2. Générér la version définitive : Finalise le score. Dans le cadre de la phase de test, les données sont utilisées pour valider / améliorer l'outil.
+
+    ⚠️ Attention : nous vous invitons à préparer en amont vos textes argumentaires dans un autre document, afin d'éviter toute perte en cas de mauvaise manipulation lors de la saisie.
+
+    A l'issue de la génération du scoring, nous vous invitons à compléter un mini questionnaire de satisfaction.
+
+    Pour davantage d'informations sur CritériFresque, ses modalités d'utilisation et les ressources disponibles pour accompagner la saisie : https://www.lesfresques.info/criterifresque
+
+    Version [NUM VERSION] [BETA].
+
+
+
+  information: |
+    Merci de nous indiquer les informations permettant de contextualiser le score de votre atelier-fresque
+
+  anonymous: |
+    Il vous est possible de participer à Critéri'Fresque sans que les données saisies ne soient rendues publiques par vos soins ou les nôtres.
+    Dans ce cas, cliquer sur la case ci-dessous
+
+  icon: |
+    Le graphe place en son centre le logo de votre atelier-fresque pour le rendre plus lisible.
+    Merci de télécharger un visuel selon l'une de ces deux méthodes
+    Aucune icône n'est demandée si vous utilisez le mode anonyme
+
+  contenus: |
+    Merci d'indiquer les notes liées à chaque critère de la catégorie "Contenus"
+    Pour chaque critère un texte argumentaire est nécéssaire.
+    (Le détail de chaque niveau du barème figure dans la notice d'utilisation)
+
+  experience: |
+    Merci d'indiquer les notes liées à chaque critère de la catégorie "Expérience"
+    Pour chaque critère un texte argumentaire est nécéssaire.
+    (Le détail de chaque niveau du barème figure dans la notice d'utilisation)
+
+  succes: |
+    Merci d'indiquer les notes liées à chaque critère de la catégorie "Succès"
+    Pour chaque critère un texte argumentaire est nécéssaire.
+    (Le détail de chaque niveau du barème figure dans la notice d'utilisation)
+
+  portage: |
+    Merci d'indiquer les notes liées à chaque critère de la catégorie "Portage"
+    Pour chaque critère un texte argumentaire est nécéssaire.
+    (Le détail de chaque niveau du barème figure dans la notice d'utilisation)
+
+  attestation: |
+    Vous attestez de la véracité des informations indiquées
+
+  feedback: |
+    Version v{{version}} {{status}}. La version Critéri'Fresque actuelle est en cours de développement
+    A l'issue de la génération du scoring, nous vous invitons à compléter un mini questionnaire de satisfaction
+
+  graphe: |
+    Score de maturité généré le {{date}} par {{fullname}} de {{organization}}
+    Un tableau argumentaire complémentaire permet de détailler le scoring.
+    Les informations fournies sont sous la responsabilité de leur auteur et n'engagent pas lesfresques.info.
+    Pour davantage d'informations : https://www.lesfresques.info/criterifresque
+    Version v{{version}} {{status}}
+
+  graphe-anonyme: |
+    Score de maturité généré le {{date}}
+    Un tableau argumentaire complémentaire permet de détailler le scoring.
+    Les informations fournies sont sous la responsabilité de leur auteur et n'engagent pas lesfresques.info.
+    Pour davantage d'informations : https://www.lesfresques.info/criterifresque
+    Version v{{version}} {{status}}
+
+  rapport: |
+    Le tableau ci dessous explique et justifie le note attribuées par l'auteur : Historique, liens externes, éléments factuels, indicateurs et tout autres informations jugées pertinentes par l'auteur du scoring.
+    Tableau généré le {{date}} par {{fullname}} de {{organization}}.
+    Un graphe permet de synthétiser le présent scoring.
+    Les informations fournies sont sous la responsabilité de leur auteur et n'engagent pas lesfresques.info.
+    Informations complémentaires et référentiel complet sur https://www.lesfresques.info/criterifresque
+    Version v{{version}} {{status}}
+
+  rapport-anonyme: |
+    Le tableau ci dessous explique et justifie le note attribuées par l'auteur : Historique, liens externes, éléments factuels, indicateurs et tout autres informations jugées pertinentes par l'auteur du scoring.
+    Tableau généré le {{date}}.
+    Un graphe permet de synthétiser le présent scoring.
+    Les informations fournies sont sous la responsabilité de leur auteur et n'engagent pas lesfresques.info.
+    Informations complémentaires et référentiel complet sur https://www.lesfresques.info/criterifresque
+    Version v{{version}} {{status}}
+
+# Descriptions of the levels for each criterion
+criteriaDescriptions:
+  C1:
+    0: "Aucune info disponible"
+    1: "Basé sur savoir empirique"
+    2: "Données débattues, limitées"
+    3: "Données reconnues, incomplètes"
+    4: "Consensus scientifique validé"
+  C2:
+    0: "Hors transition"
+    1: "Respect donut seulement"
+    2: "Transition partielle"
+    3: "Transition majoritaire"
+    4: "100% transition"
+  C3:
+    0: "Aucune doc disponible"
+    1: "Documentation artisanale"
+    2: "Supports pro et clairs"
+    3: "Ressources riches et variées"
+    4: "Écosystème interactif"
+  E1:
+    0: "Aucune implication"
+    1: "Participation légère"
+    2: "Participation active"
+    3: "Forte implication"
+    4: "Co-création totale"
+  E2:
+    0: "Aucune immersion"
+    1: "Sensibilité légère"
+    2: "Émotions limitées"
+    3: "Immersion riche"
+    4: "Expérience totale"
+  E3:
+    0: "Aucune accessibilité"
+    1: "Quelques adaptations"
+    2: "Accessibilité partielle"
+    3: "Accessibilité forte"
+    4: "Accessibilité universelle"
+  S1:
+    0: "Aucune reconnaissance"
+    1: "Pas de reconnaissance"
+    2: "Une reconnaissance"
+    3: "Nombreuses reconnaissances"
+    4: "Devenu un standard"
+  S2:
+    0: "Aucune activité"
+    1: "Moins de 20 ateliers/an"
+    2: "20 à 199 ateliers/an"
+    3: "200 à 999 ateliers/an"
+    4: "Plus de 1000 ateliers/an"
+  S3:
+    0: "Aucun déploiement"
+    1: "Quelques régions France"
+    2: "Plusieurs pays francophones"
+    3: ">10 pays et 3 langues"
+    4: ">20 pays dans le monde"
+  S4:
+    0: "Aucune info animateurs"
+    1: "Moins de 10 formés"
+    2: "10 à 199 formés"
+    3: "200 à 1999 formés"
+    4: "Plus de 2000 formés"
+  P1:
+    0: "Aucune transparence"
+    1: "Infos floues, partielles"
+    2: "Infos claires limitées"
+    3: "Transparence complète"
+    4: "Transparence exemplaire"
+  P2:
+    0: "Aucune info organisation"
+    1: "Organisation minimale"
+    2: "Personne morale dédiée"
+    3: "Gouvernance transparente"
+    4: "Structure solide et pérenne"
+  P3:
+    0: "Aucune formation prévue"
+    1: "Formation basique"
+    2: "Formation initiale + outils"
+    3: "Parcours complet validé"
+    4: "Formation reconnue externe"
+  P4:
+    0: "Aucun suivi d'impact"
+    1: "Données de satisfaction"
+    2: "Sondages ponctuels"
+    3: "Évaluations structurées"
+    4: "Études scientifiques"
+
+# Link to the feedback form
+feedbackLink: "https://forms.gle/YvBivYEebeJoHyvU6"
