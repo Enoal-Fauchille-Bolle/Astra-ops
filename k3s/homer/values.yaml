@@ -22,8 +22,10 @@ ingress:
   hosts:
     - homer.lan
     - home.lan
+    - dashboard.lan
     - homer.enoal.fr
     - home.enoal.fr
+    - dashboard.enoal.fr
 
 env:
   - name: INIT_ASSETS
