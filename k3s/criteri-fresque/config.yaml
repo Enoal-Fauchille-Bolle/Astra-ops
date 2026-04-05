@@ -1,7 +1,7 @@
 # Global configuration of the Criteri'Fresque project
 app:
   name: "Critéri'Fresque"
-  version: "1.2.0"
+  version: "1.2.1"
   beta: true
 
 maxIconSizeKB: 200
