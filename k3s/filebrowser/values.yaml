@@ -2,7 +2,7 @@ namespace: media
 
 image:
   repository: docker.io/filebrowser/filebrowser
-  tag: v2.63.1
+  tag: v2.63.2
   pullPolicy: IfNotPresent
 
 replicaCount: 1
