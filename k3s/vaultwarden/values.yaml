@@ -2,7 +2,7 @@ namespace: security
 
 image:
   repository: vaultwarden/server
-  tag: 1.35.4
+  tag: 1.35.7
   pullPolicy: IfNotPresent
 
 replicaCount: 1
