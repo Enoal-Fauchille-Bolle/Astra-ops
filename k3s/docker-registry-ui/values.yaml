@@ -1,0 +1,65 @@
+# Override values for docker-registry-ui (official Joxit chart)
+# Repo: https://helm.joxit.dev/
+# Chart: joxit/docker-registry-ui
+
+# UI Configuration
+ui:
+  # Enable Nginx proxy mode (UI acts as proxy to registry)
+  # This solves: CORS issues, authentication, and mixed content problems
+  proxy: true
+
+  # Internal registry service URL (only used in proxy mode)
+  dockerRegistryUrl: "http://docker-registry-svc:5000"
+
+  # Custom title
+  title: "Docker Registry UI"
+
+  # Single-registry mode (hides the registry selection menu)
+  singleRegistry: true
+
+  # The registry has authentication enabled
+  registrySecured: true
+
+  # Features
+  deleteImages: true
+  showContentDigest: true
+  showCatalogNbTags: true
+  catalogElementsLimit: 1000
+
+  # Display options
+  taglistOrder: "alpha-asc;num-desc"
+  taglistPageSize: 100
+
+  # Theme
+  defaultTheme: "auto"
+
+  # Container Image
+  image: joxit/docker-registry-ui:2.6.0
+
+  # Deployment
+  replicas: 1
+
+  # Kubernetes Service
+  service:
+    type: ClusterIP
+    port: 80
+    targetPort: 80
+
+  # Ingress Configuration
+  ingress:
+    enabled: true
+    ingressClassName: traefik
+    host: registry-ui.lan
+    path: /
+    pathType: Prefix
+    annotations: {}
+    tls: []
+
+  # Resource limits
+  resources:
+    requests:
+      cpu: 10m
+      memory: 64Mi
+    limits:
+      cpu: 100m
+      memory: 256Mi

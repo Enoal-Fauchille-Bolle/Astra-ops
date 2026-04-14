@@ -1,0 +1,53 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: docker-registry-ui
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    # Official Joxit chart
+    repoURL: https://helm.joxit.dev
+    chart: docker-registry-ui
+    targetRevision: 0.3.0
+    # Custom values from git repository
+    helm:
+      valueFiles:
+        - values.yaml
+    valuesObject:
+      ui:
+        proxy: true
+        dockerRegistryUrl: "http://docker-registry-svc:5000"
+        title: "Docker Registry UI"
+        singleRegistry: true
+        registrySecured: true
+        deleteImages: true
+        showContentDigest: true
+        showCatalogNbTags: true
+        catalogElementsLimit: 1000
+        taglistOrder: "alpha-asc;num-desc"
+        taglistPageSize: 100
+        defaultTheme: "auto"
+        image: joxit/docker-registry-ui:2.6.0
+        replicas: 1
+        service:
+          type: ClusterIP
+          port: 80
+          targetPort: 80
+        ingress:
+          enabled: true
+          ingressClassName: traefik
+          host: registry-ui.lan
+          path: /
+          pathType: Prefix
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: devops
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
