@@ -8,40 +8,43 @@ metadata:
 spec:
   project: default
   source:
-    # Official Joxit chart
     repoURL: https://helm.joxit.dev
     chart: docker-registry-ui
     targetRevision: 0.3.0
-    # Custom values from git repository
     helm:
-      valueFiles:
-        - values.yaml
-    valuesObject:
-      ui:
-        proxy: true
-        dockerRegistryUrl: "http://docker-registry-svc:5000"
-        title: "Docker Registry UI"
-        singleRegistry: true
-        registrySecured: true
-        deleteImages: true
-        showContentDigest: true
-        showCatalogNbTags: true
-        catalogElementsLimit: 1000
-        taglistOrder: "alpha-asc;num-desc"
-        taglistPageSize: 100
-        defaultTheme: "auto"
-        image: joxit/docker-registry-ui:2.6.0
-        replicas: 1
-        service:
-          type: ClusterIP
-          port: 80
-          targetPort: 80
-        ingress:
-          enabled: true
-          ingressClassName: traefik
-          host: registry-ui.lan
-          path: /
-          pathType: Prefix
+      values: |
+        ui:
+          proxy: true
+          dockerRegistryUrl: "http://docker-registry-svc:5000"
+          title: "Docker Registry UI"
+          singleRegistry: true
+          registrySecured: true
+          deleteImages: true
+          showContentDigest: true
+          showCatalogNbTags: true
+          catalogElementsLimit: 1000
+          taglistOrder: "alpha-asc;num-desc"
+          taglistPageSize: 100
+          defaultTheme: "auto"
+          image: joxit/docker-registry-ui:2.6.0
+          replicas: 1
+          service:
+            type: ClusterIP
+            port: 80
+            targetPort: 80
+          ingress:
+            enabled: true
+            ingressClassName: traefik
+            host: registry-ui.lan
+            path: /
+            pathType: Prefix
+          resources:
+            requests:
+              cpu: 10m
+              memory: 64Mi
+            limits:
+              cpu: 100m
+              memory: 256Mi
   destination:
     server: https://kubernetes.default.svc
     namespace: devops
