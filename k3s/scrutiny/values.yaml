@@ -1,0 +1,72 @@
+namespace: monitoring
+
+image:
+  repository: ghcr.io/analogj/scrutiny
+  tag: v0.9.2-omnibus
+  pullPolicy: IfNotPresent
+
+replicaCount: 1
+
+strategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxUnavailable: 0
+    maxSurge: 1
+
+service:
+  type: ClusterIP
+  ports:
+    - name: web
+      port: 8080
+      targetPort: 8080
+      protocol: TCP
+    - name: influxdb
+      port: 8086
+      targetPort: 8086
+      protocol: TCP
+
+ingress:
+  enabled: true
+  hosts:
+    - scrutiny.lan
+
+# Security context for accessing hardware devices
+securityContext:
+  privileged: true
+  runAsUser: 0
+
+# Environment variables
+env:
+  - name: COLLECTOR_CRON_SCHEDULE
+    value: "0 0 * * *"
+
+# Mount all volumes for Scrutiny: config, influxdb, udev, and block devices
+volumes:
+  config:
+    hostPath: /opt/k3s-data/scrutiny/config
+    mountPath: /opt/scrutiny/config
+    hostPathType: DirectoryOrCreate
+
+  influxdb:
+    hostPath: /opt/k3s-data/scrutiny/influxdb
+    mountPath: /opt/scrutiny/influxdb
+    hostPathType: DirectoryOrCreate
+
+  udev:
+    hostPath: /run/udev
+    mountPath: /run/udev
+    readOnly: true
+    hostPathType: Directory
+
+  devices:
+    hostPath: /dev
+    mountPath: /dev
+    hostPathType: Directory
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
