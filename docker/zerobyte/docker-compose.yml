@@ -16,4 +16,4 @@ services:
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - /var/lib/zerobyte:/var/lib/zerobyte
-      - ~/.config/rclone:/root/.config/rclone:ro
+      - ${RCLONE_CONFIG_PATH}:/root/.config/rclone:ro
