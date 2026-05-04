@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
         - name: zerobyte
-          image: ghcr.io/nicotsx/zerobyte:v0.35
+          image: ghcr.io/nicotsx/zerobyte:v0.36
           securityContext:
             privileged: true
           ports:
