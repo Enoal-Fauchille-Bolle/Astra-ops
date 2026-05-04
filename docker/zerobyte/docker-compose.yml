@@ -9,10 +9,10 @@ services:
       - "4096:4096"
     devices:
       - /dev/fuse:/dev/fuse
-    env_file: .env
     environment:
       - TZ=Europe/Paris
       - BASE_URL=http://zerobyte.lan
+      - APP_SECRET=${APP_SECRET}
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - /var/lib/zerobyte:/var/lib/zerobyte
