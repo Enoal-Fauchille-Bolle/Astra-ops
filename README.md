@@ -194,7 +194,7 @@ astra-ops/
 | [uptimekuma](k3s/uptimekuma)                   | Uptime monitoring and status page                 | 📊 Monitoring     | `monitoring`     | Raw             | `uptime.enoal.fr`                                          | ⏸️ Disabled |
 | [vaultwarden](k3s/vaultwarden)                 | Bitwarden-compatible password manager             | 🔐 Security       | `security`       | Helm            | `vault.enoal.fr`                                           | ✅ Active   |
 | [webcheck](k3s/webcheck)                       | Website analysis and OSINT tool                   | 🛠️ Utilities      | `utilities`      | Helm            | `webcheck.lan`                                             | ✅ Active   |
-| [zerobyte](k3s/zerobyte)                       | Backup tool with rclone integration               | 💾 Backups        | `backups`        | Raw             | `zerobyte.enoal.fr`, `zerobyte.lan`                        | 💤 Offline  |
+| [zerobyte](k3s/zerobyte)                       | Backup tool with rclone integration               | 💾 Backups        | —                | Raw             | `zerobyte.lan`                                             | ✅ Active   |
 
 ---
 
