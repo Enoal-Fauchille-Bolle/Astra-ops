@@ -33,7 +33,7 @@ env:
 
 volumes:
   assets:
-    hostPath: /mnt/data/k3s-pvc/homer
+    hostPath: /opt/k3s-data/homer
     mountPath: /www/assets
     hostPathType: Directory
 
