@@ -1,0 +1,95 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: appflowy-gotrue
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: appflowy-gotrue
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: appflowy-gotrue
+  template:
+    metadata:
+      labels:
+        app: appflowy-gotrue
+    spec:
+      initContainers:
+        - name: wait-for-postgres
+          image: busybox:1.36
+          command: ['sh', '-c', 'until nc -z appflowy-postgres 5432; do sleep 2; done']
+      containers:
+        - name: gotrue
+          image: "{{ .Values.gotrue.image.repository }}:{{ .Values.gotrue.image.tag }}"
+          imagePullPolicy: {{ .Values.gotrue.image.pullPolicy }}
+          env:
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: appflowy-secrets
+                  key: POSTGRES_PASSWORD
+            - name: GOTRUE_JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: appflowy-secrets
+                  key: GOTRUE_JWT_SECRET
+            - name: GOTRUE_ADMIN_EMAIL
+              valueFrom:
+                secretKeyRef:
+                  name: appflowy-secrets
+                  key: GOTRUE_ADMIN_EMAIL
+            - name: GOTRUE_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: appflowy-secrets
+                  key: GOTRUE_ADMIN_PASSWORD
+            - name: DATABASE_URL
+              value: "postgres://{{ .Values.postgres.user }}:$(POSTGRES_PASSWORD)@appflowy-postgres:5432/{{ .Values.postgres.database }}?search_path=auth"
+            - name: GOTRUE_DB_DRIVER
+              value: "postgres"
+            - name: GOTRUE_JWT_EXP
+              value: {{ .Values.gotrue.jwtExp | quote }}
+            - name: GOTRUE_JWT_DEFAULT_GROUP_NAME
+              value: "authenticated"
+            - name: API_EXTERNAL_URL
+              value: "https://{{ .Values.domain }}/gotrue"
+            - name: GOTRUE_SITE_URL
+              value: "https://{{ .Values.domain }}"
+            - name: GOTRUE_URI_ALLOW_LIST
+              value: "*"
+            - name: GOTRUE_MAILER_EXTERNAL_HOSTS
+              value: "{{ .Values.domain }}"
+            - name: GOTRUE_DISABLE_SIGNUP
+              value: "false"
+            - name: GOTRUE_MAILER_AUTOCONFIRM
+              value: "true"
+            - name: GOTRUE_SMS_AUTOCONFIRM
+              value: "true"
+            - name: PORT
+              value: "9999"
+          ports:
+            - containerPort: 9999
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 9999
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            failureThreshold: 5
+          resources:
+            {{- toYaml .Values.gotrue.resources | nindent 12 }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: appflowy-gotrue
+  namespace: {{ .Values.namespace }}
+spec:
+  selector:
+    app: appflowy-gotrue
+  ports:
+    - port: 9999
+      targetPort: 9999

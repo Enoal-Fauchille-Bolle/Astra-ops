@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: appflowy-postgres-init
+  namespace: {{ .Values.namespace }}
+data:
+  init.sql: |
+    CREATE ROLE postgres WITH SUPERUSER CREATEDB CREATEROLE LOGIN;
+    \c {{ .Values.postgres.database }}
+    CREATE EXTENSION IF NOT EXISTS vector;
+    GRANT ALL PRIVILEGES ON SCHEMA public TO {{ .Values.postgres.user }};
+    GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO {{ .Values.postgres.user }};
+    GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO {{ .Values.postgres.user }};
+    ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL PRIVILEGES ON TABLES TO {{ .Values.postgres.user }};
+    ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL PRIVILEGES ON SEQUENCES TO {{ .Values.postgres.user }};

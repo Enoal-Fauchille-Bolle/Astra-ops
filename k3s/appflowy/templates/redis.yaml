@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: appflowy-redis
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: appflowy-redis
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: appflowy-redis
+  template:
+    metadata:
+      labels:
+        app: appflowy-redis
+    spec:
+      containers:
+        - name: redis
+          image: "{{ .Values.redis.image.repository }}:{{ .Values.redis.image.tag }}"
+          imagePullPolicy: {{ .Values.redis.image.pullPolicy }}
+          ports:
+            - containerPort: 6379
+          readinessProbe:
+            exec:
+              command: ["redis-cli", "ping"]
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          resources:
+            {{- toYaml .Values.redis.resources | nindent 12 }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: appflowy-redis
+  namespace: {{ .Values.namespace }}
+spec:
+  selector:
+    app: appflowy-redis
+  ports:
+    - port: 6379
+      targetPort: 6379

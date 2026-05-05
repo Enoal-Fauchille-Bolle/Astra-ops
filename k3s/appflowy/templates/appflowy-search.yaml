@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: appflowy-search
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: appflowy-search
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: appflowy-search
+  template:
+    metadata:
+      labels:
+        app: appflowy-search
+    spec:
+      containers:
+        - name: meilisearch
+          image: "getmeili/meilisearch:v1.11.3"
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: MEILI_MASTER_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: appflowy-secrets
+                  key: MEILI_MASTER_KEY
+            - name: MEILI_ENV
+              value: "production"
+            - name: MEILI_NO_ANALYTICS
+              value: "true"
+          ports:
+            - containerPort: 7700
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 7700
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: appflowy-search
+  namespace: {{ .Values.namespace }}
+spec:
+  selector:
+    app: appflowy-search
+  ports:
+    - port: 7700
+      targetPort: 7700

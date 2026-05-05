@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: appflowy-nginx
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: appflowy-nginx
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: appflowy-nginx
+  template:
+    metadata:
+      labels:
+        app: appflowy-nginx
+    spec:
+      containers:
+        - name: nginx
+          image: nginx:alpine
+          ports:
+            - containerPort: 80
+          volumeMounts:
+            - name: nginx-config
+              mountPath: /etc/nginx/nginx.conf
+              subPath: nginx.conf
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              cpu: 100m
+              memory: 64Mi
+      volumes:
+        - name: nginx-config
+          configMap:
+            name: appflowy-nginx-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: appflowy-nginx
+  namespace: {{ .Values.namespace }}
+spec:
+  selector:
+    app: appflowy-nginx
+  ports:
+    - port: 80
+      targetPort: 80

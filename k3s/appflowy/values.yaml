@@ -1,0 +1,122 @@
+namespace: utilities
+
+domain: appflowy.enoal.fr
+
+# URL used by the browser to reach the backend API.
+# Must be resolvable from client devices.
+# Tip: add appflowy.enoal.fr → 192.168.1.201 in AdGuard Home for seamless LAN access.
+cloudUrl: "https://appflowy.enoal.fr"
+
+postgres:
+  image:
+    repository: pgvector/pgvector
+    tag: pg16
+    pullPolicy: IfNotPresent
+  storage:
+    hostPath: /opt/k3s-data/appflowy/postgres
+  database: appflowy
+  user: appflowy
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+redis:
+  image:
+    repository: redis
+    tag: 7-alpine
+    pullPolicy: IfNotPresent
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 100m
+      memory: 128Mi
+
+minio:
+  image:
+    repository: minio/minio
+    tag: RELEASE.2025-09-07T16-13-09Z
+    pullPolicy: IfNotPresent
+  storage:
+    hostPath: /opt/k3s-data/appflowy/minio
+  bucket: appflowy
+  region: us-east-1
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+gotrue:
+  image:
+    repository: appflowyinc/gotrue
+    tag: 0.15.13
+    pullPolicy: IfNotPresent
+  jwtExp: "7200"
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+
+appflowyCloud:
+  image:
+    repository: appflowyinc/appflowy_cloud
+    tag: 0.15.13
+    pullPolicy: IfNotPresent
+  resources:
+    requests:
+      cpu: 200m
+      memory: 512Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+
+appflowyWorker:
+  enabled: true
+  image:
+    repository: appflowyinc/appflowy_worker
+    tag: 0.15.13
+    pullPolicy: IfNotPresent
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+appflowyWeb:
+  image:
+    repository: appflowyinc/appflowy_web
+    tag: 0.12.21
+    pullPolicy: IfNotPresent
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+
+adminFrontend:
+  image:
+    repository: appflowyinc/admin_frontend
+    tag: 0.15.13
+    pullPolicy: IfNotPresent
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi

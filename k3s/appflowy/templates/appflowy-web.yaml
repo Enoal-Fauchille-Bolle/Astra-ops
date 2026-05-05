@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: appflowy-web
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: appflowy-web
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: appflowy-web
+  template:
+    metadata:
+      labels:
+        app: appflowy-web
+    spec:
+      containers:
+        - name: appflowy-web
+          image: "{{ .Values.appflowyWeb.image.repository }}:{{ .Values.appflowyWeb.image.tag }}"
+          imagePullPolicy: {{ .Values.appflowyWeb.image.pullPolicy }}
+          env:
+            - name: APPFLOWY_BASE_URL
+              value: {{ .Values.cloudUrl | quote }}
+            - name: APPFLOWY_GOTRUE_BASE_URL
+              value: "{{ .Values.cloudUrl }}/gotrue"
+            - name: APPFLOWY_WS_BASE_URL
+              value: "wss://{{ .Values.domain }}/ws/v2"
+            - name: AF_CLOUD_URL
+              value: {{ .Values.cloudUrl | quote }}
+          ports:
+            - containerPort: 80
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          resources:
+            {{- toYaml .Values.appflowyWeb.resources | nindent 12 }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: appflowy-web
+  namespace: {{ .Values.namespace }}
+spec:
+  selector:
+    app: appflowy-web
+  ports:
+    - port: 80
+      targetPort: 80
