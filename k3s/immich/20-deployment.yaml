@@ -153,7 +153,7 @@ spec:
       volumes:
         - name: library-data
           hostPath:
-            path: /mnt/data/k3s-pvc/immich/library
+            path: /opt/k3s-data/immich/library/
             type: Directory
         - name: localtime
           hostPath:
