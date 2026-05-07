@@ -16,5 +16,3 @@ services:
       test: ["CMD", "/usr/bin/check-health"]
       interval: 10s
       timeout: 3s
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
