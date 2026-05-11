@@ -5,10 +5,7 @@ services:
     restart: unless-stopped
     environment:
       TZ: "Europe/Paris"
-    ports:
-      - "80:80" # HTTP Entry (Public)
-      - "443:443" # HTTPS Entry (Public)
-      - "81:81" # Admin Web Interface
+    network_mode: host
     volumes:
       - /opt/docker-data/npm/data:/data
       - /opt/docker-data/npm/letsencrypt:/etc/letsencrypt
