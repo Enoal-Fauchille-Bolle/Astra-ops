@@ -19,6 +19,14 @@ ingress:
   hosts:
     - uptime.enoal.fr
 
+dns:
+  policy: ClusterFirst
+  nameservers:
+    - 192.168.1.202
+  searches:
+    - svc.cluster.local
+    - cluster.local
+
 volumes:
   data:
     hostPath: /opt/k3s-data/uptimekuma

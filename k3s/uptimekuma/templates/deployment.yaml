@@ -26,6 +26,12 @@ spec:
       {{- if .Values.serviceAccountName }}
       serviceAccountName: {{ .Values.serviceAccountName }}
       {{- end }}
+      {{- if .Values.dns }}
+      dnsPolicy: {{ .Values.dns.policy }}
+      dnsConfig:
+        nameservers:
+          {{- toYaml .Values.dns.nameservers | nindent 10 }}
+      {{- end }}
       containers:
         - name: {{ .Chart.Name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
