@@ -20,12 +20,14 @@ ingress:
     - uptime.enoal.fr
 
 dns:
-  policy: ClusterFirst
+  policy: None
   nameservers:
     - 192.168.1.202
+    - 10.43.0.10
   searches:
     - svc.cluster.local
     - cluster.local
+    - lan
 
 volumes:
   data:
