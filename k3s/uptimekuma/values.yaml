@@ -18,6 +18,7 @@ ingress:
   enabled: true
   hosts:
     - uptime.enoal.fr
+    - status.enoal.fr
 
 dns:
   policy: None
