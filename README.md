@@ -157,7 +157,7 @@ astra-ops/
 ## Services catalog
 
 > [!NOTE]
-> **Status** — ✅ Active: running · ⏸️ Disabled: in repo but not deployed · 💤 Offline: previously deployed, files kept as reference · 🔜 Planned: not yet in repo
+> **Status** — ✅ Active: running · ⏸️ Disabled: in repo but not deployed · 🔜 Planned: not yet in repo
 
 | Service                                        | Description                                       | Category          | Namespace        | Type            | Exposure                                                   | Status      |
 | ---------------------------------------------- | ------------------------------------------------- | ----------------- | ---------------- | --------------- | ---------------------------------------------------------- | ----------- |
@@ -181,7 +181,7 @@ astra-ops/
 | [homer](k3s/homer)                             | Application dashboard / start page                | 📋 Dashboard      | `dashboard`      | Helm            | `home.lan`, `homer.lan`, `home.enoal.fr`, `homer.enoal.fr` | ✅ Active   |
 | [immich](k3s/immich)                           | Photo management (Server + ML + Postgres + Redis) | 🎬 Media          | `media`          | Raw             | `immich.lan`, `immich.enoal.fr`, `photos.enoal.fr`         | ✅ Active   |
 | [kiwix](k3s/kiwix)                             | Offline content server (Wikipedia, etc.)          | 🎬 Media          | `media`          | Raw             | `kiwix.lan`                                                | ⏸️ Disabled |
-| [myip](k3s/myip)                               | Public IP display tool                            | 🛠️ Utilities      | `utilities`      | Raw             | `myip.lan`                                                 | 💤 Offline  |
+| [myip](k3s/myip)                               | Public IP display tool                            | 🛠️ Utilities      | `utilities`      | Raw             | `myip.lan`                                                 | ⏸️ Disabled |
 | [n8n](k3s/n8n)                                 | Workflow automation platform                      | 🗄️ DevOps         | `devops`         | Raw             | `n8n.enoal.fr`                                             | ✅ Active   |
 | [npm](docker/npm)                              | Nginx Proxy Manager — reverse proxy + SSL         | 🐳 Infrastructure | —                | Docker Compose  | `npm.lan`, 80/443/81                                       | ✅ Active   |
 | [ntfy](k3s/ntfy)                               | Self-hosted push notification server              | 🔔 Notifications  | `notifications`  | Raw             | `ntfy.enoal.fr`                                            | ⏸️ Disabled |
