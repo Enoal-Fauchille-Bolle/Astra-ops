@@ -41,6 +41,38 @@ volumes:
 securityContext:
   runAsUser: 0
 
+env:
+  - name: SFTPGO_SMTP__HOST
+    valueFrom:
+      secretKeyRef:
+        name: sftpgo-secrets
+        key: host
+  - name: SFTPGO_SMTP__PORT
+    valueFrom:
+      secretKeyRef:
+        name: sftpgo-secrets
+        key: port
+  - name: SFTPGO_SMTP__FROM
+    valueFrom:
+      secretKeyRef:
+        name: sftpgo-secrets
+        key: from
+  - name: SFTPGO_SMTP__USER
+    valueFrom:
+      secretKeyRef:
+        name: sftpgo-secrets
+        key: username
+  - name: SFTPGO_SMTP__PASSWORD
+    valueFrom:
+      secretKeyRef:
+        name: sftpgo-secrets
+        key: password
+  - name: SFTPGO_SMTP__ENCRYPTION
+    valueFrom:
+      secretKeyRef:
+        name: sftpgo-secrets
+        key: encryption
+
 resources:
   requests:
     cpu: 10m
