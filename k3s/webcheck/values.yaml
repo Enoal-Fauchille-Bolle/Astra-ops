@@ -2,7 +2,7 @@ namespace: utilities
 
 image:
   repository: lissy93/web-check
-  tag: 1.0.0
+  tag: 2.1.5
   pullPolicy: IfNotPresent
 
 replicaCount: 1
