@@ -1,0 +1,12 @@
+apiVersion: autoscaling.k8s.io/v1
+kind: VerticalPodAutoscaler
+metadata:
+  name: criteri-fresque-backend
+  namespace: web
+spec:
+  targetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: criteri-fresque-backend
+  updatePolicy:
+    updateMode: "Off"

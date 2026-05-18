@@ -1,0 +1,12 @@
+apiVersion: autoscaling.k8s.io/v1
+kind: VerticalPodAutoscaler
+metadata:
+  name: n8n
+  namespace: automation
+spec:
+  targetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: n8n
+  updatePolicy:
+    updateMode: "Off"
