@@ -1,0 +1,149 @@
+{
+  "title": "Astra — Host Overview",
+  "uid": "astra-host",
+  "schemaVersion": 38,
+  "refresh": "30s",
+  "time": { "from": "now-1h", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "title": "CPU Usage %",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "expr": "100 - (avg by(instance) (rate(node_cpu_seconds_total{mode=\"idle\"}[2m])) * 100)",
+          "legendFormat": "{{instance}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "color": { "mode": "palette-classic" }
+        }
+      }
+    },
+    {
+      "id": 2,
+      "title": "RAM Usage %",
+      "type": "timeseries",
+      "gridPos": { "x": 12, "y": 0, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "expr": "(1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100",
+          "legendFormat": "RAM used"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100
+        }
+      }
+    },
+    {
+      "id": 3,
+      "title": "Disk Usage — /opt (NVMe 1)",
+      "type": "gauge",
+      "gridPos": { "x": 0, "y": 8, "w": 6, "h": 6 },
+      "targets": [
+        {
+          "expr": "(1 - (node_filesystem_avail_bytes{mountpoint=\"/opt\"} / node_filesystem_size_bytes{mountpoint=\"/opt\"})) * 100",
+          "legendFormat": "/opt"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "steps": [
+              { "color": "green", "value": 0 },
+              { "color": "yellow", "value": 70 },
+              { "color": "red", "value": 90 }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 4,
+      "title": "Disk Usage — /mnt (NVMe 2)",
+      "type": "gauge",
+      "gridPos": { "x": 6, "y": 8, "w": 6, "h": 6 },
+      "targets": [
+        {
+          "expr": "(1 - (node_filesystem_avail_bytes{mountpoint=\"/mnt\"} / node_filesystem_size_bytes{mountpoint=\"/mnt\"})) * 100",
+          "legendFormat": "/mnt"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "steps": [
+              { "color": "green", "value": 0 },
+              { "color": "yellow", "value": 70 },
+              { "color": "red", "value": 90 }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 5,
+      "title": "Network I/O",
+      "type": "timeseries",
+      "gridPos": { "x": 12, "y": 8, "w": 12, "h": 6 },
+      "targets": [
+        {
+          "expr": "rate(node_network_receive_bytes_total{device!~\"lo|docker.*|br.*|veth.*\"}[2m])",
+          "legendFormat": "↓ {{device}}"
+        },
+        {
+          "expr": "rate(node_network_transmit_bytes_total{device!~\"lo|docker.*|br.*|veth.*\"}[2m])",
+          "legendFormat": "↑ {{device}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "Bps" }
+      }
+    },
+    {
+      "id": 6,
+      "title": "Top 10 containers — CPU",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 14, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "expr": "topk(10, sum by(name) (rate(container_cpu_usage_seconds_total{name!=\"\"}[2m])) * 100)",
+          "legendFormat": "{{name}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "percent" }
+      }
+    },
+    {
+      "id": 7,
+      "title": "Top 10 containers — RAM",
+      "type": "timeseries",
+      "gridPos": { "x": 12, "y": 14, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "expr": "topk(10, container_memory_working_set_bytes{name!=\"\"})",
+          "legendFormat": "{{name}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "bytes" }
+      }
+    }
+  ]
+}

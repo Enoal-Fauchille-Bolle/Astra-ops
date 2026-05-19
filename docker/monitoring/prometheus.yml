@@ -1,0 +1,23 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets: [localhost:9090]
+
+  # Métriques host (CPU, RAM, disque, réseau)
+  - job_name: node-exporter
+    static_configs:
+      - targets: [node-exporter:9100]
+
+  # Métriques containers Docker
+  - job_name: cadvisor
+    static_configs:
+      - targets: [cadvisor:8080]
+
+  # --- K3s (à activer quand Prometheus tourne dans le cluster) ---
+  # - job_name: kube-state-metrics
+  #   static_configs:
+  #     - targets: [kube-state-metrics.kube-system.svc.cluster.local:8080]
