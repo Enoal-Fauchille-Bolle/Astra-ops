@@ -15,6 +15,9 @@ spec:
       values: |
         recommender:
           enabled: true
+          extraArgs:
+            pod-recommendation-min-cpu-ms: "10"
+            pod-recommendation-min-memory-mb: "10"
         updater:
           enabled: false
         admissionController:
