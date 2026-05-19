@@ -19,6 +19,7 @@ orchestrated with K3s and Docker Compose, and continuously deployed via ArgoCD.
 - [Repository structure](#repository-structure)
 - [Services catalog](#services-catalog)
 - [Network and DNS](#network-and-dns)
+- [Email infrastructure](#email-infrastructure)
 - [Storage strategy](#storage-strategy)
 - [Secrets management](#secrets-management)
 - [GitOps workflow](#gitops-workflow)
@@ -117,6 +118,8 @@ graph LR
 | Container management     | Portainer EE              | Docker + Compose stack management         |
 | Log viewer               | Dozzle                    | Real-time Docker log streaming            |
 | CI runners               | Actions Runner Controller | GitHub Actions self-hosted runners on K3s |
+| Email inbound            | Cloudflare Email Routing  | Catch-all forwarding to Gmail             |
+| Email outbound           | Resend (SMTP relay)       | Authenticated sending for `@enoal.fr`     |
 
 ---
 
@@ -220,6 +223,159 @@ AdGuard Home acts as the local DNS server, resolving `.lan` hostnames to the Pul
 | 9444        | TCP      | Portainer                  |
 | 25500–25599 | TCP      | Minecraft servers (Crafty) |
 | 30022       | TCP      | SFTPGo SFTP (K3s NodePort) |
+
+### Email aliases
+
+All `*@enoal.fr` addresses are caught by Cloudflare Email Routing and forwarded to the
+personal Gmail inbox. No per-alias configuration is needed — the catch-all rule handles
+everything automatically.
+
+Here are some example aliases and their intended purposes:
+
+| Alias               | Purpose                                      |
+| ------------------- | -------------------------------------------- |
+| `enoal@enoal.fr`    | Primary professional address (CV, LinkedIn)  |
+| `contact@enoal.fr`  | General contact, portfolio                   |
+| `admin@enoal.fr`    | Infrastructure accounts (OVH, Cloudflare...) |
+| `dev@enoal.fr`      | Developer accounts (GitHub, npm, forums)     |
+| `noreply@enoal.fr`  | Sender address for homelab services          |
+| `alerts@enoal.fr`   | Monitoring alerts (Uptime Kuma, SFTPGo...)   |
+| `discord@enoal.fr`  | Discord account — breach tracing             |
+| `github@enoal.fr`   | GitHub account — breach tracing              |
+| `epitech@enoal.fr`  | Epitech services — breach tracing            |
+| `shopping@enoal.fr` | E-commerce accounts — breach tracing         |
+
+> [!TIP]
+> Breach tracing: if spam arrives on a specific alias, the leaking service is immediately
+> identified. Compromised aliases can be silently dropped in Cloudflare Email Routing
+> without changing any account password or primary address.
+
+---
+
+## Email infrastructure
+
+Self-hosting a mail server on a residential IP is not viable — ISPs block port 25 and
+residential IPs are universally blacklisted. The stack instead relies on two external
+services that handle inbound and outbound mail separately, at zero cost.
+
+### Architecture
+
+```text
+Inbound:  sender → contact@enoal.fr
+                  → Cloudflare Email Routing (MX on enoal.fr)
+                  → My Gmail inbox (via forwarding)
+
+Outbound: Gmail → smtp.resend.com:587 (SMTP relay)
+                → recipient (sent as contact@enoal.fr)
+
+Services: K3s pod → smtp.resend.com:587 (same relay)
+```
+
+### Inbound — Cloudflare Email Routing
+
+[Cloudflare Email Routing](https://developers.cloudflare.com/email-routing/) intercepts
+all mail addressed to `@enoal.fr` and forwards it to Gmail. No infrastructure required.
+
+- **Catch-all rule**: active — any `*@enoal.fr` address works immediately without
+  per-alias configuration
+- **MX records**: managed automatically by Cloudflare
+
+### Outbound — Resend
+
+[Resend](https://resend.com) acts as the SMTP relay for all outbound mail. It authenticates
+sends from `@enoal.fr` via DKIM and routes them through AWS SES infrastructure, ensuring
+high deliverability.
+
+- **Free tier**: 3 000 emails/month, 100/day — sufficient for personal and homelab use
+- **Domain**: `enoal.fr` verified via Cloudflare DomainConnect (one-time authorization)
+- **SMTP credentials**: `smtp.resend.com:587`, username `resend`, password = API key
+
+DNS records added by Resend:
+
+| Type | Name                | Purpose                              |
+| ---- | ------------------- | ------------------------------------ |
+| TXT  | `resend._domainkey` | DKIM signature key                   |
+| MX   | `send`              | Bounce handling (via AWS SES)        |
+| TXT  | `send`              | SPF for the `send.enoal.fr` envelope |
+
+> [!NOTE]
+> The `send.enoal.fr` subdomain is used exclusively as the SMTP `Return-Path` for bounce
+> processing. It does not conflict with the `enoal.fr` MX records used by Cloudflare Email
+> Routing.
+
+### DNS authentication records
+
+| Type | Name     | Value                                             | Purpose                        |
+| ---- | -------- | ------------------------------------------------- | ------------------------------ |
+| TXT  | `@`      | `v=spf1 include:_spf.mx.cloudflare.net ~all`      | SPF — authorizes Cloudflare MX |
+| TXT  | `_dmarc` | `v=DMARC1; p=none; rua=mailto:<dmarcreport-addr>` | DMARC policy (monitoring mode) |
+
+> [!TIP]
+> DMARC is currently in `p=none` (monitoring) mode. Switch to `p=quarantine` or `p=reject`
+> once aggregate reports confirm all legitimate senders pass SPF/DKIM. Reports are parsed
+> by [dmarcreport.com](https://dmarcreport.com).
+
+### Gmail — sending as @enoal.fr
+
+Gmail is configured to send as any `@enoal.fr` address via **Settings → Accounts and
+Import → Send mail as**, using the Resend SMTP credentials. Each address requires a
+one-time verification email (delivered via Cloudflare Email Routing).
+
+### Homelab services — SMTP secret
+
+Services that send email (Vaultwarden, n8n, Immich, Uptime Kuma, SFTPGo) consume
+Kubernetes Secrets injected as environment variables. Each such service has a `*-secret.yaml` template
+excluded from Git, which is copied, filled in with the Resend credentials, and applied to
+the cluster. Example:
+
+```yaml
+# k3s/vaultwarden/secrets.yaml  ← excluded by .gitignore
+apiVersion: v1
+kind: Secret
+metadata:
+  name: vaultwarden-secrets
+  namespace: security
+type: Opaque
+stringData:
+  host: smtp.resend.com
+  port: "587"
+  username: resend
+  password: <RESEND_API_KEY>
+  from: vaultwarden@enoal.fr
+```
+
+```bash
+kubectl apply -f k3s/vaultwarden/secrets.yaml
+```
+
+Reference in deployments:
+
+```yaml
+env:
+  - name: SMTP_HOST
+    valueFrom:
+      secretKeyRef:
+        name: vaultwarden-secrets
+        key: host
+  - name: SMTP_PASSWORD
+    valueFrom:
+      secretKeyRef:
+        name: vaultwarden-secrets
+        key: password
+```
+
+For **Docker Compose stacks** (Layer A), secrets are injected via Portainer's
+**Environment variables** UI — no `.env` file on disk, no repository changes required.
+
+### Services using SMTP
+
+| Service     | Usage                                              | Priority    |
+| ----------- | -------------------------------------------------- | ----------- |
+| Vaultwarden | User invitations, password reset, 2FA alerts       | 🔴 Critical |
+| n8n         | User invitations + `Send Email` workflow node      | 🔴 Critical |
+| Uptime Kuma | Downtime alerts                                    | 🟠 Optional |
+| Immich      | New user welcome, shared album notifications       | 🟠 Optional |
+| SFTPGo      | Upload/download events, backup status, share codes | 🟠 Optional |
 
 ---
 
