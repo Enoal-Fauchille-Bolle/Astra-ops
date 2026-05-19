@@ -258,7 +258,7 @@ Self-hosting a mail server on a residential IP is not viable — ISPs block port
 residential IPs are universally blacklisted. The stack instead relies on two external
 services that handle inbound and outbound mail separately, at zero cost.
 
-### Architecture
+### Email Flow
 
 ```text
 Inbound:  sender → contact@enoal.fr
