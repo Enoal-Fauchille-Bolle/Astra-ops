@@ -115,6 +115,7 @@ graph LR
 | GitOps                   | ArgoCD                    | Continuous deployment from Git            |
 | Package manager          | Helm                      | Kubernetes application packaging          |
 | Dependency updates       | Renovate                  | Automated image/chart version bumps       |
+| Resource autoscaling     | VPA (cowboysysop)         | Resource usage recommendations (Off mode) |
 | Container management     | Portainer EE              | Docker + Compose stack management         |
 | Log viewer               | Dozzle                    | Real-time Docker log streaming            |
 | CI runners               | Actions Runner Controller | GitHub Actions self-hosted runners on K3s |
@@ -136,9 +137,11 @@ astra-ops/
 │   ├── npm/                 # Nginx Proxy Manager
 │   └── portainer/           # Container management UI
 ├── infra/
-│   └── argocd/
-│       ├── argocd-ingress.yaml   # ArgoCD Ingress
-│       └── root-app.yaml         # App-of-Apps bootstrap (apply once)
+│   ├── argocd/
+│   │   ├── argocd-ingress.yaml   # ArgoCD Ingress
+│   │   └── root-app.yaml         # App-of-Apps bootstrap (apply once)
+│   └── vpa/
+│       └── <service>.yaml        # VPA objects (one per deployment, Off mode)
 ├── k3s/                     # K3s workloads (Layer B)
 │   └── <service>/
 │       ├── Chart.yaml            # (Helm) Chart metadata
@@ -482,6 +485,28 @@ k3s/<service>/
     ├── ingress.yaml
     └── ...
 ```
+
+### Vertical Pod Autoscaler (VPA)
+
+[VPA](https://github.com/kubernetes/autoscaler/tree/master/vertical-pod-autoscaler) is
+deployed via the `cowboysysop/vertical-pod-autoscaler` Helm chart and runs in **Off mode**
+(recommendations only — pods are never automatically evicted or modified).
+
+The recommender watches all application deployments and builds CPU/memory usage histograms
+over time using `metrics-server`. After 24–48 h of observation, it produces per-container
+recommendations (`Lower Bound`, `Target`, `Upper Bound`) that inform manual updates to
+`values.yaml` resource fields.
+
+```bash
+# Read recommendations for a service
+kubectl describe vpa <service> -n <namespace>
+# or browse all at once in k9s
+:vpa
+```
+
+VPA objects live in `infra/vpa/` (one file per deployment) and are deployed by the
+`vpa-objects` ArgoCD Application. The operator itself (`vpa-system`) is managed separately
+as a Helm chart Application pointing to the cowboysysop registry.
 
 ### Commit convention
 
