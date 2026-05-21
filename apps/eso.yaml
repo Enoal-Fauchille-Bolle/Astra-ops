@@ -16,6 +16,9 @@ spec:
     helm:
       values: |
         installCRDs: true
+        crds:
+          annotations:
+            argocd.argoproj.io/sync-options: ServerSideApply=true
   destination:
     server: https://kubernetes.default.svc
     namespace: external-secrets
