@@ -1,6 +1,9 @@
 .env
 *-secret.yaml
+!external-secret.yaml
 *-secrets.yaml
 *-regcred.yaml
 regcred.yaml
 secrets.yaml
+infisical-bootstrap.yaml
+infisical-token.yaml

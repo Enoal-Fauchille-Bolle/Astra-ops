@@ -1,0 +1,13 @@
+# Copy to infisical-token.yaml, fill in the token, then:
+#   kubectl apply -f infra/eso/infisical-token.yaml
+#
+# The Service Token is generated in the Infisical UI:
+#   Your Project → Settings → Service Tokens → Create token
+apiVersion: v1
+kind: Secret
+metadata:
+  name: infisical-service-token
+  namespace: external-secrets
+type: Opaque
+stringData:
+  accessToken: "st.<votre-service-token>"
