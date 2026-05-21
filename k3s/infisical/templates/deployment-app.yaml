@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: infisical-app
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: infisical-app
+spec:
+  replicas: {{ .Values.app.replicaCount }}
+  selector:
+    matchLabels:
+      app: infisical-app
+  template:
+    metadata:
+      labels:
+        app: infisical-app
+    spec:
+      containers:
+        - name: infisical
+          image: "{{ .Values.app.image.repository }}:{{ .Values.app.image.tag }}"
+          imagePullPolicy: {{ .Values.app.image.pullPolicy }}
+          envFrom:
+            - secretRef:
+                name: infisical-bootstrap-secrets
+          env:
+            {{- toYaml .Values.app.env | nindent 12 }}
+          ports:
+            - containerPort: {{ .Values.app.service.targetPort }}
+              protocol: TCP
+          resources:
+            {{- toYaml .Values.app.resources | nindent 12 }}

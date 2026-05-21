@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: infisical-postgres
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: infisical-postgres
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: infisical-postgres
+  template:
+    metadata:
+      labels:
+        app: infisical-postgres
+    spec:
+      containers:
+        - name: postgres
+          image: "{{ .Values.postgres.image.repository }}:{{ .Values.postgres.image.tag }}"
+          imagePullPolicy: {{ .Values.postgres.image.pullPolicy }}
+          envFrom:
+            - secretRef:
+                name: infisical-bootstrap-secrets
+          ports:
+            - containerPort: {{ .Values.postgres.service.port }}
+              protocol: TCP
+          volumeMounts:
+            - name: pg-data
+              mountPath: {{ .Values.postgres.volume.mountPath }}
+          resources:
+            {{- toYaml .Values.postgres.resources | nindent 12 }}
+      volumes:
+        - name: pg-data
+          hostPath:
+            path: {{ .Values.postgres.volume.hostPath }}
+            type: DirectoryOrCreate

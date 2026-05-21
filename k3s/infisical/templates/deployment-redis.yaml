@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: infisical-redis
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: infisical-redis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: infisical-redis
+  template:
+    metadata:
+      labels:
+        app: infisical-redis
+    spec:
+      containers:
+        - name: redis
+          image: "{{ .Values.redis.image.repository }}:{{ .Values.redis.image.tag }}"
+          imagePullPolicy: {{ .Values.redis.image.pullPolicy }}
+          args: ["--save", "60", "1", "--loglevel", "warning"]
+          ports:
+            - containerPort: {{ .Values.redis.service.port }}
+              protocol: TCP
+          volumeMounts:
+            - name: redis-data
+              mountPath: {{ .Values.redis.volume.mountPath }}
+          resources:
+            {{- toYaml .Values.redis.resources | nindent 12 }}
+      volumes:
+        - name: redis-data
+          hostPath:
+            path: {{ .Values.redis.volume.hostPath }}
+            type: DirectoryOrCreate

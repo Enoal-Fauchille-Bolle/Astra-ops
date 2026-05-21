@@ -1,0 +1,6 @@
+apiVersion: v2
+name: infisical
+description: Infisical - Self-hosted secret management (app + postgres + redis)
+type: application
+version: 0.1.0
+appVersion: "latest-postgres"

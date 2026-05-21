@@ -1,0 +1,70 @@
+namespace: infisical
+
+postgres:
+  image:
+    repository: postgres
+    tag: "16-alpine"
+    pullPolicy: IfNotPresent
+  service:
+    port: 5432
+  volume:
+    hostPath: /opt/k3s-data/infisical/postgres
+    mountPath: /var/lib/postgresql/data
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 200m
+      memory: 512Mi
+
+redis:
+  image:
+    repository: redis
+    tag: "7-alpine"
+    pullPolicy: IfNotPresent
+  service:
+    port: 6379
+  volume:
+    hostPath: /opt/k3s-data/infisical/redis
+    mountPath: /data
+  resources:
+    requests:
+      cpu: 10m
+      memory: 32Mi
+    limits:
+      cpu: 100m
+      memory: 128Mi
+
+app:
+  image:
+    repository: infisical/infisical
+    tag: "latest-postgres"
+    pullPolicy: IfNotPresent
+  replicaCount: 1
+  env:
+    - name: REDIS_URL
+      value: "redis://infisical-redis-svc:6379"
+    - name: SITE_URL
+      value: "http://infisical.lan"
+    - name: TELEMETRY_ENABLED
+      value: "false"
+    - name: HTTPS_ENABLED
+      value: "false"
+    - name: NODE_ENV
+      value: "production"
+  service:
+    port: 8080
+    targetPort: 8080
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 1000m
+      memory: 2Gi
+
+ingress:
+  enabled: true
+  hosts:
+    - infisical.lan

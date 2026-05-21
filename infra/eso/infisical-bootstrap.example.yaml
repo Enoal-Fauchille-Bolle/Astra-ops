@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: infisical-bootstrap-secrets
+  namespace: infisical
+type: Opaque
+stringData:
+  # --- Infisical app ---
+  # Generate with: openssl rand -hex 16
+  ENCRYPTION_KEY: "<16-char-hex>"
+  # Generate with: openssl rand -base64 32
+  AUTH_SECRET: "<base64-random>"
+  # Full postgres URI — replace <POSTGRES_PASSWORD> with the value below
+  DB_CONNECTION_URI: "postgresql://infisical:<POSTGRES_PASSWORD>@infisical-postgres-svc:5432/infisical"
+
+  # --- Postgres ---
+  POSTGRES_USER: "infisical"
+  POSTGRES_PASSWORD: "<your-password>"
+  POSTGRES_DB: "infisical"
+
+  # --- SMTP (optional) ---
+  SMTP_HOST: "smtp.example.com"
+  SMTP_PORT: "587"
+  SMTP_USER: "smtp_user"
+  SMTP_PASSWORD: "smtp_password"
+  SMTP_FROM_ADDRESS: "infisical@example.com"
+  SMTP_FROM_NAME: "Infisical"
