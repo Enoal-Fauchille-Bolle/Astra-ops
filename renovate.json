@@ -4,10 +4,12 @@
         "config:recommended"
     ],
     "automerge": false,
-    "commitMessagePrefix": "⬆️",
+    "commitMessagePrefix": "⬆️ [{{parentDir}}]",
     "commitMessageAction": "Update",
-    "commitMessageTopic": "[{{parentDir}}] {{depName}}",
+    "commitMessageTopic": "{{depName}}",
     "commitMessageExtra": "{{currentVersion}} → {{newVersion}}",
+    "commitMessageSuffix": "",
+    "recreateClosed": false,
     "packageRules": [
         {
             "description": "Enable all private GHCR images",
