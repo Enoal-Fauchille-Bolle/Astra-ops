@@ -1,6 +1,6 @@
 # 🚀 Astra-ops
 
-GitOps monorepo for the **Astra homelab** — a personal infrastructure running on Proxmox,
+GitOps monorepo for my homelab called **Astra** — a personal infrastructure running on Proxmox,
 orchestrated with K3s and Docker Compose, and continuously deployed via ArgoCD.
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
