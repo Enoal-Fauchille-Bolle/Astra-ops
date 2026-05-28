@@ -2,13 +2,17 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": ["config:recommended"],
   "automerge": false,
-  "commitMessagePrefix": "⬆️ [{{parentDir}}]",
-  "commitMessageAction": "Update",
-  "commitMessageTopic": "{{depName}}",
-  "commitMessageExtra": "{{currentVersion}} → {{newVersion}}",
-  "commitMessageSuffix": "",
   "recreateClosed": false,
+  "commitMessagePrefix": "⬆️ [{{parentDir}}]",
   "packageRules": [
+    {
+      "description": "Format commit messages for all Docker images — strip registry prefix and set version arrow format",
+      "matchDatasources": ["docker"],
+      "overrideDepName": "{{{replace '^[^/]+\\.[^/]+/' '' depName}}}",
+      "commitMessageAction": "Update",
+      "commitMessageTopic": "{{depName}}",
+      "commitMessageExtra": "{{currentVersion}} → {{newVersion}}"
+    },
     {
       "description": "Enable all private GHCR images",
       "matchDatasources": ["docker"],
