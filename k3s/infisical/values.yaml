@@ -21,7 +21,7 @@ postgres:
 redis:
   image:
     repository: redis
-    tag: "7-alpine"
+    tag: "8-alpine"
     pullPolicy: IfNotPresent
   service:
     port: 6379
