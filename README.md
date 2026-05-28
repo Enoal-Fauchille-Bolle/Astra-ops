@@ -78,12 +78,15 @@ graph TB
 
 ### Traffic flow
 
-```text
-Internet (https://app.enoal.fr)
-  → Router (NAT 443 → 192.168.1.201)
-    → Nginx Proxy Manager (SSL termination)
-      → Traefik (K3s ingress routing)
-        → Target Pod
+```mermaid
+flowchart TD
+    INET((Internet\nhttps://app.enoal.fr))
+    ROUTER[Router\nNAT 443 → 192.168.1.201]
+    NPM[Nginx Proxy Manager\nSSL termination]
+    TRAEFIK[Traefik\nK3s ingress routing]
+    POD[Target Pod]
+
+    INET --> ROUTER --> NPM --> TRAEFIK --> POD
 ```
 
 ### Storage layout
