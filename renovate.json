@@ -1,48 +1,36 @@
 {
-    "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-    "extends": [
-        "config:recommended"
-    ],
-    "automerge": false,
-    "commitMessagePrefix": "⬆️ [{{parentDir}}]",
-    "commitMessageAction": "Update",
-    "commitMessageTopic": "{{depName}}",
-    "commitMessageExtra": "{{currentVersion}} → {{newVersion}}",
-    "commitMessageSuffix": "",
-    "recreateClosed": false,
-    "packageRules": [
-        {
-            "description": "Enable all private GHCR images",
-            "matchDatasources": [
-                "docker"
-            ],
-            "matchPackageNames": [
-                "ghcr.io/enoal-fauchille-bolle/**"
-            ],
-            "enabled": true
-        }
-    ],
-    "docker-compose": {
-        "managerFilePatterns": [
-            "/docker/.*/docker-compose\\.yml$/"
-        ]
-    },
-    "helm-values": {
-        "managerFilePatterns": [
-            "/k3s/.*/values\\.yaml$/"
-        ]
-    },
-    "kubernetes": {
-        "managerFilePatterns": [
-            "/k3s/.*\\.(yaml|yml)$/"
-        ]
-    },
-    "hostRules": [
-        {
-            "hostType": "docker",
-            "matchHost": "ghcr.io",
-            "username": "Enoal-Fauchille-Bolle",
-            "password": "{{ secrets.GHCR_PAT }}"
-        }
-    ]
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "automerge": false,
+  "commitMessagePrefix": "⬆️ [{{parentDir}}]",
+  "commitMessageAction": "Update",
+  "commitMessageTopic": "{{depName}}",
+  "commitMessageExtra": "{{currentVersion}} → {{newVersion}}",
+  "commitMessageSuffix": "",
+  "recreateClosed": false,
+  "packageRules": [
+    {
+      "description": "Enable all private GHCR images",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["ghcr.io/enoal-fauchille-bolle/**"],
+      "enabled": true
+    }
+  ],
+  "docker-compose": {
+    "managerFilePatterns": ["/docker/.*/docker-compose\\.yml$/"]
+  },
+  "helm-values": {
+    "managerFilePatterns": ["/k3s/.*/values\\.yaml$/"]
+  },
+  "kubernetes": {
+    "managerFilePatterns": ["/k3s/.*\\.(yaml|yml)$/"]
+  },
+  "hostRules": [
+    {
+      "hostType": "docker",
+      "matchHost": "ghcr.io",
+      "username": "Enoal-Fauchille-Bolle",
+      "password": "{{ secrets.GHCR_PAT }}"
+    }
+  ]
 }
