@@ -14,6 +14,7 @@ orchestrated with K3s and Docker Compose, and continuously deployed via ArgoCD.
 ## Table of contents
 
 - [Overview](#overview)
+- [About](#about)
 - [Architecture](#architecture)
 - [Tech stack](#tech-stack)
 - [Repository structure](#repository-structure)
@@ -43,6 +44,27 @@ The infrastructure is split into two deployment layers:
   (Nginx Proxy Manager, Dozzle, Crafty).
 - **Layer B — K3s (Kubernetes)**: all application workloads, packaged as Helm charts
   or raw manifests and deployed through ArgoCD.
+
+---
+
+## About
+
+Astra is not the most practical homelab architecture. A single reverse proxy handling both SSL termination and internal routing would be simpler. Running everything on bare metal would eliminate the VM overhead entirely. An opinionated all-in-one solution would take an afternoon to set up.
+
+But simplicity was not the goal — learning was.
+
+Every piece of this stack was chosen because it forced me to understand something real:
+
+- **Kubernetes (K3s)** — container orchestration, namespaces, Helm packaging, HPA/VPA autoscaling, and the GitOps feedback loop with ArgoCD.
+- **Networking** — split-horizon DNS with AdGuard Home, NAT and port forwarding, SSL termination, and the Traefik ingress controller.
+- **SysAdmin / Linux** — Proxmox VE, VM and LXC provisioning, NVMe storage layout, and keeping a production-like system running continuously on a mini PC.
+- **DevOps** — GitOps with ArgoCD, Renovate for automated dependency updates, and self-hosted GitHub Actions runners on K3s with ARC.
+- **Email infrastructure** — SPF, DKIM, DMARC, routing inbound mail through Cloudflare Email Routing and outbound through an SMTP relay, without ever touching a mail server.
+- **Backup strategy** — designing a 3-2-1 architecture with Proxmox Backup Server for local block-level snapshots and Zerobyte + Rclone + MEGA for offsite cloud backups, including data classification tiers and RTO/RPO planning.
+- **Secrets management** — External Secrets Operator (ESO) syncing secrets from Infisical into Kubernetes, keeping credentials entirely out of Git.
+
+> [!NOTE]
+> The most visible architectural compromise is the double reverse proxy: Nginx Proxy Manager handles SSL termination and public routing, then passes plain HTTP to Traefik inside the cluster. The cleaner approach would be Traefik directly exposed with cert-manager — but NPM was already familiar and added a useful management UI.
 
 ---
 
