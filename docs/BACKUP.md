@@ -46,11 +46,11 @@
 
 The Astra homelab backup system follows a **3-2-1 strategy** (3 copies, 2 different media types, 1 offsite) implemented across two complementary layers.
 
-```txt
-3 copies  = production data  +  Layer 1 (local NVMe)  +  Layer 2 (cloud)
-2 media   = NVMe storage  +  cloud object storage (MEGA)
-1 offsite = MEGA cloud remotes (off-premises)
-```
+| Rule | Implementation |
+| --- | --- |
+| **3 copies** | Production + Layer 1 (PBS, local NVMe) + Layer 2 (MEGA cloud) |
+| **2 media** | NVMe storage + cloud object storage (MEGA) |
+| **1 offsite** | MEGA cloud remotes (off-premises) |
 
 ### Architecture Diagram
 
