@@ -30,10 +30,8 @@
    - 5.5 [RTO / RPO](#55-rto--rpo)
 6. [Database Dump Strategy](#6-database-dump-strategy)
 7. [Secrets Management](#7-secrets-management)
-8. [Storage Layout & Planned Migrations](#8-storage-layout--planned-migrations)
+8. [Storage Layout](#8-storage-layout)
    - 8.1 [Current Layout](#81-current-layout)
-   - 8.2 [Planned Directory Changes](#82-planned-directory-changes)
-   - 8.3 [Disk Resize — Pulsar sda](#83-disk-resize--pulsar-sda)
 9. [Restoration Runbooks](#9-restoration-runbooks)
    - 9.1 [Scenario A — Logical Corruption (service-level)](#91-scenario-a--logical-corruption-service-level)
    - 9.2 [Scenario B — Netac NVMe Failure](#92-scenario-b--netac-nvme-failure)
@@ -414,84 +412,49 @@ This sync will be automated via a **systemd timer on Fedora** (daily or on signi
 
 ---
 
-## 8. Storage Layout & Planned Migrations
+## 8. Storage Layout
 
 ### 8.1 Current Layout
 
 ```txt
 Pulsar /opt/ (sda — hot)
 ├── k3s-data/
-│   ├── vaultwarden/      6.7M
-│   ├── immich/           1.1G   (DB only, photos are in /mnt/data)
-│   ├── n8n/               41M
-│   ├── scanopy/           68M
-│   ├── appflowy/          52M
-│   ├── uptimekuma/       231M
-│   ├── docker-registry/   57M
-│   ├── jellyfin/          65M
-│   ├── scrutiny/         408K
-│   ├── sftpgo/           380K
-│   ├── filebrowser/       64K
+│   ├── vaultwarden/        6.7M
+│   ├── immich/             1.1G   (DB only)
+│   │   └── library/        6.4G   (photos)
+│   ├── homer/              5.3M
+│   ├── criteri-fresque/     38M
+│   ├── n8n/                 41M
+│   ├── scanopy/             68M
+│   ├── uptimekuma/         231M
+│   ├── docker-registry/     57M
+│   ├── sftpgo/             380K
+│   ├── filebrowser/         64K
 │   ├── filebrowser-quantum/ 896K
-│   ├── ntfy/             160K
-│   ├── diun/             536K
-│   ├── convertx/         356K
-│   └── zerobyte/         1.3M
+│   ├── ntfy/               160K
+│   ├── diun/               536K
+│   └── convertx/           356K
 └── docker-data/
-    ├── crowdsec/          92M
-    ├── npm/               20M
-    └── portainer/         15M
+    ├── crowdsec/            92M
+    ├── npm/                 20M
+    └── portainer/           15M
 
 Pulsar /mnt/data/ (sdb — cold)
 ├── k3s-pvc/
-│   ├── immich/           6.4G   ← planned move to /opt/k3s-data/immich/library/
-│   ├── filebrowser/      9.1G
-│   ├── homer/            5.3M   ← planned move to /opt/k3s-data/homer/
-│   ├── criteri-fresque/   38M   ← planned move to /opt/k3s-data/criteri-fresque/
-│   ├── crafty/            92K
-│   └── kiwix/            136G   (Tier 3)
+│   ├── filebrowser/        9.1G
+│   ├── crafty/              92K
+│   └── kiwix/             136G   (Tier 3)
 ├── docker-volumes/
 │   └── crafty/
-│       ├── backups/      4.3G   (Tier 2)
-│       ├── config/        53M   (Tier 2)
-│       ├── servers/       14G   (Tier 3)
-│       ├── logs/         207M   (Tier 3)
-│       └── import/         8K
-├── backups/              102M   → growing (personal uploads + future dumps)
+│       ├── backups/        4.3G   (Tier 2)
+│       ├── config/          53M   (Tier 2)
+│       ├── servers/         14G   (Tier 3)
+│       ├── logs/           207M   (Tier 3)
+│       └── import/           8K
+├── backups/                102M   → growing (personal uploads + future dumps)
 └── media/
-    ├── photos/           946M   (Tier 2)
-    └── movies/            93G   (Tier 3)
-```
-
-### 8.2 Planned Directory Changes
-
-| Action     | From                                 | To                                   | Reason                                                             |
-| ---------- | ------------------------------------ | ------------------------------------ | ------------------------------------------------------------------ |
-| **Move**   | `/mnt/data/k3s-pvc/immich/`          | `/opt/k3s-data/immich/library/`      | Consolidate immich DB + photos in one place, Tier 2 on hot disk    |
-| **Move**   | `/mnt/data/k3s-pvc/homer/`           | `/opt/k3s-data/homer/`               | Small config, not cold data                                        |
-| **Move**   | `/mnt/data/k3s-pvc/criteri-fresque/` | `/opt/k3s-data/criteri-fresque/`     | Small config, not cold data                                        |
-| **Create** | —                                    | `/mnt/data/backups/dumps/`           | Destination for DB dump script outputs                             |
-| **Create** | —                                    | `/mnt/data/backups/proxmox-configs/` | Rsync target for `/etc/pve/` and `/etc/proxmox-backup/` from Astra |
-
-> All moves require updating the corresponding K3s PV/PVC definitions or Docker Compose volume paths and restarting the affected services.
-
-### 8.3 Disk Resize — Pulsar sda
-
-`sda` (Pulsar OS disk) is at **80% capacity** (74G/97G). After planned migrations (Immich photos +6.4G, Homer +5.3M, Criteri-fresque +38M), it will be around **87% used** — too close to the limit.
-
-The `local-lvm` pool on `nvme0n1` has approximately **670G free**. Resizing is straightforward from the Proxmox UI:
-
-1. Proxmox UI → VM 100 → Hardware → Hard Disk (scsi0) → Disk Action → Resize
-2. Add desired amount (recommended: **+100G** → total 200G)
-3. Inside Pulsar, extend the LVM and filesystem:
-
-```bash
-# After Proxmox resize, inside Pulsar:
-sudo growpart /dev/sda 3
-sudo pvresize /dev/sda3
-sudo lvextend -l +100%FREE /dev/ubuntu-vg/ubuntu-lv
-sudo resize2fs /dev/ubuntu-vg/ubuntu-lv
-df -h /   # verify
+    ├── photos/             946M   (Tier 2)
+    └── movies/              93G   (Tier 3)
 ```
 
 ---
