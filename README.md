@@ -437,14 +437,14 @@ the `Secret` — no manual intervention required.
 
 ### What lives in git
 
-| File | Status | Description |
-| ---- | ------ | ----------- |
-| `k3s/<service>/external-secret.yaml` | ✅ Committed | Maps Infisical keys → K8s Secret |
-| `infra/eso/cluster-secret-store.yaml` | ✅ Committed | ESO connection config to Infisical |
-| `infra/eso/infisical-bootstrap.example` | ✅ Committed | Template for the bootstrap secret |
-| `infra/eso/infisical-token.example` | ✅ Committed | Template for the service token |
-| `infra/eso/infisical-bootstrap.yaml` | 🔒 Gitignored | Real bootstrap secret (fill locally) |
-| `infra/eso/infisical-token.yaml` | 🔒 Gitignored | Real service token (fill locally) |
+| File                                    | Status        | Description                          |
+| --------------------------------------- | ------------- | ------------------------------------ |
+| `k3s/<service>/external-secret.yaml`    | ✅ Committed  | Maps Infisical keys → K8s Secret     |
+| `infra/eso/cluster-secret-store.yaml`   | ✅ Committed  | ESO connection config to Infisical   |
+| `infra/eso/infisical-bootstrap.example` | ✅ Committed  | Template for the bootstrap secret    |
+| `infra/eso/infisical-token.example`     | ✅ Committed  | Template for the service token       |
+| `infra/eso/infisical-bootstrap.yaml`    | 🔒 Gitignored | Real bootstrap secret (fill locally) |
+| `infra/eso/infisical-token.yaml`        | 🔒 Gitignored | Real service token (fill locally)    |
 
 ### Adding a secret to a service
 
