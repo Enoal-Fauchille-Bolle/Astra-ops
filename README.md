@@ -140,6 +140,8 @@ graph LR
 | GitOps                   | ArgoCD                    | Continuous deployment from Git            |
 | Package manager          | Helm                      | Kubernetes application packaging          |
 | Dependency updates       | Renovate                  | Automated image/chart version bumps       |
+| Secrets management       | External Secrets Operator | Sync secrets from Infisical into K8s      |
+| Secrets backend          | Infisical (self-hosted)   | Centralized secrets store                 |
 | Resource autoscaling     | VPA (cowboysysop)         | Resource usage recommendations (Off mode) |
 | Container management     | Portainer EE              | Docker + Compose stack management         |
 | Log viewer               | Dozzle                    | Real-time Docker log streaming            |
@@ -165,6 +167,10 @@ astra-ops/
 │   ├── argocd/
 │   │   ├── argocd-ingress.yaml   # ArgoCD Ingress
 │   │   └── root-app.yaml         # App-of-Apps bootstrap (apply once)
+│   ├── eso/
+│   │   ├── cluster-secret-store.yaml    # ClusterSecretStore (committed)
+│   │   ├── infisical-bootstrap.example  # Bootstrap secret template (committed)
+│   │   └── infisical-token.example      # Service token template (committed)
 │   └── vpa/
 │       └── <service>.yaml        # VPA objects (one per deployment, Off mode)
 ├── k3s/                     # K3s workloads (Layer B)
@@ -352,31 +358,12 @@ one-time verification email (delivered via Cloudflare Email Routing).
 ### Homelab services — SMTP secret
 
 Services that send email (Vaultwarden, n8n, Immich, Uptime Kuma, SFTPGo) consume
-Kubernetes Secrets injected as environment variables. Each such service has a `*-secret.yaml` template
-excluded from Git, which is copied, filled in with the Resend credentials, and applied to
-the cluster. Example:
+Kubernetes Secrets injected as environment variables. SMTP credentials (`SMTP_HOST`,
+`SMTP_PASSWORD`, etc.) are stored in Infisical and synced automatically into the cluster
+by ESO. Each service has a committed `external-secret.yaml` that maps the Infisical keys
+to the expected Secret — no manual `kubectl apply` required after the initial bootstrap.
 
-```yaml
-# k3s/vaultwarden/secrets.yaml  ← excluded by .gitignore
-apiVersion: v1
-kind: Secret
-metadata:
-  name: vaultwarden-secrets
-  namespace: security
-type: Opaque
-stringData:
-  host: smtp.resend.com
-  port: "587"
-  username: resend
-  password: <RESEND_API_KEY>
-  from: vaultwarden@enoal.fr
-```
-
-```bash
-kubectl apply -f k3s/vaultwarden/secrets.yaml
-```
-
-Reference in deployments:
+Reference in deployments is unchanged:
 
 ```yaml
 env:
@@ -384,12 +371,12 @@ env:
     valueFrom:
       secretKeyRef:
         name: vaultwarden-secrets
-        key: host
+        key: SMTP_HOST
   - name: SMTP_PASSWORD
     valueFrom:
       secretKeyRef:
         name: vaultwarden-secrets
-        key: password
+        key: SMTP_PASSWORD
 ```
 
 For **Docker Compose stacks** (Layer A), secrets are injected via Portainer's
@@ -431,16 +418,52 @@ Both drives are NVMe, with distinct roles:
 
 ## Secrets management
 
-Secrets are **never** committed to this repository. The `.gitignore` excludes:
+Secrets are **never** committed to this repository. The stack uses
+[External Secrets Operator](https://external-secrets.io) (ESO) backed by a self-hosted
+[Infisical](https://infisical.com) instance running on the cluster itself.
+
+### How it works
 
 ```text
-.env
-*-secret.yaml
-*-secrets.yaml
-*-regcred.yaml
-regcred.yaml
-secrets.yaml
+ExternalSecret (git) → ESO → Infisical (cluster) → Secret K8s (cluster) → Pod
 ```
+
+Each service has a committed `k3s/<service>/external-secret.yaml` that describes which
+keys to pull from Infisical and how to map them into a Kubernetes Secret. ArgoCD deploys
+the `ExternalSecret` object; ESO resolves it automatically against Infisical and creates
+the `Secret` — no manual intervention required.
+
+### What lives in git
+
+| File | Status | Description |
+| ---- | ------ | ----------- |
+| `k3s/<service>/external-secret.yaml` | ✅ Committed | Maps Infisical keys → K8s Secret |
+| `infra/eso/cluster-secret-store.yaml` | ✅ Committed | ESO connection config to Infisical |
+| `infra/eso/infisical-bootstrap.example` | ✅ Committed | Template for the bootstrap secret |
+| `infra/eso/infisical-token.example` | ✅ Committed | Template for the service token |
+| `infra/eso/infisical-bootstrap.yaml` | 🔒 Gitignored | Real bootstrap secret (fill locally) |
+| `infra/eso/infisical-token.yaml` | 🔒 Gitignored | Real service token (fill locally) |
+
+### Adding a secret to a service
+
+1. Add the key/value in the Infisical UI (`infisical.lan` → project `astra-yrel` → env `prod`)
+2. Push the `external-secret.yaml` for the service (already in repo) — ArgoCD + ESO handle the rest
+
+### Bootstrap after a K3s reinstall
+
+Infisical data persists on disk (`/opt/k3s-data/infisical/`). After a cluster reinstall,
+two manual `kubectl apply` are needed before ArgoCD can sync secrets — retrieve them from
+Vaultwarden if needed:
+
+```bash
+# Fill in values from infra/eso/infisical-bootstrap.example, then:
+kubectl apply -f infra/eso/infisical-bootstrap.yaml
+
+# Fill in the Infisical service token, then:
+kubectl apply -f infra/eso/infisical-token.yaml
+```
+
+ArgoCD deploys everything else automatically.
 
 ### Registry credentials
 
@@ -453,20 +476,23 @@ cd k3s/<service>
 kubectl apply -f regcred.yaml
 ```
 
-### Application secrets
+### Layer A — Docker Compose
 
-Secrets are injected via:
+Secrets for Docker Compose stacks are injected via Portainer's **Environment variables**
+UI — no `.env` file on disk, no repository changes required.
 
-- `envFrom.secretRef` — all keys as environment variables
-- `env.valueFrom.secretKeyRef` — individual keys
+### gitignore patterns
 
-Each service that needs secrets includes a `secrets.example.yaml` template.
-Copy it to `secrets.yaml`, fill in values, and apply:
-
-```bash
-cp k3s/<service>/secrets.example.yaml k3s/<service>/secrets.yaml
-# edit secrets.yaml
-kubectl apply -f k3s/<service>/secrets.yaml
+```text
+.env
+*-secret.yaml       # catch-all for manual secrets
+!external-secret.yaml  # exception: ExternalSecret manifests are committed
+*-secrets.yaml
+*-regcred.yaml
+regcred.yaml
+secrets.yaml
+infisical-bootstrap.yaml
+infisical-token.yaml
 ```
 
 ---
@@ -625,18 +651,27 @@ Apply the root App-of-Apps once — ArgoCD then deploys and manages everything i
 kubectl apply -f infra/argocd/root-app.yaml
 ```
 
-### 5. Create secrets
+### 5. Bootstrap secrets
+
+Application secrets are managed by ESO + Infisical. Two files must be applied manually
+(copy from the `.example` templates in `infra/eso/`, fill in values, then apply):
 
 ```bash
-# GHCR registry credentials
-cd k3s/<service>
-./generate-regcred.sh
-kubectl apply -f regcred.yaml
+# Infisical bootstrap (ENCRYPTION_KEY, AUTH_SECRET, DB credentials)
+kubectl apply -f infra/eso/infisical-bootstrap.yaml
 
-# Application secrets
-cp k3s/<service>/secrets.example.yaml k3s/<service>/secrets.yaml
-# Edit secrets.yaml, then:
-kubectl apply -f k3s/<service>/secrets.yaml
+# Infisical service token (generated in the Infisical UI after first login)
+kubectl apply -f infra/eso/infisical-token.yaml
+```
+
+All other application secrets are created automatically by ESO once the cluster is synced.
+
+For services using GHCR private images, apply the registry credentials:
+
+```bash
+cd k3s/<service>
+./generate-regcred.sh   # prompts for GitHub username + PAT
+kubectl apply -f regcred.yaml
 ```
 
 ### 6. Configure Nginx Proxy Manager
