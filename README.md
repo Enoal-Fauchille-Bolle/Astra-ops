@@ -249,7 +249,7 @@ AdGuard Home acts as the local DNS server, resolving `.lan` hostnames to the Pul
 | 81          | TCP      | NPM Admin UI               |
 | 8443        | TCP      | Crafty Admin UI            |
 | 9444        | TCP      | Portainer                  |
-| 25500–25599 | TCP      | Minecraft servers (Crafty) |
+| 25500-25599 | TCP      | Minecraft servers (Crafty) |
 | 30022       | TCP      | SFTPGo SFTP (K3s NodePort) |
 
 ### Email aliases
@@ -518,7 +518,7 @@ deployed via the `cowboysysop/vertical-pod-autoscaler` Helm chart and runs in **
 (recommendations only — pods are never automatically evicted or modified).
 
 The recommender watches all application deployments and builds CPU/memory usage histograms
-over time using `metrics-server`. After 24–48 h of observation, it produces per-container
+over time using `metrics-server`. After 24-48 h of observation, it produces per-container
 recommendations (`Lower Bound`, `Target`, `Upper Bound`) that inform manual updates to
 `values.yaml` resource fields.
 
