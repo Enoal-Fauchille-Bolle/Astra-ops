@@ -153,9 +153,9 @@ sdb (500G) → /mnt/data
 └── /mnt/data/media/            Media library (movies, photos, documents)
 ```
 
-> **Disk usage (as of May 2026):**
-> `sda`: 74G used / 97G (80% — resize planned, see §8.3)
-> `sdb`: 262G used / 492G (57%)
+> **Disk usage (as of June 2026):**
+> `sda`: 119G used / 195G (64%)
+> `sdb`: 206G used / 492G (57%)
 
 ### 2.3 Accepted Constraints
 
