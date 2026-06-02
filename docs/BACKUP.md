@@ -137,11 +137,11 @@ Pulsar (VM 100) sees two virtual disks:
 
 | Disk                                       | Device | Mount       | Size | Role                                   |
 | ------------------------------------------ | ------ | ----------- | ---- | -------------------------------------- |
-| OS disk (`vm-100-disk-0` on `local-lvm`)   | `sda`  | `/`         | 100G | OS, hot app data, K3s/Docker state     |
+| OS disk (`vm-100-disk-0` on `local-lvm`)   | `sda`  | `/`         | 200G | OS, hot app data, K3s/Docker state     |
 | Cold disk (`vm-100-disk-0.qcow2` on vault) | `sdb`  | `/mnt/data` | 500G | Cold data: media, PVCs, Crafty volumes |
 
 ```txt
-sda (100G) → /
+sda (200G) → /
 ├── /opt/k3s-data/      Hot persistent data for K3s services
 ├── /opt/docker-data/   Hot persistent data for Docker services
 └── /opt/ops/           GitOps repo (astra-ops — also on GitHub)
