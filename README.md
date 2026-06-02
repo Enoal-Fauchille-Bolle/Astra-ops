@@ -296,15 +296,20 @@ services that handle inbound and outbound mail separately, at zero cost.
 
 ### Email Flow
 
-```text
-Inbound:  sender → contact@enoal.fr
-                  → Cloudflare Email Routing (MX on enoal.fr)
-                  → My Gmail inbox (via forwarding)
-
-Outbound: Gmail → smtp.resend.com:587 (SMTP relay)
-                → recipient (sent as contact@enoal.fr)
-
-Services: K3s pod → smtp.resend.com:587 (same relay)
+```mermaid
+flowchart LR
+    subgraph OUTBOUND["📤 Outbound"]
+        direction LR
+        GM2[Gmail] --> RELAY["smtp.resend.com:587\nSMTP relay"] --> R["Recipient\nsent as @enoal.fr"]
+    end
+    subgraph SERVICES["⚙️ Services"]
+        direction LR
+        POD[K3s pod] --> RELAY
+    end
+    subgraph INBOUND["📥 Inbound"]
+        direction LR
+        S[Sender] --> CF["Cloudflare Email Routing\nMX on enoal.fr"] --> GM[Gmail inbox]
+    end
 ```
 
 ### Inbound — Cloudflare Email Routing
@@ -426,8 +431,9 @@ Secrets are **never** committed to this repository. The stack uses
 
 ### How it works
 
-```text
-ExternalSecret (git) → ESO → Infisical (cluster) → Secret K8s (cluster) → Pod
+```mermaid
+flowchart LR
+    ES["ExternalSecret\n(git)"] --> ESO[ESO] --> INF["Infisical\n(cluster)"] --> SEC["Secret K8s\n(cluster)"] --> POD[Pod]
 ```
 
 Each service has a committed `k3s/<service>/external-secret.yaml` that describes which
