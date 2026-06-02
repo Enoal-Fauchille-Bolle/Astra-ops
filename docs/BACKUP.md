@@ -46,11 +46,11 @@
 
 The Astra homelab backup system follows a **3-2-1 strategy** (3 copies, 2 different media types, 1 offsite) implemented across two complementary layers.
 
-| Rule | Implementation |
-| --- | --- |
-| **3 copies** | Production + Layer 1 (PBS, local NVMe) + Layer 2 (MEGA cloud) |
-| **2 media** | NVMe storage + cloud object storage (MEGA) |
-| **1 offsite** | MEGA cloud remotes (off-premises) |
+| Rule          | Implementation                                                |
+| ------------- | ------------------------------------------------------------- |
+| **3 copies**  | Production + Layer 1 (PBS, local NVMe) + Layer 2 (MEGA cloud) |
+| **2 media**   | NVMe storage + cloud object storage (MEGA)                    |
+| **1 offsite** | MEGA cloud remotes (off-premises)                             |
 
 ### Architecture Diagram
 
@@ -180,36 +180,36 @@ Bulk data that is either reconstructible (Minecraft servers, Kiwix ZIM archives)
 
 ### 3.2 Complete Data Inventory
 
-| Service / Path          | Current Location                           | Target Location                                | Size            | Tier | Layer 2        | DB Dump Needed                                                                            |
-| ----------------------- | ------------------------------------------ | ---------------------------------------------- | --------------- | ---- | -------------- | ----------------------------------------------------------------------------------------- |
-| **Vaultwarden**         | `/opt/k3s-data/vaultwarden/`               | unchanged                                      | 6.7M            | 1    | dump only      | SQLite                                                                                    |
-| **Immich DB**           | `/opt/k3s-data/immich/`                    | unchanged                                      | 1.1G            | 1    | dump only      | PostgreSQL + Redis                                                                        |
-| **n8n**                 | `/opt/k3s-data/n8n/`                       | unchanged                                      | 41M             | 1    | dump only      | SQLite                                                                                    |
-| **Scanopy**             | `/opt/k3s-data/scanopy/`                   | unchanged                                      | 68M             | 1    | dump only      | PostgreSQL                                                                                |
-| **Uptimekuma**          | `/opt/k3s-data/uptimekuma/`                | unchanged                                      | 231M            | 1    | dump only      | SQLite                                                                                    |
-| **Crowdsec**            | `/opt/docker-data/crowdsec/`               | unchanged                                      | 92M             | 1    | dump only      | SQLite                                                                                    |
-| **SFTPgo**              | `/opt/k3s-data/sftpgo/`                    | unchanged                                      | 380K            | 1    | dump only      | SQLite                                                                                    |
-| **Docker Registry**     | `/opt/k3s-data/docker-registry/`           | unchanged                                      | 57M             | 1    | files (no DB)  | —                                                                                         |
-| **NPM**                 | `/opt/docker-data/npm/`                    | unchanged                                      | 20M             | 1    | dump only      | SQLite (`database.sqlite` in `/data/`)                                                    |
-| **Portainer**           | `/opt/docker-data/portainer/`              | unchanged                                      | 15M             | 1    | files (no DB)  | BoltDB (`portainer.db`) — PBS only, file cold copy if needed                              |
-| **Filebrowser Quantum** | `/opt/k3s-data/filebrowser-quantum/`       | unchanged                                      | 896K            | 1    | dump only      | SQLite (`database.db`)                                                                    |
-| **Ntfy**                | `/opt/k3s-data/ntfy/`                      | unchanged                                      | 160K            | 1    | dump only      | SQLite (`cache.db` + `user.db`)                                                           |
-| `/etc/pve/`             | Astra host                                 | unchanged                                      | ~5M             | 1    | ✅ files       | —                                                                                         |
-| `/etc/proxmox-backup/`  | Astra host                                 | unchanged                                      | ~5M             | 1    | ✅ files       | —                                                                                         |
-| **Immich photos**       | `/opt/k3s-data/immich/library/`            | unchanged                                      | 6.4G            | 2    | ✅ files       | —                                                                                         |
-| **Filebrowser files**   | `/mnt/data/k3s-pvc/filebrowser/`           | unchanged                                      | 9.1G            | 2    | ✅ files       | —                                                                                         |
-| **Homer config**        | `/opt/k3s-data/homer/`                     | unchanged                                      | 5.3M            | 2    | ✅ files       | —                                                                                         |
-| **Criteri-fresque**     | `/opt/k3s-data/criteri-fresque/`           | unchanged                                      | 38M             | 2    | ✅ files       | —                                                                                         |
-| **Personal backups**    | `/mnt/data/backups/`                       | unchanged                                      | ~1-5G (growing) | 2    | ✅ files       | —                                                                                         |
-| **Photos**              | `/mnt/data/media/photos/`                  | unchanged                                      | 946M            | 2    | ✅ files       | —                                                                                         |
-| **DB Dumps**            | `/mnt/data/backups/dumps/` _(to create)_   | unchanged                                      | ~500M           | 2    | ✅ files       | —                                                                                         |
-| **Secrets**             | `~/astra-secrets/` on operator's computer  | rclone → MEGA                                  | ~1M             | 2    | ✅ rclone sync | —                                                                                         |
-| **Crafty backups**      | `/mnt/data/docker-volumes/crafty/backups/` | unchanged                                      | 4.3G            | 2    | ✅ files       | —                                                                                         |
-| **Crafty config**       | `/mnt/data/docker-volumes/crafty/config/`  | `/opt/docker-data/crafty/config/` _(planned)_  | 53M             | 2    | ✅ files       | —                                                                                         |
-| **Crafty servers**      | `/mnt/data/docker-volumes/crafty/servers/` | `/opt/docker-data/crafty/servers/` _(planned)_ | 14G             | ❌ 3 | —              | —                                                                                         |
-| **Crafty logs**         | `/mnt/data/docker-volumes/crafty/logs/`    | unchanged                                      | 207M            | ❌ 3 | —              | —                                                                                         |
-| **Kiwix ZIM**           | `/mnt/data/k3s-pvc/kiwix/`                 | unchanged                                      | 136G            | ❌ 3 | —              | —                                                                                         |
-| **Movies**              | `/mnt/data/media/movies/`                  | unchanged                                      | 93G             | ❌ 3 | —              | —                                                                                         |
+| Service / Path          | Current Location                           | Target Location                                | Size            | Tier | Layer 2        | DB Dump Needed                                               |
+| ----------------------- | ------------------------------------------ | ---------------------------------------------- | --------------- | ---- | -------------- | ------------------------------------------------------------ |
+| **Vaultwarden**         | `/opt/k3s-data/vaultwarden/`               | unchanged                                      | 6.7M            | 1    | dump only      | SQLite                                                       |
+| **Immich DB**           | `/opt/k3s-data/immich/`                    | unchanged                                      | 1.1G            | 1    | dump only      | PostgreSQL + Redis                                           |
+| **n8n**                 | `/opt/k3s-data/n8n/`                       | unchanged                                      | 41M             | 1    | dump only      | SQLite                                                       |
+| **Scanopy**             | `/opt/k3s-data/scanopy/`                   | unchanged                                      | 68M             | 1    | dump only      | PostgreSQL                                                   |
+| **Uptimekuma**          | `/opt/k3s-data/uptimekuma/`                | unchanged                                      | 231M            | 1    | dump only      | SQLite                                                       |
+| **Crowdsec**            | `/opt/docker-data/crowdsec/`               | unchanged                                      | 92M             | 1    | dump only      | SQLite                                                       |
+| **SFTPgo**              | `/opt/k3s-data/sftpgo/`                    | unchanged                                      | 380K            | 1    | dump only      | SQLite                                                       |
+| **Docker Registry**     | `/opt/k3s-data/docker-registry/`           | unchanged                                      | 57M             | 1    | files (no DB)  | —                                                            |
+| **NPM**                 | `/opt/docker-data/npm/`                    | unchanged                                      | 20M             | 1    | dump only      | SQLite (`database.sqlite` in `/data/`)                       |
+| **Portainer**           | `/opt/docker-data/portainer/`              | unchanged                                      | 15M             | 1    | files (no DB)  | BoltDB (`portainer.db`) — PBS only, file cold copy if needed |
+| **Filebrowser Quantum** | `/opt/k3s-data/filebrowser-quantum/`       | unchanged                                      | 896K            | 1    | dump only      | SQLite (`database.db`)                                       |
+| **Ntfy**                | `/opt/k3s-data/ntfy/`                      | unchanged                                      | 160K            | 1    | dump only      | SQLite (`cache.db` + `user.db`)                              |
+| `/etc/pve/`             | Astra host                                 | unchanged                                      | ~5M             | 1    | ✅ files       | —                                                            |
+| `/etc/proxmox-backup/`  | Astra host                                 | unchanged                                      | ~5M             | 1    | ✅ files       | —                                                            |
+| **Immich photos**       | `/opt/k3s-data/immich/library/`            | unchanged                                      | 6.4G            | 2    | ✅ files       | —                                                            |
+| **Filebrowser files**   | `/mnt/data/k3s-pvc/filebrowser/`           | unchanged                                      | 9.1G            | 2    | ✅ files       | —                                                            |
+| **Homer config**        | `/opt/k3s-data/homer/`                     | unchanged                                      | 5.3M            | 2    | ✅ files       | —                                                            |
+| **Criteri-fresque**     | `/opt/k3s-data/criteri-fresque/`           | unchanged                                      | 38M             | 2    | ✅ files       | —                                                            |
+| **Personal backups**    | `/mnt/data/backups/`                       | unchanged                                      | ~1-5G (growing) | 2    | ✅ files       | —                                                            |
+| **Photos**              | `/mnt/data/media/photos/`                  | unchanged                                      | 946M            | 2    | ✅ files       | —                                                            |
+| **DB Dumps**            | `/mnt/data/backups/dumps/` _(to create)_   | unchanged                                      | ~500M           | 2    | ✅ files       | —                                                            |
+| **Secrets**             | `~/astra-secrets/` on operator's computer  | rclone → MEGA                                  | ~1M             | 2    | ✅ rclone sync | —                                                            |
+| **Crafty backups**      | `/mnt/data/docker-volumes/crafty/backups/` | unchanged                                      | 4.3G            | 2    | ✅ files       | —                                                            |
+| **Crafty config**       | `/mnt/data/docker-volumes/crafty/config/`  | `/opt/docker-data/crafty/config/` _(planned)_  | 53M             | 2    | ✅ files       | —                                                            |
+| **Crafty servers**      | `/mnt/data/docker-volumes/crafty/servers/` | `/opt/docker-data/crafty/servers/` _(planned)_ | 14G             | ❌ 3 | —              | —                                                            |
+| **Crafty logs**         | `/mnt/data/docker-volumes/crafty/logs/`    | unchanged                                      | 207M            | ❌ 3 | —              | —                                                            |
+| **Kiwix ZIM**           | `/mnt/data/k3s-pvc/kiwix/`                 | unchanged                                      | 136G            | ❌ 3 | —              | —                                                            |
+| **Movies**              | `/mnt/data/media/movies/`                  | unchanged                                      | 93G             | ❌ 3 | —              | —                                                            |
 
 ---
 
