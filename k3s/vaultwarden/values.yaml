@@ -39,10 +39,10 @@ volumes:
 resources:
   requests:
     cpu: 10m
-    memory: 128Mi
+    memory: 237Mi
   limits:
     cpu: 100m
-    memory: 256Mi
+    memory: 384Mi
 
 readinessProbe:
   httpGet:
