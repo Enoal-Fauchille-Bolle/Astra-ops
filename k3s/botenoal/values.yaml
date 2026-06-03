@@ -37,3 +37,20 @@ resources:
 
 imagePullSecrets:
   - name: regcred-botenoal
+
+externalSecrets:
+  - name: botenoal-es
+    targetName: botenoal-secrets
+    data:
+      - secretKey: token
+        remoteRef:
+          key: BOTENOAL_TOKEN
+      - secretKey: secret
+        remoteRef:
+          key: BOTENOAL_SECRET
+      - secretKey: MongoDB
+        remoteRef:
+          key: BOTENOAL_MONGODB
+      - secretKey: DashboardURL
+        remoteRef:
+          key: BOTENOAL_DASHBOARD_URL
