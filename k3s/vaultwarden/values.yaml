@@ -50,3 +50,29 @@ readinessProbe:
     port: 80
   initialDelaySeconds: 10
   periodSeconds: 5
+
+externalSecrets:
+  - name: vaultwarden-es
+    targetName: vaultwarden-secrets
+    data:
+      - secretKey: ADMIN_TOKEN
+        remoteRef:
+          key: VAULTWARDEN_ADMIN_TOKEN
+      - secretKey: SMTP_HOST
+        remoteRef:
+          key: SMTP_HOST
+      - secretKey: SMTP_PORT
+        remoteRef:
+          key: SMTP_PORT
+      - secretKey: SMTP_FROM
+        remoteRef:
+          key: SMTP_FROM
+      - secretKey: SMTP_SECURITY
+        remoteRef:
+          key: SMTP_SECURITY
+      - secretKey: SMTP_USERNAME
+        remoteRef:
+          key: SMTP_USERNAME
+      - secretKey: SMTP_PASSWORD
+        remoteRef:
+          key: VAULTWARDEN_SMTP_PASSWORD
