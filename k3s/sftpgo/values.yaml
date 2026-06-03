@@ -80,3 +80,26 @@ resources:
   limits:
     cpu: 200m
     memory: 192Mi
+
+externalSecrets:
+  - name: sftpgo-es
+    targetName: sftpgo-secrets
+    data:
+      - secretKey: host
+        remoteRef:
+          key: SMTP_HOST
+      - secretKey: port
+        remoteRef:
+          key: SMTP_PORT
+      - secretKey: from
+        remoteRef:
+          key: SFTPGO_SMTP_FROM
+      - secretKey: encryption
+        remoteRef:
+          key: SFTPGO_SMTP_ENCRYPTION
+      - secretKey: username
+        remoteRef:
+          key: SMTP_USERNAME
+      - secretKey: password
+        remoteRef:
+          key: SFTPGO_SMTP_PASSWORD
