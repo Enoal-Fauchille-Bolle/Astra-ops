@@ -37,3 +37,20 @@ resources:
 
 imagePullSecrets:
   - name: regcred-azerbot
+
+externalSecrets:
+  - name: azerbot-es
+    targetName: azerbot-secrets
+    data:
+      - secretKey: token
+        remoteRef:
+          key: AZERBOT_TOKEN
+      - secretKey: secret
+        remoteRef:
+          key: AZERBOT_SECRET
+      - secretKey: MongoDB
+        remoteRef:
+          key: AZERBOT_MONGODB
+      - secretKey: DashboardURL
+        remoteRef:
+          key: AZERBOT_DASHBOARD_URL
