@@ -61,3 +61,11 @@ readinessProbe:
     port: 5000
   initialDelaySeconds: 5
   periodSeconds: 10
+
+externalSecrets:
+  - name: docker-registry-es
+    targetName: docker-registry-secrets
+    data:
+      - secretKey: htpasswd
+        remoteRef:
+          key: DOCKER_REGISTRY_HTPASSWD
