@@ -64,7 +64,7 @@ externalSecrets:
       - secretKey: SMTP_PORT
         remoteRef:
           key: SMTP_PORT
-      - secretKey: SMTP_FROM
+      - secretKey: VAULTWARDEN_SMTP_FROM
         remoteRef:
           key: SMTP_FROM
       - secretKey: SMTP_SECURITY
