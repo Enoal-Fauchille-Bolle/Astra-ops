@@ -1,0 +1,11 @@
+services:
+  beszel:
+    image: henrygd/beszel
+    container_name: beszel
+    restart: unless-stopped
+    environment:
+      - APP_URL=http://beszel.lan
+    ports:
+      - 8090:8090
+    volumes:
+      - /opt/docker/beszel:/beszel_data
