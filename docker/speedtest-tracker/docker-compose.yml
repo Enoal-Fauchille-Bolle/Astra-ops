@@ -12,5 +12,6 @@ services:
             - APP_URL=http://speedtest-tracker.lan
             - APP_KEY=${APP_KEY}
             - DB_CONNECTION=sqlite
+            - SPEEDTEST_SCHEDULE=${SPEEDTEST_SCHEDULE}
         volumes:
             - /opt/docker/speedtest-tracker:/config
