@@ -39,7 +39,7 @@ redis:
 app:
   image:
     repository: infisical/infisical
-    tag: "latest-postgres"
+    tag: "v0.160.10"
     pullPolicy: IfNotPresent
   replicaCount: 1
   env:
