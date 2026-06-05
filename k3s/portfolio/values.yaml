@@ -2,7 +2,7 @@ namespace: web
 
 image:
   repository: ghcr.io/enoal-fauchille-bolle/portfolio
-  tag: 1.3.0
+  tag: 1.4.0
   pullPolicy: IfNotPresent
 
 replicaCount: 1
