@@ -1,0 +1,12 @@
+services:
+  wallos:
+    container_name: wallos
+    image: bellamy/wallos:4.9.5
+    ports:
+      - "8282:80/tcp"
+    environment:
+      TZ: 'Europe/Paris'
+    volumes:
+      - './opt/docker-data/wallos/db:/var/www/html/db'
+      - './opt/docker-data/wallos/logos:/var/www/html/images/uploads/logos'
+    restart: unless-stopped

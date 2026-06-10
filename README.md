@@ -238,6 +238,7 @@ astra-ops/
 | [speedtest-tracker](k3s/speedtest-tracker)     | Speedtest results tracking                        | 📊 Monitoring     | —                | Docker Compose  | `speedtest-tracker.lan`                                    | 🔒 LAN only | ✅ Active   |
 | [uptimekuma](k3s/uptimekuma)                   | Uptime monitoring and status page                 | 📊 Monitoring     | `monitoring`     | Raw             | `uptime.enoal.fr`                                          | 🌍 Public   | ✅ Active   |
 | [vaultwarden](k3s/vaultwarden)                 | Bitwarden-compatible password manager             | 🔐 Security       | `security`       | Helm            | `vault.enoal.fr`                                           | 🌍 Public   | ✅ Active   |
+| [wallos](docker/wallos)                        | Personal subscription tracker                     | 🛠️ Utilities      | —                | Docker Compose  | `wallos.lan`                                               | 🔒 LAN only | ✅ Active   |
 | [webcheck](k3s/webcheck)                       | Website analysis and OSINT tool                   | 🛠️ Utilities      | `utilities`      | Helm            | `webcheck.lan`                                             | 🔒 LAN only | ✅ Active   |
 | [zerobyte](docker/zerobyte)                    | Backup tool with Restic + Rclone integration      | 💾 Backups        | —                | Docker Compose  | `zerobyte.lan`                                             | 🔒 LAN only | ✅ Active   |
 
