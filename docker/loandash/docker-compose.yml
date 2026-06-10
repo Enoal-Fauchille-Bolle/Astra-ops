@@ -1,0 +1,9 @@
+services:
+  loandash:
+    image: hamzamix/loandash:1.3.0
+    container_name: loandash
+    ports:
+      - "8050:3000"
+    volumes:
+      - ./opt/docker-data/loandash:/data
+    restart: unless-stopped
