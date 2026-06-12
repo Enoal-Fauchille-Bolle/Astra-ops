@@ -1,6 +1,6 @@
 services:
   zerobyte:
-    image: nicotsx/zerobyte:v0.37.3
+    image: ghcr.io/nicotsx/zerobyte:v0.39
     container_name: zerobyte
     restart: unless-stopped
     cap_add:
