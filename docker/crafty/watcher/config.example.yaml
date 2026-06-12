@@ -1,0 +1,40 @@
+crafty:
+  base_url: "https://127.0.0.1:8443"
+  api_token_env: "CRAFTY_API_TOKEN"
+  verify_tls: false
+
+servers:
+  server-1:
+    crafty_server_id: "<UUID_SERVER_1>"
+    listen_port: 25500
+    edition: java
+    idle_timeout_minutes: 10
+    start_timeout_seconds: 180
+    motd_hibernating: "§7⏳ Serveur en veille...\n§eConnecte-toi pour le démarrer !"
+    kick_message: "§6Démarrage en cours...\n§fReconnecte-toi dans ~30 secondes."
+
+  server-2:
+    crafty_server_id: "<UUID_SERVER_2>"
+    listen_port: 25501
+    edition: java
+    idle_timeout_minutes: 10
+    start_timeout_seconds: 180
+    motd_hibernating: "§7⏳ Serveur en veille...\n§eConnecte-toi pour le démarrer !"
+    kick_message: "§6Démarrage en cours...\n§fReconnecte-toi dans ~30 secondes."
+
+webhook:
+  enabled: true
+  url: "https://discord.com/api/webhooks/<WEBHOOK_ID>/<WEBHOOK_TOKEN>"
+  label: "Crafty Watcher"
+
+health:
+  enabled: true
+  host: "127.0.0.1"
+  port: 8095
+
+cooldowns:
+  stop_cooldown_minutes: 0
+  start_grace_minutes: 0
+
+logging:
+  level: "INFO"

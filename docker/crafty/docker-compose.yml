@@ -3,13 +3,9 @@ services:
     container_name: crafty
     image: registry.gitlab.com/crafty-controller/crafty-4:4.10.4
     restart: always
+    network_mode: host
     environment:
       - TZ=Europe/Paris
-    ports:
-      - "8443:8443" # Interface Web HTTPS (Admin)
-      - "8123:8123" # Dynmap (Cartes web)
-      - "19132:19132/udp" # Bedrock par défaut
-      - "25501-25510:25501-25510" # Plage pour 11 serveurs Java (dont le 25500)
     volumes:
       - /mnt/data/docker-volumes/crafty/backups:/crafty/backups
       - /mnt/data/docker-volumes/crafty/logs:/crafty/logs
@@ -18,12 +14,13 @@ services:
       - /mnt/data/docker-volumes/crafty/import:/crafty/import
 
   watcher:
-    build: ./watcher
+    image: ghcr.io/soveticka/crafty-server-watcher:latest
     container_name: crafty_watcher
     restart: always
-    ports:
-      - "25500:25500" # Le portier écoute le port officiel
-    env_file:
-      - .env
-    networks:
-      default: # S'assure qu'il peut parler à Crafty
+    network_mode: host
+    volumes:
+      - /opt/docker-data/crafty/watcher/config.yaml:/config/config.yaml:ro
+    environment:
+      - CRAFTY_API_TOKEN=${CRAFTY_API_TOKEN}
+    depends_on:
+      - crafty
