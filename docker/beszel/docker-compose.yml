@@ -8,4 +8,4 @@ services:
     ports:
       - 8090:8090
     volumes:
-      - /opt/docker/beszel:/beszel_data
+      - /opt/docker-data/beszel:/beszel_data

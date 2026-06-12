@@ -14,4 +14,4 @@ services:
             - DB_CONNECTION=sqlite
             - SPEEDTEST_SCHEDULE=${SPEEDTEST_SCHEDULE}
         volumes:
-            - /opt/docker/speedtest-tracker:/config
+            - /opt/docker-data/speedtest-tracker:/config
