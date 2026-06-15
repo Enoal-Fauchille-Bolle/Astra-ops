@@ -9,8 +9,8 @@ services:
     volumes:
       - /mnt/data/docker-volumes/crafty/backups:/crafty/backups
       - /mnt/data/docker-volumes/crafty/logs:/crafty/logs
-      - /mnt/data/docker-volumes/crafty/servers:/crafty/servers
-      - /mnt/data/docker-volumes/crafty/config:/crafty/app/config
+      - /opt/docker-data/crafty/servers/:/crafty/servers
+      - /opt/docker-data/crafty/config/:/crafty/app/config
       - /mnt/data/docker-volumes/crafty/import:/crafty/import
 
   watcher:
