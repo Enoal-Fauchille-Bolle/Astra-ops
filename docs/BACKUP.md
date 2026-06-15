@@ -161,8 +161,6 @@ The Netac NVMe (`nvme1n1`) hosts both the Pulsar cold disk and the PBS datastore
 
 This is a known, accepted constraint given the single-server hardware budget. Layer 2 (cloud) is the mitigation.
 
-The original USB external drive (`sda` on Astra) was removed from the architecture due to I/O instability caused by the JMicron USB controller locking the drive read-only under backup load.
-
 ---
 
 ## 3. Data Classification Model — 3 Tiers
@@ -270,10 +268,6 @@ All jobs run nightly during low-activity periods:
 Zerobyte is a self-hosted backup automation tool running as a **Docker Compose service on Pulsar**. It provides a web UI over **Restic**, handling scheduling, retention, and monitoring.
 
 Restic operates at the **file level**: it chunks files, deduplicates content across snapshots, compresses with ZSTD, and encrypts with AES-256 before uploading. Rclone provides the transport layer, mapping Restic's backend protocol to MEGA's API.
-
-> Zerobyte is NOT a cloud service. It is a local tool (running at `zerobyte.lan`) that pushes encrypted backup snapshots to MEGA remote storage via Rclone.
-
-Zerobyte Docker Compose is part of Layer A infrastructure, deployed via Portainer alongside NPM, Dozzle, and Crowdsec. Its raw manifest K3s entry (`k3s/zerobyte/`) is archived in `apps/.disabled/` — it was never deployed via K3s.
 
 ### 5.2 Cloud Storage Strategy
 
@@ -408,7 +402,7 @@ rclone sync ~/astra-secrets mega-a-crypt: \
   --suffix "-$(date +%Y%m%d)"
 ```
 
-This sync will be automated via a **systemd timer on Fedora** (daily or on significant changes). Versioned old copies are kept for 30 days in the `astra-secrets-old` prefix.
+This sync will be automated via a **systemd timer on my workstation** (daily or on significant changes). Versioned old copies are kept for 30 days in the `astra-secrets-old` prefix.
 
 ---
 
