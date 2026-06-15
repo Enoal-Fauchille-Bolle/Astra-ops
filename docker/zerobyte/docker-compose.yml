@@ -24,7 +24,7 @@ services:
       - /mnt/data/k3s-pvc/filebrowser:/data/filebrowser:ro # File Browser
       - /opt/k3s-data/criteri-fresque:/data/criteri-fresque:ro # Criteri Fresque
       - /opt/docker-data/crafty/config:/data/crafty/config:ro # Crafty Config
-      - /opt/docker-data/crafty/backups:/data/crafty/backups:ro # Crafty Backups
+      - /mnt/data/docker-volumes/crafty/backups:/data/crafty/backups:ro # Crafty Backups
       - /opt/k3s-data/immich/library:/data/immich/library:ro # Immich Library
       - /mnt/data/backups:/data/backups:ro # Backups
       - /mnt/data/media/photos:/data/media/photos:ro # Photos
