@@ -5,5 +5,5 @@ services:
     ports:
       - "8050:3000"
     volumes:
-      - ./opt/docker-data/loandash:/data
+      - /opt/docker-data/loandash:/data
     restart: unless-stopped
