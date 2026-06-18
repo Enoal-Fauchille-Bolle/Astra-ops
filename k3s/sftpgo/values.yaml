@@ -1,8 +1,8 @@
 namespace: media
 
 image:
-  repository: docker.io/drakkan/sftpgo
-  tag: v2.7.1
+  repository: ghcr.io/drakkan/sftpgo
+  tag: v2.7.3
   pullPolicy: IfNotPresent
 
 replicaCount: 1
