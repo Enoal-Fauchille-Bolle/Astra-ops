@@ -39,7 +39,7 @@ redis:
 app:
   image:
     repository: infisical/infisical
-    tag: "v0.161.0"
+    tag: "v0.161.1"
     pullPolicy: IfNotPresent
   replicaCount: 1
   env:
