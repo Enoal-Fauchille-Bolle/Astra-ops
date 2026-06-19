@@ -8,9 +8,8 @@
     {
       "description": "Format commit messages for all Docker images — strip registry prefix and set version arrow format",
       "matchDatasources": ["docker"],
-      "overrideDepName": "{{{replace '^[^/]+\\.[^/]+/' '' depName}}}",
       "commitMessageAction": "Update",
-      "commitMessageTopic": "{{depName}}",
+      "commitMessageTopic": "{{{replace '^[^/]+\\.[^/]+/' '' depName}}}",
       "commitMessageExtra": "{{currentVersion}} → {{newVersion}}"
     },
     {
