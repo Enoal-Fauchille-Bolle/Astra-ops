@@ -17,6 +17,14 @@
       "matchDatasources": ["docker"],
       "matchPackageNames": ["ghcr.io/enoal-fauchille-bolle/**"],
       "enabled": true
+    },
+    {
+      "description": "n8n tags its pre-releases as plain semver Docker tags (e.g. 2.27.3, no -beta suffix), so the docker datasource cannot tell them apart from stable releases. Follow GitHub Releases instead, where the prerelease flag is exposed and Renovate skips unstable by default. Refs n8n-io/n8n#8672, renovatebot/renovate#34456.",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["docker.n8n.io/n8nio/n8n"],
+      "overrideDatasource": "github-releases",
+      "overridePackageName": "n8n-io/n8n",
+      "extractVersion": "^n8n@(?<version>.+)$"
     }
   ],
   "docker-compose": {
