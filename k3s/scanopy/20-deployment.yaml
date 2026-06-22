@@ -62,7 +62,7 @@ spec:
     spec:
       containers:
         - name: daemon
-          image: ghcr.io/scanopy/scanopy/daemon:v0.16.2
+          image: ghcr.io/scanopy/scanopy/daemon:v0.17.0
           securityContext:
             privileged: true
           resources:
