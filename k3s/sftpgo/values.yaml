@@ -2,7 +2,7 @@ namespace: media
 
 image:
   repository: ghcr.io/drakkan/sftpgo
-  tag: v2.7.4
+  tag: v2.7.5
   pullPolicy: IfNotPresent
 
 replicaCount: 1
