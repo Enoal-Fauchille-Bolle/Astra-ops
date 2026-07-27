@@ -1,6 +1,6 @@
 services:
   loandash:
-    image: hamzamix/loandash:1.3.0
+    image: hamzamix/loandash:2.0.0
     container_name: loandash
     ports:
       - "8050:3000"
