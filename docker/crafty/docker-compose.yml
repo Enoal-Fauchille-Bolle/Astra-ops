@@ -14,7 +14,10 @@ services:
       - /mnt/data/docker-volumes/crafty/import:/crafty/import
 
   watcher:
-    image: ghcr.io/soveticka/crafty-server-watcher:latest
+    # Upstream image patched at build time — see ./watcher/README.md.
+    # Revert to `image: ghcr.io/soveticka/crafty-server-watcher:latest`
+    # once the start race condition is fixed upstream.
+    build: ./watcher
     container_name: crafty_watcher
     restart: always
     network_mode: host
