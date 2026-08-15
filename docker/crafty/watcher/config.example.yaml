@@ -12,6 +12,13 @@ servers:
     start_timeout_seconds: 180
     motd_hibernating: "§7⏳ Serveur en veille...\n§eConnecte-toi pour le démarrer !"
     kick_message: "§6Démarrage en cours...\n§fReconnecte-toi dans ~30 secondes."
+    # Only whitelisted players may wake the server. Reuses the server's own
+    # whitelist.json (mounted read-only at /servers), so there is a single
+    # list: /whitelist add in Crafty is picked up without a restart.
+    access:
+      mode: whitelist
+      whitelist_file: "/servers/<UUID_SERVER_1>/whitelist.json"
+      deny_message: "§cCe serveur est privé.\n§7Tu n'es pas sur la liste blanche."
 
   server-2:
     crafty_server_id: "<UUID_SERVER_2>"
@@ -21,11 +28,24 @@ servers:
     start_timeout_seconds: 180
     motd_hibernating: "§7⏳ Serveur en veille...\n§eConnecte-toi pour le démarrer !"
     kick_message: "§6Démarrage en cours...\n§fReconnecte-toi dans ~30 secondes."
+    access:
+      mode: whitelist
+      whitelist_file: "/servers/<UUID_SERVER_2>/whitelist.json"
+      deny_message: "§cCe serveur est privé.\n§7Tu n'es pas sur la liste blanche."
 
 webhook:
   enabled: true
   url: "https://discord.com/api/webhooks/<WEBHOOK_ID>/<WEBHOOK_TOKEN>"
   label: "Crafty Watcher"
+  # At most one "wake-up denied" alert per server per hour, so a scanner
+  # cannot flood the channel.
+  denied_notify_cooldown_minutes: 60
+
+# Keeps the idle countdown across restarts. Without it, any restart resets
+# the clock — and a watcher restarted more often than idle_timeout_minutes
+# never shuts anything down.
+state:
+  file: "/data/state.json"
 
 health:
   enabled: true

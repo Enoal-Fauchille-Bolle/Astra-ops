@@ -14,15 +14,20 @@ services:
       - /mnt/data/docker-volumes/crafty/import:/crafty/import
 
   watcher:
-    # Upstream image patched at build time — see ./watcher/README.md.
-    # Revert to `image: ghcr.io/soveticka/crafty-server-watcher:latest`
-    # once the start race condition is fixed upstream.
-    build: ./watcher
+    # Fork of soveticka/crafty-server-watcher — see ./watcher/README.md.
+    # Must stay a pre-built image: a `build:` here makes Portainer's GitOps
+    # poll recreate the container every ~5 min, which wipes the in-memory
+    # idle countdown and stops any server from ever hibernating.
+    image: ghcr.io/enoal-fauchille-bolle/crafty-server-watcher:1.1.0
     container_name: crafty_watcher
     restart: always
     network_mode: host
     volumes:
       - /opt/docker-data/crafty/watcher/config.yaml:/config/config.yaml:ro
+      # Idle countdowns, so a restart does not reset them.
+      - /opt/docker-data/crafty/watcher/state:/data
+      # Read the servers' own whitelist.json to decide who may wake them.
+      - /opt/docker-data/crafty/servers:/servers:ro
     environment:
       - CRAFTY_API_TOKEN=${CRAFTY_API_TOKEN}
     depends_on:

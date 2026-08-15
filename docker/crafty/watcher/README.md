@@ -1,87 +1,103 @@
-# crafty-server-watcher (patched)
+# crafty-server-watcher
 
-The watcher hibernates the Minecraft servers and wakes them up when a player
-connects. We run the upstream image
-[`ghcr.io/soveticka/crafty-server-watcher`](https://github.com/Soveticka/Crafty-Server-Watcher),
-**patched at build time** because of a race condition that breaks roughly one
-wake-up in six.
+The watcher hibernates the Minecraft servers (ports 25500-25501) and wakes them
+when a whitelisted player connects.
 
-> This directory is temporary. Once the fix ships upstream: delete
-> `Dockerfile`, `patch_start_race.py` and `test_start_race.py`, and put
-> `image: ghcr.io/soveticka/crafty-server-watcher:latest` back in
-> `../docker-compose.yml`.
->
-> Upstream tracking: [issue #22](https://github.com/Soveticka/Crafty-Server-Watcher/issues/22)
-> · [PR #23](https://github.com/Soveticka/Crafty-Server-Watcher/pull/23)
+We run [`ghcr.io/enoal-fauchille-bolle/crafty-server-watcher`](https://github.com/Enoal-Fauchille-Bolle/Crafty-Server-Watcher),
+a fork of [Soveticka/Crafty-Server-Watcher](https://github.com/Soveticka/Crafty-Server-Watcher).
+Each change is offered upstream as its own pull request; the fork's README
+tracks what diverges and why.
 
-## The bug
+> This directory previously held a `Dockerfile` that patched the upstream image
+> at build time. That is gone — see "Why an image, never a build" below. Only
+> this README and `config.example.yaml` remain.
 
-Symptom: a player connects, the watcher does start the server, but Paper dies
-immediately.
+## Why an image, never a build
 
-```
-[13:24:36 WARN]: **** FAILED TO BIND TO PORT!
-[13:24:36 WARN]: bind(..) failed with error(-98): Address already in use
-```
+`build:` in this stack is what kept the servers running forever.
 
-Cause: in `_handle_login()` the watcher releases the port, **sleeps 5 seconds**,
-then calls the Crafty API and only afterwards moves the state machine to
-`STARTING`. But `ensure_listeners()` runs concurrently on every polling tick
-(30s by default); a tick landing inside that window still sees `STOPPED`, clears
-the start lockout and **re-binds the port** right under the Minecraft server
-that is booting.
+Portainer redeploys the stack from Git every ~5 minutes. A `build:` service is
+rebuilt on every poll, the resulting image ID differs, and Compose therefore
+*recreates* the container — while `crafty` next to it, on a fixed image tag,
+is merely reported as `Running`:
 
 ```
-11:24:24.759  Proxy listener stopped on port 25500 for server 'server-1'
-11:24:29.571  Start lockout cleared for 'server-1' (state=STOPPED)          <-- tick during the sleep
-11:24:29.571  Proxy listener started on 0.0.0.0:25500 for server 'server-1' <-- port taken back
-11:24:29.774  Port 25500 released and start_server sent (lockout active)    <-- the lockout is gone
-11:24:36      Paper: Address already in use
+15:33:43  Crafty Server Watcher starting
+15:38:39  Crafty Server Watcher starting      <-- recreated, +4min56
+15:43:37  Crafty Server Watcher starting      <-- recreated, +4min58
 ```
 
-## The fix
+The idle countdown lives in the watcher's memory, so every recreation reset it:
 
-`patch_start_race.py` applies four replacements anchored on the upstream source:
-
-1. `sm.transition(State.STARTING)` **before** the `sleep(5)` — `ensure_listeners()`
-   then takes the `continue` branch and leaves the port alone.
-2. Removal of the now-redundant transition after `start_server()`.
-3. Rollback to `STOPPED` if the API call fails, so the existing recovery path
-   (clear the lockout, re-bind) stays consistent.
-4. Addition of the `CRASHED → STARTING` edge in the transition graph:
-   `_handle_login()` also starts servers from `CRASHED`, but the graph rejected
-   that transition (`invalid transition ... (ignored)`), so the bug came right
-   back for a server that had just crashed.
-
-Every anchor must match **exactly once**, otherwise the build fails with an
-explicit message: if upstream changes those blocks we find out immediately
-instead of silently overwriting their changes. That is also why `FROM` is
-pinned by digest — Renovate will offer the bump, and the build will break if the
-patch no longer applies.
-
-## Verifying the fix
-
-`test_start_race.py` replays the real `_handle_login()` path over a real socket,
-fires a polling tick in the middle of the start window, then checks whether a
-server could actually bind the port.
-
-```bash
-docker build -t crafty-watcher:test .
-docker run --rm -e PYTHONPATH=/app -w /app \
-  -v "$PWD/test_start_race.py:/test_start_race.py:ro" \
-  --entrypoint python crafty-watcher:test /test_start_race.py STOPPED
-docker run --rm -e PYTHONPATH=/app -w /app \
-  -v "$PWD/test_start_race.py:/test_start_race.py:ro" \
-  --entrypoint python crafty-watcher:test /test_start_race.py CRASHED
+```
+15:42:40  idle for 240s / 600s, shutdown in 360s
+15:43:37  [recreation]
+15:44:10  idle for  30s / 600s, shutdown in 570s
 ```
 
-Expected: `port 25500 free for MC : True` and exit code 0. Both scenarios fail
-against the unpatched upstream image.
+A 10-minute threshold reset every 5 minutes is unreachable. Crafty's audit log
+confirms the outcome: over weeks it recorded `start_server` from the `watcher`
+user many times and `stop_server` **never** — the only stops were manual.
+
+Two independent fixes, so this cannot come back:
+
+1. **This file**: a pinned `image:` tag, never `build:`. Renovate tracks it
+   through the existing `docker-compose.yml` manager.
+2. **The fork**: `state.file` persists the countdown to disk, so even a genuine
+   restart resumes where it left off.
+
+## Wake-up whitelist
+
+Any login attempt used to start a server, and a scanner (`Cornbread2100_`) was
+booting both of them nightly. The Minecraft whitelist refused it — but only
+after the JVM was up and holding 1.5 GB.
+
+`access.mode: whitelist` refuses the wake-up first, reading each server's own
+`whitelist.json` through the read-only `/servers` mount. Adding a friend with
+`/whitelist add` in Crafty is enough; the watcher re-reads the file on change.
+
+The player name arrives before Mojang authentication, so it is a claim rather
+than a proof: someone who knows a whitelisted name can still trigger a start.
+That stops scanners trying arbitrary names, which is the actual problem here.
+
+If the whitelist cannot be read, the watcher allows everyone and logs an error
+— a broken mount must not lock us out of our own servers.
 
 ## Configuration
 
-The config does not live in this repo: it sits on the host at
+The live config is **not** in this repo: it sits on the host at
 `/opt/docker-data/crafty/watcher/config.yaml` (mounted read-only), because it
 holds the Discord webhook URL and the Crafty server UUIDs. See
 `config.example.yaml` for the format. The Crafty API token comes from the
 `CRAFTY_API_TOKEN` environment variable.
+
+Two host paths are mounted beyond the config:
+
+| Host | Container | Why |
+|---|---|---|
+| `/opt/docker-data/crafty/watcher/state` | `/data` | Idle countdowns, survives restarts |
+| `/opt/docker-data/crafty/servers` | `/servers` (ro) | Each server's `whitelist.json` |
+
+Create the state directory before the first deploy:
+
+```bash
+mkdir -p /opt/docker-data/crafty/watcher/state
+```
+
+## Checking it works
+
+```bash
+# 1. The container is no longer recreated on every GitOps poll.
+docker inspect crafty_watcher --format '{{.State.StartedAt}} {{.RestartCount}}'
+# wait 10-15 min, run again: StartedAt must be unchanged
+docker logs --since 15m portainer 2>&1 | grep -a crafty_watcher
+# expected: "Container crafty_watcher  Running"   (never "Recreate")
+
+# 2. The idle counter now gets past 600s.
+curl -s http://127.0.0.1:8095/status
+docker logs --tail 20 crafty_watcher | grep 'idle for'
+
+# 3. The shutdown actually happens — absent from the audit log until now.
+tail -5 /mnt/data/docker-volumes/crafty/logs/audit.log
+# expected: "issued command stop_server ...", user_name: "watcher"
+```
