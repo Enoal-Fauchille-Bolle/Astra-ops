@@ -3,7 +3,7 @@ namespace: infisical
 postgres:
   image:
     repository: postgres
-    tag: "16-alpine"
+    tag: "18-alpine"
     pullPolicy: IfNotPresent
   service:
     port: 5432
