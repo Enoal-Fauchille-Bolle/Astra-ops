@@ -1,0 +1,100 @@
+namespace: analytics
+
+postgres:
+  image:
+    repository: postgres
+    tag: "16-alpine"
+    pullPolicy: IfNotPresent
+  service:
+    port: 5432
+  volume:
+    hostPath: /opt/k3s-data/umami/postgres
+    mountPath: /var/lib/postgresql/data
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 200m
+      memory: 512Mi
+
+app:
+  image:
+    repository: ghcr.io/umami-software/umami
+    tag: "3.3.0"
+    pullPolicy: IfNotPresent
+  replicaCount: 1
+  env:
+    # Serve the tracker as /s.js instead of /script.js — the default name is
+    # matched by EasyPrivacy and AdGuard Tracking Protection.
+    - name: TRACKER_SCRIPT_NAME
+      value: "s.js"
+    # Collect on /api/s instead of /api/send, for the same reason.
+    - name: COLLECT_API_ENDPOINT
+      value: "/api/s"
+    - name: DISABLE_TELEMETRY
+      value: "1"
+  service:
+    port: 3000
+    targetPort: 3000
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  readinessProbe:
+    httpGet:
+      path: /api/heartbeat
+      port: 3000
+    initialDelaySeconds: 10
+    periodSeconds: 5
+
+ingress:
+  # LAN-only dashboard. Never exposed to the internet.
+  dashboard:
+    enabled: true
+    hosts:
+      - analytics.lan
+  # First-party tracker served from the portfolio's own domains, so it cannot
+  # be blocked without breaking the site itself. The portfolio Ingress lives in
+  # the `web` namespace; Traefik merges rules from every namespace per host.
+  #
+  # Traefik derives a router's default priority from the LENGTH of its rule:
+  #   Host(`enoal.fr`) && PathPrefix(`/`)   -> 35 characters (portfolio)
+  #   Host(`enoal.fr`) && Path(`/s.js`)     -> 33 characters (this Ingress)
+  # `PathPrefix` being longer than `Path`, the portfolio would win despite its
+  # less specific path. The explicit priority below is therefore required, not
+  # a precaution.
+  tracker:
+    enabled: true
+    priority: 100
+    hosts:
+      - enoal.fr
+      - www.enoal.fr
+      - portfolio.enoal.fr
+    paths:
+      - /s.js
+      - /api/s
+
+externalSecrets:
+  - name: umami-es
+    targetName: umami-secrets
+    targetTemplate:
+      engineVersion: v2
+      data:
+        # Consumed by the app container.
+        APP_SECRET: "{{ .appSecret }}"
+        DATABASE_URL: "postgresql://umami:{{ .postgresPassword }}@umami-postgres-svc:5432/umami"
+        # Consumed by the postgres container.
+        POSTGRES_USER: "umami"
+        POSTGRES_DB: "umami"
+        POSTGRES_PASSWORD: "{{ .postgresPassword }}"
+    data:
+      - secretKey: appSecret
+        remoteRef:
+          key: UMAMI_APP_SECRET
+      - secretKey: postgresPassword
+        remoteRef:
+          key: UMAMI_POSTGRES_PASSWORD

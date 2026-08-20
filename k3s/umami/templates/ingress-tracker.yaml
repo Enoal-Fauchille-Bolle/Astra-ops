@@ -1,0 +1,35 @@
+{{- if .Values.ingress.tracker.enabled }}
+# Serves the tracker first-party from the portfolio's own hosts. Only the two
+# tracker paths are claimed; everything else on these hosts stays on the
+# portfolio Ingress in the `web` namespace.
+#
+# `pathType: Exact` makes Traefik emit `Path(...)` instead of `PathPrefix(...)`,
+# so `/s.js.map` or `/api/something` are not captured by mistake.
+#
+# The priority annotation is mandatory: Traefik's default priority is the rule's
+# character length, and `PathPrefix(`/`)` on the portfolio produces a LONGER
+# rule than `Path(`/s.js`)` here. See k3s/umami/values.yaml for the count.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: umami-tracker-ingress
+  namespace: {{ .Values.namespace }}
+  annotations:
+    traefik.ingress.kubernetes.io/router.priority: {{ .Values.ingress.tracker.priority | quote }}
+spec:
+  rules:
+    {{- range .Values.ingress.tracker.hosts }}
+    - host: {{ . }}
+      http:
+        paths:
+          {{- range $.Values.ingress.tracker.paths }}
+          - path: {{ . }}
+            pathType: Exact
+            backend:
+              service:
+                name: umami-app-svc
+                port:
+                  number: {{ $.Values.app.service.port }}
+          {{- end }}
+    {{- end }}
+{{- end }}
