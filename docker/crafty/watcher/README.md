@@ -63,6 +63,59 @@ That stops scanners trying arbitrary names, which is the actual problem here.
 If the whitelist cannot be read, the watcher allows everyone and logs an error
 — a broken mount must not lock us out of our own servers.
 
+## Starting a server from the Crafty console
+
+Pressing **Start** in Crafty used to kill the server it was starting:
+
+```
+**** FAILED TO BIND TO PORT!
+The exception was: ... bind(..) failed with error(-98): Address already in use
+```
+
+The watcher holds a sleeping server's port — that is how it shows the MOTD and
+wakes it on connect — and it only polls Crafty every 30s. A start it did not
+trigger itself therefore loses the race: the JVM asks for the port about five
+seconds after being spawned, long before the next poll.
+
+Since watcher 1.2.0 the watcher listens for Crafty's own `start_server` webhook,
+which lands **0.8s** after the JVM is spawned (measured on `SMP 26.2`), and steps
+off the port immediately. The start is announced on Discord like a player
+wake-up, tagged `Triggered from Crafty (console or API)`.
+
+This needs two halves, and **neither lives in this repo**:
+
+1. In `/opt/docker-data/crafty/watcher/config.yaml`, next to the rest of the
+   config:
+
+   ```yaml
+   crafty_events:
+     enabled: true
+     path: "/events/crafty"
+     token: "<shared secret>"
+   ```
+
+2. In Crafty, per server: **Config → Webhooks → New webhook**
+
+   | Field | Value |
+   |---|---|
+   | Type | `Discord` — any provider works, only the URL and body matter |
+   | URL | `http://127.0.0.1:8095/events/crafty?token=<the same secret>` |
+   | Triggers | `start_server` — the trigger is not called `server_start` |
+   | Body | `{"server_id": "{{ server_id }}", "event": "{{ event_type }}"}` |
+
+The secret matters even though the endpoint binds to `127.0.0.1`: `crafty` and
+`crafty_watcher` both run with `network_mode: host`, so every container on that
+network shares the same localhost.
+
+Two consequences worth remembering:
+
+- The webhook is stored in Crafty's own database, so it is one more piece of
+  unversioned state — like the scheduled backups.
+- **Rolling the watcher back below 1.2.0 requires disabling that webhook.** The
+  older health server answers `405` to any POST, and Crafty calls
+  `raise_for_status()` from inside the very call that started the server, so
+  every start would raise in Crafty's start path.
+
 ## Configuration
 
 The live config is **not** in this repo: it sits on the host at
