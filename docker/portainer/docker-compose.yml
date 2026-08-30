@@ -4,13 +4,13 @@ services:
     image: portainer/portainer-ee:lts
     restart: always
     environment:
-      - TRUSTED_ORIGINS=portainer.lan
+      - TRUSTED_ORIGINS=http://portainer.lan,https://portainer.lan
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - /var/run/docker.sock:/var/run/docker.sock
       - /opt/docker-data/portainer:/data
     ports:
-      - 9444:9443
+      - 9000:9000
       # - 8000:8000  # Remove if you do not intend to use Edge Agents
 
 networks:
