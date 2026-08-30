@@ -431,6 +431,12 @@ Both drives are NVMe, with distinct roles:
 | `/mnt/data/k3s-pvc/<service>/`        | Large or cold PVC data for K3s services     |
 | `/mnt/data/docker-volumes/<service>/` | Large volume data for Docker services       |
 
+> [!IMPORTANT]
+> Docker Compose bind mounts **must use absolute paths**. Portainer deploys these stacks
+> from Git into a per-commit directory (`/data/compose/<stack-id>/<sha>/`), so a relative
+> source such as `./<service>-data` resolves inside that throwaway clone and is recreated
+> empty on every commit. Always mount `/opt/docker-data/<service>/`.
+
 ---
 
 ## Secrets management

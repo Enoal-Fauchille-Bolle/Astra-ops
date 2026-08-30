@@ -206,6 +206,7 @@ Bulk data that is either reconstructible (Minecraft servers, Kiwix ZIM archives)
 | **Crafty config**       | `/opt/docker-data/crafty/config/`          | 53M             | 2    | ✅ files       | —                                                            |
 | **Crafty servers**      | `/opt/docker-data/crafty/servers/`         | 14G             | ❌ 3 | —              | —                                                            |
 | **Crafty logs**         | `/mnt/data/docker-volumes/crafty/logs/`    | 207M            | ❌ 3 | —              | —                                                            |
+| **Portracker**          | `/opt/docker-data/portracker/`             | 68K             | ❌ 3 | —              | —                                                            |
 | **Kiwix ZIM**           | `/mnt/data/k3s-pvc/kiwix/`                 | 136G            | ❌ 3 | —              | —                                                            |
 | **Movies**              | `/mnt/data/media/movies/`                  | 93G             | ❌ 3 | —              | —                                                            |
 

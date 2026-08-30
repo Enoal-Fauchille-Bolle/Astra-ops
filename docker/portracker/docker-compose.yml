@@ -25,7 +25,7 @@ services:
     security_opt:
       - apparmor:unconfined
     volumes:
-      - ./portracker-data:/data
+      - /opt/docker-data/portracker:/data
     ports:
       - "4999:4999"
     environment:
