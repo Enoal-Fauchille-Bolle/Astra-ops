@@ -461,7 +461,7 @@ Pulsar /mnt/data/ (sdb — cold)
 
 **Recovery via Layer 1 (PBS):**
 
-1. Access PBS web UI at `pbs.lan` (or directly at the LXC IP).
+1. Access PBS web UI at `pbs.enoal.fr` (or directly at the LXC IP).
 2. Navigate to the relevant datastore → find the most recent healthy snapshot of Pulsar (VM 100).
 3. If restoring the entire VM: Proxmox UI → VM 100 → Backups → Restore.
 4. If restoring individual files: use `proxmox-backup-client` to mount the snapshot and extract specific paths.
