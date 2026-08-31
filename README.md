@@ -208,7 +208,7 @@ astra-ops/
 | [botenoal](k3s/botenoal)                       | Custom Discord bot                                | 🤖 Bots           | `bots`           | Helm            | `botenoal.lan`                                             | 🔒 LAN only | ✅ Active   |
 | [cloudflared](docker/cloudflared)              | Cloudflare tunnel for secure public access        | 🐳 Infrastructure | —                | Docker Compose  | —                                                          | —           | ⏸️ Disabled |
 | [convertx](k3s/convertx)                       | Universal file converter                          | 🛠️ Utilities      | `utilities`      | Raw             | `convertx.lan`                                             | 🔒 LAN only | ⏸️ Disabled |
-| [crafty](docker/crafty)                        | Minecraft server manager + watcher proxy          | 🎮 Gaming         | —                | Docker Compose  | `crafty.enoal.fr`                                          | 🌍 Public   | ✅ Active   |
+| [crafty](docker/crafty)                        | Minecraft server manager + watcher proxy          | 🎮 Gaming         | —                | Docker Compose  | `crafty.enoal.fr`, `smp-map.enoal.fr`                      | 🌍 Public   | ✅ Active   |
 | [criterifresque](k3s/criteri-fresque)          | Criteri'Fresque website                           | 🌐 Web            | `web`            | Helm            | `beta.criterifresque.lesfresques.info`                     | 🌍 Public   | ✅ Active   |
 | [crowdsec](docker/crowdsec)                    | Intrusion detection for Nginx Proxy Manager       | 🐳 Infrastructure | —                | Docker Compose  | —                                                          | —           | ⏸️ Disabled |
 | [cv](k3s/cv)                                   | Personal CV/resume website (HPA enabled)          | 🌐 Web            | `web`            | Helm            | `cv.enoal.fr`                                              | 🌍 Public   | ✅ Active   |
@@ -265,6 +265,7 @@ AdGuard Home acts as the local DNS server, resolving `.lan` hostnames to the Pul
 | 80          | TCP      | NPM (HTTP entry)           |
 | 443         | TCP      | NPM (HTTPS entry)          |
 | 81          | TCP      | NPM Admin UI               |
+| 8098        | TCP      | squaremap SMP (web map)    |
 | 8443        | TCP      | Crafty Admin UI            |
 | 9444        | TCP      | Portainer                  |
 | 25500-25599 | TCP      | Minecraft servers (Crafty) |
