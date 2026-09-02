@@ -1,0 +1,45 @@
+namespace: web
+
+image:
+  repository: ghcr.io/enoal-fauchille-bolle/roots-smp-web
+  tag: 1.0.0
+  pullPolicy: IfNotPresent
+
+replicaCount: 1
+
+service:
+  port: 80
+  targetPort: 80
+
+ingress:
+  hosts:
+    - rootssmp.enoal.fr
+
+probes:
+  liveness:
+    path: /
+    initialDelaySeconds: 10
+    periodSeconds: 10
+  readiness:
+    path: /
+    initialDelaySeconds: 5
+    periodSeconds: 5
+
+resources:
+  requests:
+    cpu: 10m
+    memory: 16Mi
+  limits:
+    cpu: 100m
+    memory: 64Mi
+
+imagePullSecrets:
+  - name: regcred-roots-smp-web
+
+autoscaling:
+  minReplicas: 1
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 75
+  scaleUpStabilizationSeconds: 0
+  scaleUpMaxPods: 4
+  scaleDownStabilizationSeconds: 300
