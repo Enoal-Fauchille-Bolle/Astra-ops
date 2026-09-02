@@ -35,11 +35,3 @@ resources:
 
 imagePullSecrets:
   - name: regcred-roots-smp-web
-
-autoscaling:
-  minReplicas: 1
-  maxReplicas: 5
-  targetCPUUtilizationPercentage: 75
-  scaleUpStabilizationSeconds: 0
-  scaleUpMaxPods: 4
-  scaleDownStabilizationSeconds: 300
