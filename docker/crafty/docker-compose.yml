@@ -18,7 +18,7 @@ services:
     # Must stay a pre-built image: a `build:` here makes Portainer's GitOps
     # poll recreate the container every ~5 min, which wipes the in-memory
     # idle countdown and stops any server from ever hibernating.
-    image: ghcr.io/enoal-fauchille-bolle/crafty-server-watcher:1.3.0
+    image: ghcr.io/enoal-fauchille-bolle/crafty-server-watcher:1.3.1
     container_name: crafty_watcher
     restart: always
     network_mode: host
