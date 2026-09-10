@@ -1,7 +1,7 @@
 # Backup Architecture — Astra Homelab
 
-> **Status:** Layer 1 operational. Layer 2 deployment in progress.
-> **Last updated:** May 2026
+> **Status:** Layer 1 operational. Layer 2 partially deployed — see §12.
+> **Last updated:** 2026-09-09 (sizes in §3.2 and §8.1 remeasured; §2.3, §4.2 and §12 revised)
 > **Language:** English (technical reference)
 
 ---
@@ -60,7 +60,7 @@ graph TB
         subgraph PROD["Production — nvme0n1 (WD Blue 1To)"]
             PVE_OS[Proxmox OS — pve-root 96G]
             LVM[local-lvm pool 793G]
-            LVM --> DISK0[vm-100-disk-0 100G — Pulsar OS]
+            LVM --> DISK0[vm-100-disk-0 200G — Pulsar OS]
             LVM --> DISK1[vm-101-disk-0 8G — AdGuard]
             LVM --> DISK2[vm-102-disk-0 4G — Wireguard]
             LVM --> DISK3[vm-103-disk-0 8G — PBS]
@@ -68,7 +68,7 @@ graph TB
 
         subgraph VAULT["Vault — nvme1n1 (Netac 1To)"]
             VAULT_IMAGES[vm-100-disk-0.qcow2 500G — Pulsar cold disk]
-            PBS_DS[PBS Datastore — pbs-datastore]
+            PBS_DS[PBS Datastore — 468G · 67% of vault]
         end
     end
 
@@ -117,17 +117,25 @@ nvme0n1 (931G)
 ├── pve-swap        8G
 ├── pve-root       96G   → Proxmox OS (/etc/pve, /etc/proxmox-backup)
 └── pve-data      793G   → local-lvm pool
-    ├── vm-100-disk-0   100G  → Pulsar OS disk (= sda in Pulsar)
+    ├── vm-100-disk-0   200G  → Pulsar OS disk (= sda in Pulsar)
     ├── vm-101-disk-0     8G  → AdGuard
     ├── vm-102-disk-0     4G  → Wireguard
     └── vm-103-disk-0     8G  → PBS
 
 nvme1n1 (938G — "vault")
-├── vm-100-disk-0.qcow2  501G  → Pulsar cold disk (= sdb in Pulsar)
-├── vm-100-state-*.raw    16G  → Pulsar RAM snapshot (manual, not for backup)
-├── template/              3G  → ISOs
-└── pbs-datastore/         ?   → PBS backup chunks
+├── vm-100-disk-0.qcow2  501G declared / 88G allocated  → Pulsar cold disk (= sdb)
+├── template/            4.6G  → ISOs
+└── pbs-datastore/       468G  → PBS backup chunks — largest consumer of this disk
 ```
+
+> **Remeasured 2026-09-09.** `vault`: **560G used / 938G (61 %)**, 369G free. The
+> `vm-100-state-*.raw` entry listed here previously no longer exists. `pve-data` is at
+> **24.5 %** (194.5 / 793.8 GiB) with 370 GiB provisioned — 47 % over-commit, comfortable.
+>
+> Note the `.qcow2` is *sparse*: 501G declared, **88G actually allocated** after the
+> 2026-09-09 `fstrim`. Before that trim it held 225G, of which ~137G was dead space left by
+> the deleted Kiwix library — freeing files inside a guest returns nothing to the host until
+> `fstrim` issues the TRIM and QEMU punches the holes.
 
 ### 2.2 Pulsar — Main VM
 
@@ -151,15 +159,37 @@ sdb (500G) → /mnt/data
 └── /mnt/data/media/            Media library (movies, photos, documents)
 ```
 
-> **Disk usage (as of June 2026):**
-> `sda`: 119G used / 195G (64%)
-> `sdb`: 206G used / 492G (57%)
+> **Disk usage (measured 2026-09-09):**
+> `sda`: **103G used / 195G (55 %)** — 85G free
+> `sdb`: **87G used / 492G (19 %)** — 380G free
+>
+> Of `sdb`'s 87G, roughly **73G is reconstructible or derived** (47G of re-downloadable
+> movies, 26G of Crafty archives that are themselves backups). Only about **13G is
+> irreplaceable**.
 
 ### 2.3 Accepted Constraints
 
 The Netac NVMe (`nvme1n1`) hosts both the Pulsar cold disk and the PBS datastore. This means Layer 1 backups and the associated production data reside on the same physical device. A single Netac failure would result in simultaneous loss of Pulsar's cold data AND its Layer 1 backups.
 
 This is a known, accepted constraint given the single-server hardware budget. Layer 2 (cloud) is the mitigation.
+
+> **Revision 2026-09-09 — the mitigation is not fully in service.** Several Layer 2 items in
+> §12 remain unchecked, and three directories are bind-mounted into the Zerobyte container
+> without a corresponding volume declaration, so they are **never** backed up off-site:
+> `/mnt/data/backups`, `/mnt/data/media/photos` and `/opt/docker-data/portainer`. Until
+> those are declared, the argument that justifies accepting the co-location does not hold.
+>
+> **Also revised 2026-09-09:** hardware expansion is more constrained than assumed. Both M.2
+> slots are populated (`lspci` shows two NVMe controllers, both occupied); only **two unused
+> SATA ports** remain (`ata1`/`ata2`, both `SATA link down`). A third NVMe is not an option.
+>
+> **Measured the same day**, the Netac was at **79 % (194 GB free)** and growing at
+> **9.38 GiB/day**, projecting saturation around 30 September 2026. Two non-destructive
+> reclaims brought it to **61 % (369 GB free)**: `fstrim -av` on Pulsar returned **137 GB**
+> of dead space still allocated in the `.qcow2` after the Kiwix deletion, and
+> `tune2fs -m 1 /dev/nvme1n1p1` released **38 GB** of ext4 root reserve that PBS — running as
+> uid `100034` — could never use. The growth rate is unchanged; see
+> `~/.claude/exports/plan-stockage-astra-2026-09-09.md` for the remaining steps.
 
 ---
 
@@ -178,37 +208,53 @@ Bulk data that is either reconstructible (Minecraft servers, Kiwix ZIM archives)
 
 ### 3.2 Complete Data Inventory
 
-| Service / Path          | Current Location                           | Size            | Tier | Layer 2        | DB Dump Needed                                               |
-| ----------------------- | ------------------------------------------ | --------------- | ---- | -------------- | ------------------------------------------------------------ |
-| **Vaultwarden**         | `/opt/k3s-data/vaultwarden/`               | 6.7M            | 1    | dump only      | SQLite                                                       |
-| **Immich DB**           | `/opt/k3s-data/immich/`                    | 1.1G            | 1    | dump only      | PostgreSQL + Redis                                           |
-| **n8n**                 | `/opt/k3s-data/n8n/`                       | 41M             | 1    | dump only      | SQLite                                                       |
-| **Scanopy**             | `/opt/k3s-data/scanopy/`                   | 68M             | 1    | dump only      | PostgreSQL                                                   |
-| **Uptimekuma**          | `/opt/k3s-data/uptimekuma/`                | 231M            | 1    | dump only      | SQLite                                                       |
-| **Crowdsec**            | `/opt/docker-data/crowdsec/`               | 92M             | 1    | dump only      | SQLite                                                       |
-| **SFTPgo**              | `/opt/k3s-data/sftpgo/`                    | 380K            | 1    | dump only      | SQLite                                                       |
-| **Docker Registry**     | `/opt/k3s-data/docker-registry/`           | 57M             | 1    | files (no DB)  | —                                                            |
-| **NPM**                 | `/opt/docker-data/npm/`                    | 20M             | 1    | dump only      | SQLite (`database.sqlite` in `/data/`)                       |
-| **Portainer**           | `/opt/docker-data/portainer/`              | 15M             | 1    | files (no DB)  | BoltDB (`portainer.db`) — PBS only, file cold copy if needed |
-| **Filebrowser Quantum** | `/opt/k3s-data/filebrowser-quantum/`       | 896K            | 1    | dump only      | SQLite (`database.db`)                                       |
-| **Ntfy**                | `/opt/k3s-data/ntfy/`                      | 160K            | 1    | dump only      | SQLite (`cache.db` + `user.db`)                              |
-| `/etc/pve/`             | Astra host                                 | ~5M             | 1    | ✅ files       | —                                                            |
-| `/etc/proxmox-backup/`  | Astra host                                 | ~5M             | 1    | ✅ files       | —                                                            |
-| **Immich photos**       | `/opt/k3s-data/immich/library/`            | 6.4G            | 2    | ✅ files       | —                                                            |
-| **Filebrowser files**   | `/mnt/data/k3s-pvc/filebrowser/`           | 9.1G            | 2    | ✅ files       | —                                                            |
-| **Homer config**        | `/opt/k3s-data/homer/`                     | 5.3M            | 2    | ✅ files       | —                                                            |
-| **Criteri-fresque**     | `/opt/k3s-data/criteri-fresque/`           | 38M             | 2    | ✅ files       | —                                                            |
-| **Personal backups**    | `/mnt/data/backups/`                       | ~1-5G (growing) | 2    | ✅ files       | —                                                            |
-| **Photos**              | `/mnt/data/media/photos/`                  | 946M            | 2    | ✅ files       | —                                                            |
-| **DB Dumps**            | `/mnt/data/backups/dumps/` _(to create)_   | ~500M           | 2    | ✅ files       | —                                                            |
-| **Secrets**             | `~/astra-secrets/` on operator's computer  | ~1M             | 2    | ✅ rclone sync | —                                                            |
-| **Crafty backups**      | `/mnt/data/docker-volumes/crafty/backups/` | 4.3G            | 2    | ✅ files       | —                                                            |
-| **Crafty config**       | `/opt/docker-data/crafty/config/`          | 53M             | 2    | ✅ files       | —                                                            |
-| **Crafty servers**      | `/opt/docker-data/crafty/servers/`         | 14G             | ❌ 3 | —              | —                                                            |
-| **Crafty logs**         | `/mnt/data/docker-volumes/crafty/logs/`    | 207M            | ❌ 3 | —              | —                                                            |
-| **Portracker**          | `/opt/docker-data/portracker/`             | 68K             | ❌ 3 | —              | —                                                            |
-| **Kiwix ZIM**           | `/mnt/data/k3s-pvc/kiwix/`                 | 136G            | ❌ 3 | —              | —                                                            |
-| **Movies**              | `/mnt/data/media/movies/`                  | 93G             | ❌ 3 | —              | —                                                            |
+> **Sizes marked `2026-09-09` were remeasured that day; the rest still date from May 2026
+> and should be re-checked before being relied on.**
+
+| Service / Path | Location | Size | Tier | Layer 2 | DB dump | Verified |
+| -------------- | -------- | ---- | ---- | ------- | ------- | -------- |
+| **Vaultwarden** | `/opt/k3s-data/vaultwarden/` | 6.7M | 1 | dump only | SQLite | May 2026 |
+| **Immich DB** | `/opt/k3s-data/immich/postgres/` | **295M** | 1 | covered — Immich dumps itself into `library/backups/` | PostgreSQL 14 + vectorchord | 2026-09-09 |
+| **Umami DB** | K3s ns `analytics` | not measured | 1 | ❌ none | PostgreSQL 16 | **added 2026-09-09** |
+| **Infisical DB** | K3s ns `infisical` | not measured | 1 | ❌ none | PostgreSQL 16 | **added 2026-09-09** |
+| **Dawarich DB** | Docker `dawarich_db` | not measured | 1 | ❌ none | PostGIS 17 | **added 2026-09-09** |
+| **n8n** | `/opt/k3s-data/n8n/` | 41M | 1 | dump only | SQLite | May 2026 |
+| **Scanopy** | `/opt/k3s-data/scanopy/` | 68M | 1 | dump only | PostgreSQL — **no running deployment found on 2026-09-09, confirm before scripting** | May 2026 |
+| **Uptimekuma** | `/opt/k3s-data/uptimekuma/` | 231M | 1 | dump only | SQLite | May 2026 |
+| **Crowdsec** | `/opt/docker-data/crowdsec/` | 92M | 1 | dump only | SQLite | May 2026 |
+| **SFTPgo** | `/opt/k3s-data/sftpgo/` | 380K | 1 | dump only | SQLite | May 2026 |
+| **Docker Registry** | `/opt/k3s-data/docker-registry/` | 57M | 1 | ✅ files | — | May 2026 |
+| **NPM** | `/opt/docker-data/npm/` | 20M | 1 | dump only | SQLite | May 2026 |
+| **Portainer** | `/opt/docker-data/portainer/` | **83M** | 1 | ⚠️ **mounted, never declared** | BoltDB | 2026-09-09 |
+| **Filebrowser Quantum** | `/opt/k3s-data/filebrowser-quantum/` | 896K | 1 | dump only | SQLite | May 2026 |
+| **Ntfy** | `/opt/k3s-data/ntfy/` | 160K | 1 | dump only | SQLite | May 2026 |
+| `/etc/pve/` | Astra host | ~5M | 1 | ❌ not yet | — | May 2026 |
+| `/etc/proxmox-backup/` | LXC 103 | **60K** | 1 | ❌ not yet | — | 2026-09-09 |
+| **Immich photos** | `/opt/k3s-data/immich/library/` | **31G** | 2 | ✅ Backblaze B2 | — | 2026-09-09 |
+| **Filebrowser files** | `/mnt/data/k3s-pvc/filebrowser/` | **4.7G** | 2 | ✅ files | — | 2026-09-09 |
+| **Homer config** | `/opt/k3s-data/homer/` | 5.3M | 2 | ✅ files | — | May 2026 |
+| **Criteri-fresque** | `/opt/k3s-data/criteri-fresque/` | 38M | 2 | ✅ files | — | May 2026 |
+| **Personal backups** | `/mnt/data/backups/` | **8.8G** | 2 | ⚠️ **mounted, never declared** | — | 2026-09-09 |
+| **Photos** | `/mnt/data/media/photos/` | **946M** | 2 | ⚠️ **mounted, never declared** | — | 2026-09-09 |
+| **DB dumps** | `/mnt/data/backups/dumps/` | — | 2 | ❌ directory does not exist | — | 2026-09-09 |
+| **Secrets** | `~/astra-secrets/` (workstation) | ~1M | 2 | ❌ not yet | — | May 2026 |
+| **Crafty backups** | `/mnt/data/docker-volumes/crafty/backups/` | **26G** | 2 | ✅ files | — | 2026-09-09 |
+| **Crafty config** | `/opt/docker-data/crafty/config/` | **169M** | 2 | ✅ files | — | 2026-09-09 |
+| **Crafty servers** | `/opt/docker-data/crafty/servers/` | **17G** | ❌ 3 | — | — | 2026-09-09 |
+| **Crafty logs** | `/mnt/data/docker-volumes/crafty/logs/` | **430M** | ❌ 3 | — | — | 2026-09-09 |
+| **Portracker** | `/opt/docker-data/portracker/` | 68K | ❌ 3 | — | — | May 2026 |
+| **Kiwix ZIM** | `/mnt/data/k3s-pvc/kiwix/` | **empty** — 136G deleted 2026-09-09 | ❌ 3 | — | — | 2026-09-09 |
+| **Movies** | `/mnt/data/media/movies/` | **47G** (19 files) | ❌ 3 | — | — | 2026-09-09 |
+
+> **⚠️ The three rows marked "mounted, never declared"** are bind-mounted read-only into the
+> Zerobyte container by `docker/zerobyte/docker-compose.yml`, but no matching *volume* exists
+> in Zerobyte, so no job ever backs them up. Their only protection today is PBS — i.e. the
+> Netac. Note that most of the 8.8G under `/mnt/data/backups/` is a single Minecraft server
+> archive, likely redundant with the Crafty backups; triage before declaring it.
+>
+> **Growth driver, measured 2026-09-09:** Crafty produces **28.6 GiB/week** of new `.zip`
+> archives across three servers, one of them daily. ZIP streams do not deduplicate, so PBS
+> stores each archive whole, every night. Immich by comparison adds 0.86 GiB/week.
 
 ---
 
@@ -231,7 +277,36 @@ Datastore location: `/mnt/pve/vault/` (Netac NVMe, `nvme1n1`).
 | Wireguard | 102 | LXC  | ✅                        |
 | PBS       | 103 | LXC  | ❌ Excluded by design     |
 
-PBS (LXC 103) is intentionally excluded. It is stateless: in the event of PBS loss, a new LXC can be created and pointed at the existing datastore directory to immediately reindex all existing backup chunks. Backing up the backup tool into itself would create circular I/O dependencies.
+PBS (LXC 103) is intentionally excluded — but **not** for the reason previously given here.
+
+> **Correction, 2026-09-09.** This section used to claim that backing up the PBS container
+> would "create circular I/O dependencies". That is **false**. LXC 103 reaches its datastore
+> through a *bind mount* (`mp0: /mnt/pve/vault/pbs-datastore,mp=/mnt/datastore`), and the
+> Proxmox VE documentation is explicit: *"The contents of bind mount points are not backed up
+> when using vzdump."* The `backup=1` option exists only for **volume** mount points. A
+> `vzdump` of LXC 103 would therefore capture its 8 GB rootfs and nothing else — no recursion
+> is possible.
+
+The real reason to exclude it: a backup of LXC 103 would live **inside the datastore it is
+meant to help rebuild**, making it useless in the one scenario that matters — loss of the
+Netac drive. And it is unnecessary, because the datastore is self-describing: point a fresh
+PBS install at the existing directory (or pass `reuse-datastore`) and every chunk and index
+is recovered.
+
+What genuinely needs protecting is the **configuration**, which is *not* in the datastore —
+about **60 KB** in `/etc/proxmox-backup/`:
+
+| File | Lost without it |
+| ---- | --------------- |
+| `datastore.cfg` | datastore definition, GC schedule (`Sun 05:00`) |
+| `verification.cfg` | the `verify-weekly` job |
+| `prune.cfg` | retention policy |
+| `notifications.cfg` + `notifications-priv.cfg` | the Resend notification target |
+| `user.cfg`, `acl.cfg`, `shadow.json` | accounts, permissions, password hashes |
+| `authkey.key`, `csrf.key`, `proxy.pem` | API tokens and TLS certificate |
+
+This is what the unchecked §12 task — rsyncing `/etc/pve/` and `/etc/proxmox-backup/` to
+`/mnt/data/backups/proxmox-configs/` — is for. It remains **to do**.
 
 ### 4.3 Retention Policy
 
@@ -412,44 +487,49 @@ This sync will be automated via a **systemd timer on my workstation** (daily or 
 ### 8.1 Current Layout
 
 ```txt
-Pulsar /opt/ (sda — hot)
+Pulsar /opt/ (sda — hot)          103G used / 195G (55 %)   [2026-09-09]
 ├── k3s-data/
-│   ├── vaultwarden/        6.7M
-│   ├── immich/             1.1G   (DB only)
-│   │   └── library/        6.4G   (photos)
-│   ├── homer/              5.3M
-│   ├── criteri-fresque/     38M
-│   ├── n8n/                 41M
-│   ├── scanopy/             68M
-│   ├── uptimekuma/         231M
-│   ├── docker-registry/     57M
-│   ├── sftpgo/             380K
-│   ├── filebrowser/         64K
-│   ├── filebrowser-quantum/ 896K
-│   ├── ntfy/               160K
-│   ├── diun/               536K
-│   └── convertx/           356K
-└── docker-data/
-    ├── crowdsec/            92M
-    ├── npm/                 20M
-    └── portainer/           15M
+│   ├── immich/            32G   ├── library/upload   29G   (Tier 2)
+│   │                            ├── library/thumbs  1.5G   (Tier 3, regenerable)
+│   │                            ├── model-cache     786M   (Tier 3, re-downloaded)
+│   │                            └── postgres        295M   (Tier 1)
+│   ├── uptimekuma/       231M
+│   ├── scanopy/           68M
+│   ├── docker-registry/   57M
+│   ├── n8n/               41M
+│   ├── criteri-fresque/   38M
+│   ├── vaultwarden/      6.7M
+│   ├── homer/            5.3M
+│   ├── filebrowser-quantum/ 896K · sftpgo/ 380K · ntfy/ 160K
+│   └── diun/ 536K · convertx/ 356K · filebrowser/ 64K
+├── docker-data/
+│   ├── crafty/            17G   └── servers/ 17G (Tier 3) · config/ 169M (Tier 2)
+│   ├── portainer/         83M   ⚠️ mounted in Zerobyte, never declared
+│   ├── crowdsec/          92M
+│   ├── npm/               20M
+│   └── portracker/        68K
+└── ops/                   11M   GitOps clone (also on GitHub)
 
-Pulsar /mnt/data/ (sdb — cold)
-├── k3s-pvc/
-│   ├── filebrowser/        9.1G
-│   ├── crafty/              92K
-│   └── kiwix/             136G   (Tier 3)
-├── docker-volumes/
-│   └── crafty/
-│       ├── backups/        4.3G   (Tier 2)
-│       ├── config/          53M   (Tier 2)
-│       ├── servers/         14G   (Tier 3)
-│       ├── logs/           207M   (Tier 3)
-│       └── import/           8K
-├── backups/                102M   → growing (personal uploads + future dumps)
-└── media/
-    ├── photos/             946M   (Tier 2)
-    └── movies/              93G   (Tier 3)
+  Not application data, but the bulk of this disk:
+  /var/lib/rancher/k3s/.../containerd  25G   container images (reconstructible)
+  /var/lib/containerd                  13G   second image store (reconstructible)
+  /var/lib/docker                     8.0G   (reconstructible)
+  /swap.img 4.1G · /usr 3.6G · /var/log 2.7G
+
+Pulsar /mnt/data/ (sdb — cold)     87G used / 492G (19 %)   [2026-09-09]
+├── media/
+│   ├── movies/            47G   (Tier 3 — 19 re-downloadable files)
+│   └── photos/           946M   (Tier 2) ⚠️ mounted in Zerobyte, never declared
+├── docker-volumes/crafty/
+│   ├── backups/           26G   (Tier 2) — 28.6 GiB/week of new ZIPs, main growth driver
+│   └── logs/             430M   (Tier 3)
+├── backups/              8.8G   ⚠️ mounted in Zerobyte, never declared
+│   ├── 2026-06-15_*.zip  8.7G   Minecraft server archive — likely redundant with Crafty
+│   └── OnePlus-10T/      102M   phone backup (irreplaceable)
+└── k3s-pvc/
+    ├── filebrowser/      4.7G   (Tier 2)
+    ├── crafty/            92K
+    └── kiwix/            empty  (136G deleted 2026-09-09)
 ```
 
 ---
@@ -597,46 +677,83 @@ For each tested restore:
 
 ## 12. Pending Tasks & Future Work
 
-### Immediate (before Layer 2 goes live)
+> **Reviewed against the machines on 2026-09-09.** Items are checked only where the state was
+> actually verified, not where it was merely planned.
 
-- [ ] Configure rclone remotes on Pulsar (`mega-a`, `mega-b`, `mega-c`)
-- [x] Deploy Zerobyte via Docker Compose (`docker/zerobyte/docker-compose.yml`)
-- [ ] Create Zerobyte repositories in the UI pointing to each MEGA remote
-- [ ] Create Zerobyte volumes for all Tier 2 source paths
-- [ ] Create all backup jobs per §5.4
+### Layer 2 — Zerobyte
+
+- [x] Configure rclone remotes on Pulsar — `mega-a`, `mega-b`, `mega-c`, `mega-d`, `backblaze-test`
+- [x] Deploy Zerobyte via Docker Compose (`docker/zerobyte/docker-compose.yml`, v0.42)
+- [x] Create Zerobyte repositories — `Mega A`, `Mega C`, `Mega D`, `Backblaze`
 - [x] Add `zerobyte.lan` DNS entry in AdGuard Home
 - [x] Add NPM proxy host for `zerobyte.lan`
+- [x] Move Immich off-site to Backblaze B2 (2026-09-09) — 7/7 schedules now `success`
+- [ ] **Declare the three mounted-but-undeclared volumes**: `/data/backups`,
+      `/data/media/photos`, `/data/portainer`. Triage `/mnt/data/backups/` first — most of its
+      8.8G is a Minecraft archive that is probably redundant.
 - [ ] Set up ntfy webhook in Zerobyte settings
 - [ ] Create `/mnt/data/backups/dumps/` directory
 - [ ] Create `/mnt/data/backups/proxmox-configs/` directory
-- [ ] Write rsync cron on Astra to sync `/etc/pve/` and `/etc/proxmox-backup/` to `/mnt/data/backups/proxmox-configs/`
+- [ ] Write rsync + systemd timer on Astra to sync `/etc/pve/` and `/etc/proxmox-backup/`
+      to `/mnt/data/backups/proxmox-configs/`, then declare it as a Zerobyte volume.
+      **Blocker to investigate first:** `/etc/pve` is a FUSE mount (`pmxcfs`), and reading
+      `/etc/pve/storage.cfg` returned `Permission denied` even under `sudo` on 2026-09-09.
 
-### Storage Migrations (after Layer 2 is stable)
+### Storage — reclaimed 2026-09-09
 
-- [x] Resize Pulsar `sda` from 100G → 200G (Proxmox UI + `growpart` inside Pulsar)
-- [x] Move `/mnt/data/k3s-pvc/immich/` → `/opt/k3s-data/immich/library/` (update PVC)
-- [x] Move `/mnt/data/k3s-pvc/homer/` → `/opt/k3s-data/homer/` (update PVC)
-- [x] Move `/mnt/data/k3s-pvc/criteri-fresque/` → `/opt/k3s-data/criteri-fresque/` (update PVC)
-- [x] Delete residue: `sudo rm -rf /opt/k3s-data/crafty/`
+- [x] Resize Pulsar `sda` from 100G → 200G
+- [x] Move `/mnt/data/k3s-pvc/immich/` → `/opt/k3s-data/immich/library/`
+- [x] Move `/mnt/data/k3s-pvc/homer/` → `/opt/k3s-data/homer/`
+- [x] Move `/mnt/data/k3s-pvc/criteri-fresque/` → `/opt/k3s-data/criteri-fresque/`
+- [x] Delete residue `/opt/k3s-data/crafty/`
+- [x] **`fstrim -av` on Pulsar** — returned **137G** of dead space to `vault` (79 % → 63 %)
+- [x] **`tune2fs -m 1 /dev/nvme1n1p1`** — released **38G** of ext4 root reserve (63 % → 61 %)
+- [x] **AdGuard query log** — retention 90d → 7d and log cleared; LXC 101 went 95 % → 11 %
 
-### Phase 2 — Database Dumps
+### Storage — still open
+
+- [ ] **Cut the growth at the source**: Crafty produces 28.6 GiB/week of non-deduplicating
+      ZIPs. Reduce cadence or retention on the server created 2026-08-31, which alone emits
+      1.5 GiB/day. Nothing else meaningfully slows `vault`.
+- [ ] **Set `backup=0` on `scsi1`** so PBS stops backing up the 500G cold disk that lives on
+      the very drive it writes to. Only after the three Zerobyte volumes above are declared.
+- [ ] Decide the fate of LXC 102 (`wireguard`, stopped since 2026-05-04) in the vzdump job
+- [ ] Consider a SATA SSD for the datastore — **both M.2 slots are occupied**, only two SATA
+      ports remain free
+
+### Phase 2 — Database dumps
 
 - [ ] Write `/opt/ops/docker/zerobyte/dump-databases.sh`
-- [ ] Test each dump command individually (verify output is valid)
+- [ ] **Exclude Immich from the script** — its database runs on
+      `postgres:14-vectorchord0.4.3-pgvectors0.2.0`, and a plain `pg_dump` produces a file no
+      vanilla PostgreSQL can restore. Immich already dumps itself into `library/backups/`,
+      which Backblaze covers.
+- [ ] **Add Umami, Infisical and Dawarich** — absent from the §6 table, and unprotected today
+- [ ] Confirm whether Scanopy still runs before scripting its dump
+- [ ] Test each dump command individually
 - [ ] Set up systemd timer on Pulsar to run dumps at 01:00 daily
 - [ ] Add `tier2-db-dumps` job in Zerobyte pointing to `/mnt/data/backups/dumps/`
-- [ ] Validate: dump → Zerobyte backup → restore dump → import to DB
+- [ ] Validate end to end: dump → Zerobyte backup → restore dump → import to DB
 
-### Phase 3 — Secrets Sync
+### Phase 3 — Secrets sync
 
-- [ ] Configure `rclone crypt` on the operator's computer for `mega-a-crypt` remote
+- [ ] Configure `rclone crypt` on the workstation for a `mega-a-crypt` remote
 - [ ] Create `~/astra-secrets/` and consolidate all secrets
 - [ ] Write rclone sync script with versioned backup dir
-- [ ] Create systemd timer on Fedora (daily sync)
+- [ ] Create systemd timer on the workstation (daily sync)
 - [ ] First restore test: decrypt and apply secrets on a clean machine
+
+### Monitoring
+
+- [ ] **Move the disk alert threshold from `sda` to `vault`.** The current rule watches Pulsar
+      `sda` at 85 %; `sda` sits at 55 % while `vault` — which holds every backup — reached
+      79 % unnoticed. Alert on `/mnt/pve/vault` at 75 %.
+- [ ] Alert on LXC 101 (`adguard`) — it hit 95 % unnoticed on 2026-09-09
 
 ### Long-term
 
-- [ ] Evaluate replacing multi-account MEGA setup with a paid single account if storage needs grow beyond 3×20G
-- [ ] Consider Backblaze B2 (~$0.006/GB/month) as a more scalable alternative for Tier 2
-- [ ] Monitor Pulsar `sda` usage monthly — alert threshold at 85%
+- [x] Evaluate Backblaze B2 as a scalable Tier 2 alternative — **adopted for Immich**
+      (bucket `astra-pulsar-backup`, ~30.4 GiB, lifecycle `daysFromHidingToDeleting: 1`)
+- [ ] Decide whether to migrate the remaining MEGA jobs to B2
+- [ ] `Mega B` is **retired**: removed from Zerobyte on 2026-09-09, its 10 snapshots left
+      intact on MEGA, neither copied nor purged. Still readable with `restic --no-lock`.
