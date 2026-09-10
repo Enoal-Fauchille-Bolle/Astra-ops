@@ -115,15 +115,25 @@ flowchart TD
 
 ```mermaid
 graph LR
-    subgraph NVMe1["NVMe 1 — WD Blue SN580 1 To (local-lvm)"]
-        OS[Proxmox OS + VM Disks]
-        HOT["/opt/k3s-data/ · /opt/docker-data/"]
+    subgraph NVMe1["NVMe 1 — WD Blue SN580 1 To (local-lvm) — 24% used"]
+        OS[Proxmox OS + all guest system disks]
+        HOT["/opt/k3s-data/ · /opt/docker-data/ — hot data"]
     end
-    subgraph NVMe2["NVMe 2 — Netac 1 To (vault)"]
-        COLD["/mnt/data/ — Media, Backups, PVC"]
-        ISO[Proxmox Backups + ISOs]
+    subgraph NVMe2["NVMe 2 — Netac 1 To (vault) — 61% used"]
+        COLD["/mnt/data/ — media, PVCs, Crafty volumes — 88G"]
+        PBS["PBS datastore — 468G · backups of every guest"]
+        ISO["ISOs — 4.6G"]
     end
 ```
+
+> **The Netac holds both the cold data and every Layer 1 backup of it.** At 468 G the PBS
+> datastore is the single largest consumer of this disk — larger than the cold data it
+> protects. A single Netac failure loses both at once; the off-site Layer 2 is the only
+> mitigation. This is a deliberate trade-off, documented and quantified in
+> [`docs/BACKUP.md` §2.3](docs/BACKUP.md#23-accepted-constraints).
+>
+> Both M.2 slots are occupied — two free SATA ports are the only internal expansion path.
+> Sizes measured 2026-09-09.
 
 ---
 
