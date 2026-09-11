@@ -1,0 +1,62 @@
+namespace: productivity
+
+image:
+  repository: couchdb
+  tag: 3.5.2.1
+  pullPolicy: IfNotPresent
+
+replicaCount: 1
+
+strategy:
+  type: Recreate
+
+service:
+  port: 5984
+  targetPort: 5984
+
+ingress:
+  enabled: true
+  hosts:
+    - couchdb.enoal.fr
+
+envFrom:
+  - secretRef:
+      name: couchdb-secrets
+
+volumes:
+  data:
+    hostPath: /opt/k3s-data/couchdb/data
+    mountPath: /opt/couchdb/data
+  config:
+    hostPath: /opt/k3s-data/couchdb/etc
+    mountPath: /opt/couchdb/etc/local.d
+
+resources:
+  requests:
+    cpu: 10m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+# Authenticated like the healthcheck of the official LiveSync compose, so the
+# probe does not depend on /_up being exempt from require_valid_user.
+readinessProbe:
+  exec:
+    command:
+      - sh
+      - -c
+      - curl -sf -u "$COUCHDB_USER:$COUCHDB_PASSWORD" http://localhost:5984/_up
+  initialDelaySeconds: 10
+  periodSeconds: 10
+
+externalSecrets:
+  - name: couchdb-es
+    targetName: couchdb-secrets
+    data:
+      - secretKey: COUCHDB_USER
+        remoteRef:
+          key: COUCHDB_USER
+      - secretKey: COUCHDB_PASSWORD
+        remoteRef:
+          key: COUCHDB_PASSWORD
