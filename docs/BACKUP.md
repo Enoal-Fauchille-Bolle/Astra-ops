@@ -830,9 +830,32 @@ Then start both services again. The datastore itself is self-describing (§4.2).
 | Zerobyte job failures   | Zerobyte built-in notifications    | Discord webhook — ⚠️ **broken for long messages** (below) |
 | PBS backup job status   | PBS notifications                  | Email via Resend (configured 2026-09-09) |
 | Proxmox config copy     | Uptime Kuma push monitor (§4.2)    | Discord (`APS #monitoring`): `down` pushed on failure, or no push for 25 h |
-| Disk usage — Netac      | Dashdot (`dashdot.lan`)            | Visual monitoring      |
-| Disk usage — Pulsar sda | Dashdot + manual check             | Threshold: 85%         |
+| Disk usage — `vault`    | Beszel agent on Astra, drop-in below | Discord (`APS #monitoring`, Beszel webhook): above 75 % |
+| Disk usage — Pulsar sda | Beszel agent on Pulsar             | Discord (Beszel): above 85 % |
+| LXC 101 `adguard`       | Beszel agent in the container      | Discord (Beszel): disk or memory above 80 % |
+| AdGuard DNS answers     | Uptime Kuma DNS monitor **AdGuard DNS**: resolves `beszel.lan` through `192.168.1.202` | Discord (`APS #monitoring`) |
+| LXC 103 `pbs`           | Beszel agent in the container      | Discord (Beszel): disk above 80 %, memory above 80 % for 10 min |
 | Cloud storage usage     | MEGA web UI · B2 *Caps & Alerts*   | Manual quarterly check · B2 spending cap |
+
+> **Until 2026-09-11 no disk alert existed.** Dashdot only draws graphs: `vault` reached 79 %
+> and LXC 101 95 % without a single message. The Beszel alerts above replace it.
+
+> **Beszel keeps one disk alert per machine, and it fires on the fullest disk.** The agent on
+> Astra only reports `/` until told otherwise; the drop-in
+> [`infra/astra/beszel-agent.service.d/extra-filesystems.conf`](../infra/astra/beszel-agent.service.d/extra-filesystems.conf)
+> adds `/mnt/pve/vault`. With `/` at 14 % and `vault` at 62 %, the 75 % rule is in practice a
+> `vault` rule. The alert message names the machine, not the disk.
+
+> **`local-lvm` has no alert, on purpose.** A thin pool has no file system, so Beszel cannot
+> see it, and its `Data%` counts every block ever written, not what the guests use. Measured
+> 2026-09-11: 378G provisioned on a 794G pool, `Data` 20 %, `Meta` 0.93 %. The pool cannot
+> fill while provisioning stays below its size; add an alert before it goes above.
+
+> **The agents in LXC 101 and 103 log `lookup beszel.lan on 1.1.1.1:53: no such host`.** Not a
+> failure: both containers resolve through `1.1.1.1`, which does not know `beszel.lan`, so the
+> hub falls back to reaching the agent over SSH on port 45876. Left as is — AdGuard must not
+> depend on itself to resolve. Beszel's *Status* alert only proves the agent answers; the
+> Kuma DNS monitor proves AdGuard actually serves.
 
 > **⚠️ Zerobyte → Discord returns HTTP 400 whenever a message exceeds Discord's 2,000-character
 > limit.** The webhook itself works; the failure messages of 2026-09-09 were 9,741 and 13,379
@@ -955,10 +978,16 @@ For each tested restore:
 
 ### Monitoring
 
-- [ ] **Move the disk alert threshold from `sda` to `vault`.** The current rule watches Pulsar
-      `sda` at 85 %; `sda` sits at 55 % while `vault` — which holds every backup — reached
-      79 % unnoticed. Alert on `/mnt/pve/vault` at 75 %.
-- [ ] Alert on LXC 101 (`adguard`) — it hit 95 % unnoticed on 2026-09-09
+- [x] **Alert on `vault` at 75 %** — Beszel, 2026-09-11 (§10); tested by lowering the
+      threshold to 60 %, which fired at 61.6 %
+- [x] Alert on LXC 101 (`adguard`) — Beszel agent and Kuma DNS monitor, 2026-09-11 (§10)
+- [x] Alert on LXC 103 (`pbs`) — Beszel agent, 2026-09-11 (§10)
+- [ ] Fix the failed units in LXC 103. The container runs without `nesting=1` (LXC 101 has
+      it), so every unit that asks systemd for sandboxing dies with `226/NAMESPACE`:
+      `logrotate` (every night, since install), `man-db`, `systemd-logind`,
+      `systemd-networkd` and its socket. `zfs-mount` and `zfs-share` fail for the reason
+      `zfs-zed` did. The journal is not at risk: it holds at 797.5M, journald's default cap
+      of 10 % of the 7.8G root
 
 ### Long-term
 
