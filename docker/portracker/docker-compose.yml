@@ -13,7 +13,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
 
   portracker:
-    image: mostafawahied/portracker:1.3.10
+    image: mostafawahied/portracker:1.3.11
     container_name: portracker
     restart: unless-stopped
     pid: "host"
