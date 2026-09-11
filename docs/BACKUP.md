@@ -1,9 +1,10 @@
 # Backup Architecture — Astra Homelab
 
-> **Status:** Layer 1 operational. Layer 2 in service for every Tier 2 path on `/mnt/data`;
-> database dumps and Proxmox config backups still missing — see §12.
+> **Status:** Layer 1 operational. Layer 2 in service for every Tier 2 path on `/mnt/data`
+> and for the Proxmox configuration; database dumps still missing — see §12.
 > **Last updated:** 2026-09-11 (§5 rewritten from the live Zerobyte database; all Crafty
-> servers now off-site; `backup=0` on Pulsar's cold disk decided; §2, §3.2, §8.1 remeasured)
+> servers now off-site; `backup=0` applied on Pulsar's cold disk; nightly Proxmox config
+> copy in service, §4.2 and §9.4; §2, §3.2, §8.1 remeasured)
 > **Language:** English (technical reference)
 
 ---
@@ -38,6 +39,7 @@
    - 9.1 [Scenario A — Logical Corruption (service-level)](#91-scenario-a--logical-corruption-service-level)
    - 9.2 [Scenario B — Netac NVMe Failure](#92-scenario-b--netac-nvme-failure)
    - 9.3 [Scenario C — Total Loss of Astra](#93-scenario-c--total-loss-of-astra)
+   - 9.4 [Restoring the Proxmox configuration](#94-restoring-the-proxmox-configuration)
 10. [Monitoring & Alerts](#10-monitoring--alerts)
 11. [Restore Testing](#11-restore-testing)
 12. [Pending Tasks & Future Work](#12-pending-tasks--future-work)
@@ -81,7 +83,7 @@ graph TB
         subgraph SDA["sda 200G — OS disk → / (in PBS)"]
             OPT[/opt/k3s-data/ · /opt/docker-data/]
         end
-        subgraph SDB["sdb 500G — cold disk → /mnt/data (backup=0, decided)"]
+        subgraph SDB["sdb 500G — cold disk → /mnt/data (backup=0)"]
             MNT[/mnt/data/k3s-pvc/ · /mnt/data/backups/ · /mnt/data/media/]
             CRAFTY_VOL[/mnt/data/docker-volumes/crafty/]
         end
@@ -156,7 +158,7 @@ Pulsar (VM 100) sees two virtual disks:
 | Disk                                       | Proxmox | Device | Mount       | Size | Role                                   | In PBS |
 | ------------------------------------------ | ------- | ------ | ----------- | ---- | -------------------------------------- | ------ |
 | OS disk (`vm-100-disk-0` on `local-lvm`)   | `scsi0` | `sda`  | `/`         | 200G | OS, hot app data, K3s/Docker state     | ✅     |
-| Cold disk (`vm-100-disk-0.qcow2` on vault) | `scsi1` | `sdb`  | `/mnt/data` | 500G | Cold data: media, PVCs, Crafty volumes | ❌ `backup=0` — decided 2026-09-11, see §4.2 |
+| Cold disk (`vm-100-disk-0.qcow2` on vault) | `scsi1` | `sdb`  | `/mnt/data` | 500G | Cold data: media, PVCs, Crafty volumes | ❌ `backup=0` since 2026-09-11, see §4.2 |
 
 ```txt
 sda (200G) → /
@@ -223,7 +225,7 @@ Live databases and application runtime state. Backed up exclusively by PBS block
 Static personal files, cold PVC data, pre-generated database dumps, and other irreplaceable data that is safe to copy at the file level. This is the only data sent to cloud storage.
 
 **Tier 3 — Disposable (No cloud backup)**
-Bulk data that is either reconstructible (Minecraft servers, Kiwix ZIM archives) or acceptable to lose and re-download (movies). Tier 3 data on `sda` (Crafty server worlds, container images) is protected by PBS snapshots of the Pulsar VM. Tier 3 data on `sdb` (`/mnt/data`: movies, Crafty logs) has **no backup at all** once `backup=0` is applied — an accepted loss.
+Bulk data that is either reconstructible (Minecraft servers, Kiwix ZIM archives) or acceptable to lose and re-download (movies). Tier 3 data on `sda` (Crafty server worlds, container images) is protected by PBS snapshots of the Pulsar VM. Tier 3 data on `sdb` (`/mnt/data`: movies, Crafty logs) has **no backup at all** since `backup=0` was applied on 2026-09-11 — an accepted loss.
 
 ### 3.2 Complete Data Inventory
 
@@ -292,7 +294,7 @@ Datastore location: `/mnt/pve/vault/` (Netac NVMe, `nvme1n1`).
 
 | Guest     | ID  | Type | Included                  |
 | --------- | --- | ---- | ------------------------- |
-| Pulsar    | 100 | VM   | ✅ OS disk `scsi0` only — cold disk `scsi1` set to `backup=0` (decided 2026-09-11, **pending application**) |
+| Pulsar    | 100 | VM   | ✅ OS disk `scsi0` only — cold disk `scsi1` set to `backup=0` (applied 2026-09-11 11:21) |
 | AdGuard   | 101 | LXC  | ✅                        |
 | Wireguard | 102 | LXC  | ✅                        |
 | PBS       | 103 | LXC  | ❌ Excluded by design     |
@@ -312,8 +314,8 @@ days). What loses its only backup: movies (47G, re-downloadable) and Crafty logs
   through the retention policy (§4.3), up to ~6 months for the monthly ones.
 - **Restore caution:** the documentation does not say what happens to an excluded disk when a
   VM is restored over itself. Restore Pulsar to a **new VMID**, never over VM 100.
-- Apply in the UI (VM 100 → Hardware → `scsi1` → Edit → Advanced → uncheck *Backup*) and
-  verify with `qm config 100 | grep scsi1`, which must end in `backup=0`.
+- Applied in the UI on 2026-09-11 at 11:21 (VM 100 → Hardware → `scsi1` → Edit → Advanced →
+  uncheck *Backup*). Verify with `qm config 100 | grep scsi1`, which must end in `backup=0`.
 
 PBS (LXC 103) is intentionally excluded — but **not** for the reason previously given here.
 
@@ -343,8 +345,50 @@ about **60 KB** in `/etc/proxmox-backup/`:
 | `user.cfg`, `acl.cfg`, `shadow.json` | accounts, permissions, password hashes |
 | `authkey.key`, `csrf.key`, `proxy.pem` | API tokens and TLS certificate |
 
-This is what the unchecked §12 task — rsyncing `/etc/pve/` and `/etc/proxmox-backup/` to
-`/mnt/data/backups/proxmox-configs/` — is for. It remains **to do**.
+#### Proxmox configuration copy — in service since 2026-09-11
+
+A nightly job on Astra copies both configurations to Pulsar, where Zerobyte job 13
+(**Backups**) ships them to Backblaze at 02:00 — no new Zerobyte volume was needed.
+
+| Piece | Where | What it does |
+| --- | --- | --- |
+| Script | `infra/astra/proxmox-config-backup.sh` → `/usr/local/sbin/proxmox-config-backup` on Astra | stages the copy in `/run` (tmpfs), then rsyncs it to Pulsar with `--delete` |
+| Timer | `infra/astra/proxmox-config-backup.{service,timer}` | daily at **01:30**, `Persistent=true` (catches up at boot) |
+| Destination | `/mnt/data/backups/proxmox-configs/` on Pulsar | owned by `astra-configs`, directories `700`, files `600` |
+| Alerting | Uptime Kuma push monitor **Proxmox Config Backup** | `up` on success, `down` on any failure, alert on Discord if no push for 25 h (§10) |
+
+What the copy holds (~70 KB):
+
+| Folder | Content | Used for |
+| --- | --- | --- |
+| `pve/` | `/etc/pve` as readable files (runtime dotfiles and `priv/lock/` skipped) | reading or re-creating a single setting |
+| `pmxcfs/config.db` | the pmxcfs database, copied with `sqlite3 .backup` and integrity-checked | the official full recovery (§9.4) |
+| `pbs/proxmox-backup/` | `/etc/proxmox-backup` from LXC 103 (lock files skipped) | rebuilding PBS (§9.4) |
+| `host/` | `/etc/hostname`, `/etc/hosts`, `/etc/network/interfaces`, `/etc/fstab`, `mnt-pve-vault.mount` | identity, network and `vault` mount of Astra |
+| `MANIFEST.txt` | date, `pveversion -v`, `proxmox-backup-manager versions` | reinstalling the same versions first |
+
+**Transport.** Astra pushes; Pulsar never gets any access to Astra. Root on Astra uses a
+dedicated key (`/root/.ssh/proxmox-config-backup_ed25519`) and a pinned host key
+(`/root/.ssh/proxmox-config-backup_known_hosts`). On Pulsar, the system account
+`astra-configs` (shell `dash`, root-owned home and `authorized_keys`) accepts that key only as:
+
+```
+restrict,from="192.168.1.200",command="rrsync -wo /mnt/data/backups/proxmox-configs" ssh-ed25519 …
+```
+
+Verified on 2026-09-11: an interactive shell, an arbitrary command, reading back, a path
+outside the directory (`..`) and both port-forwarding directions are refused; writing works.
+This does not protect Pulsar from a compromised Astra (the hypervisor owns the VM anyway); it
+confines a script mistake or a leaked key to one directory.
+
+**Secrets.** The copy contains private keys, password hashes, the PBS storage password and
+the Resend API key. They are protected by file permissions on Pulsar and by restic encryption
+off-site — no second encryption layer, since Zerobyte on Pulsar already holds the keys to
+every repository. The push URL lives in `/etc/default/proxmox-config-backup` (root, `600`),
+outside this repository.
+
+**Failure behaviour.** Every step runs under `set -e` and the transfer comes last: if one step
+fails (integrity check, LXC 103 stopped…), nothing is sent and Pulsar keeps the last good copy.
 
 ### 4.3 Retention Policy
 
@@ -496,11 +540,10 @@ Every active job keeps **7 daily, 4 weekly, 3 monthly** snapshots and was in `su
 | Job | Source | Blocker |
 | --- | ------ | ------- |
 | Database dumps | `/mnt/data/backups/dumps/` | the dump script (§6) does not exist |
-| Proxmox configs | `/mnt/data/backups/proxmox-configs/` | needs an rsync + timer on Astra; `/etc/pve` read returned `Permission denied` under `sudo` on 2026-09-09 |
 
-> `/etc/pve/` lives on the **Astra host** and `/etc/proxmox-backup/` inside **LXC 103** —
-> neither is visible from Pulsar. The planned route is a cron job on Astra that rsyncs them to `/mnt/data/backups/proxmox-configs/`,
-> which the existing **Backups** job (13) would then pick up with no new volume.
+> The Proxmox configuration needs no job of its own: Astra copies it nightly into
+> `/mnt/data/backups/proxmox-configs/`, which the existing **Backups** job (13) already covers
+> (§4.2).
 
 ### 5.5 RTO / RPO
 
@@ -614,7 +657,7 @@ Pulsar /opt/ (sda — hot)          103G used / 195G (55 %)   [2026-09-09]
   /swap.img 4.1G · /usr 3.6G · /var/log 2.7G
 
 Pulsar /mnt/data/ (sdb — cold)     79G used / 492G (17 %)   [2026-09-11]
-                                   not in PBS once backup=0 is applied (§4.2)
+                                   not in PBS since backup=0, 2026-09-11 (§4.2)
 ├── media/
 │   ├── movies/            47G   (Tier 3 — 19 re-downloadable files, no backup)
 │   └── photos/           946M   (Tier 2) → Backblaze since 2026-09-10
@@ -622,8 +665,9 @@ Pulsar /mnt/data/ (sdb — cold)     79G used / 492G (17 %)   [2026-09-11]
 │   ├── backups/           26G   (Tier 2) → Backblaze since 2026-09-11, all 3 servers
 │   └── logs/             432M   (Tier 3, no backup)
 ├── backups/              102M   (Tier 2) → Backblaze since 2026-09-10
-│   └── OnePlus-10T/      102M   phone backup (irreplaceable) — the 8.7G Minecraft
-│                                archive and a password export were deleted 2026-09-10
+│   ├── OnePlus-10T/      102M   phone backup (irreplaceable) — the 8.7G Minecraft
+│   │                            archive and a password export were deleted 2026-09-10
+│   └── proxmox-configs/   70K   Astra + PBS configuration, refreshed nightly (§4.2)
 └── k3s-pvc/
     ├── filebrowser/      4.7G   (Tier 2) → Mega C
     ├── crafty/            92K
@@ -660,7 +704,7 @@ cp -r /mnt/restore-point/mnt/data/k3s-pvc/immich/ /mnt/data/k3s-pvc/immich-resto
 1. Restart the affected service.
 2. Validate service health.
 
-**Files under `/mnt/data`** are no longer in PBS once `backup=0` is applied: restore them from
+**Files under `/mnt/data`** are no longer in PBS since `backup=0` (2026-09-11): restore them from
 Zerobyte (§5.4), after adding a writable restore target (§5.5).
 
 **Estimated time:** 15 min – 1 hour depending on restore scope.
@@ -686,6 +730,7 @@ Zerobyte (§5.4), after adding a writable restore target (§5.5).
 1. Replace Netac NVMe with a new drive.
 2. In Proxmox, create a new storage pool on the new drive (e.g., `vault`).
 3. Create a new PBS LXC (ID 103) and point it to the new datastore — no historical backups, but PBS is operational again.
+   Restore its configuration (users, retention, verify job, notifications) from the Proxmox config copy (§9.4).
 4. Add the new drive as a second disk to Pulsar (Proxmox UI → VM 100 → Hardware → Add → Hard Disk).
 5. Inside Pulsar, format and mount the new disk at `/mnt/data`.
 6. Restore Tier 2 data via Zerobyte:
@@ -715,8 +760,11 @@ Zerobyte (§5.4), after adding a writable restore target (§5.5).
 **Recovery steps:**
 
 1. Provision a new server (or reinstall on repaired hardware).
-2. Install Proxmox VE.
-3. Recreate the VM/LXC structure (refer to `astra-ops` README and this document).
+2. Install Proxmox VE — the version recorded in the config copy's `MANIFEST.txt`.
+3. Recreate the VM/LXC structure from the Proxmox config copy (§9.4). **Catch:** that copy
+   sits in Backblaze, and opening it takes the B2 key and Zerobyte's restic password — both
+   live only on Pulsar today. Without them off-Astra (§12, Phase 3), fall back to the
+   `astra-ops` README and this document.
 4. Create Pulsar VM (Ubuntu Server), install K3s and Docker.
 5. Install Zerobyte (Docker Compose in `docker/zerobyte/`).
 6. Configure rclone remotes (`mega-a`, `mega-c`, `mega-d`) on the new Pulsar, and re-create
@@ -742,12 +790,46 @@ Zerobyte (§5.4), after adding a writable restore target (§5.5).
 
 ---
 
+### 9.4 Restoring the Proxmox configuration
+
+**Where to get it:** `/mnt/data/backups/proxmox-configs/` on Pulsar if it survived, otherwise
+Zerobyte job 13 (**Backups**, repository **Backblaze**) — pick a snapshot from before the
+incident, since the nightly copy mirrors the current state with `--delete`.
+
+**Proxmox VE — full recovery** (`pmxcfs` documentation, section *Recovery*), on a fresh
+install with nothing running:
+
+1. Install the Proxmox VE version listed in `MANIFEST.txt`.
+2. `systemctl stop pve-cluster`
+3. Copy `pmxcfs/config.db` to `/var/lib/pve-cluster/config.db` and set it to `0600`, owned by root.
+4. Adapt `/etc/hostname` and `/etc/hosts` from `host/`, and `/etc/network/interfaces` if the
+   hardware (NIC names) is the same.
+5. Reboot, then check storage, VMs and LXCs — the disks themselves come from PBS or Layer 2.
+
+For a single setting, read the matching file under `pve/` instead.
+
+**Proxmox Backup Server** — in a fresh LXC with the same PBS version, stop
+`proxmox-backup-proxy` and `proxmox-backup`, copy `pbs/proxmox-backup/*` into
+`/etc/proxmox-backup/`, and restore the original ownership, which the copy does not keep
+(every file arrives as `600`):
+
+| Files | Owner | Mode |
+| --- | --- | --- |
+| `authkey.key`, `notifications-priv.cfg`, `shadow.json` | `root:root` | `600` |
+| every other file (`*.cfg`, `authkey.pub`, `csrf.key`, `proxy.key`, `proxy.pem`) | `root:backup` | `640` |
+| the directory `/etc/proxmox-backup` | `backup:backup` | `700` |
+
+Then start both services again. The datastore itself is self-describing (§4.2).
+
+---
+
 ## 10. Monitoring & Alerts
 
 | Component               | Monitoring Method                  | Alert Channel          |
 | ----------------------- | ---------------------------------- | ---------------------- |
 | Zerobyte job failures   | Zerobyte built-in notifications    | Discord webhook — ⚠️ **broken for long messages** (below) |
 | PBS backup job status   | PBS notifications                  | Email via Resend (configured 2026-09-09) |
+| Proxmox config copy     | Uptime Kuma push monitor (§4.2)    | Discord (`APS #monitoring`): `down` pushed on failure, or no push for 25 h |
 | Disk usage — Netac      | Dashdot (`dashdot.lan`)            | Visual monitoring      |
 | Disk usage — Pulsar sda | Dashdot + manual check             | Threshold: 85%         |
 | Cloud storage usage     | MEGA web UI · B2 *Caps & Alerts*   | Manual quarterly check · B2 spending cap |
@@ -811,11 +893,13 @@ For each tested restore:
 - [ ] Decide the fate of `Mega D` (job disabled, 7 dormant Nous Deux snapshots)
 - [ ] Set up ntfy webhook in Zerobyte settings
 - [ ] Create `/mnt/data/backups/dumps/` directory
-- [ ] Create `/mnt/data/backups/proxmox-configs/` directory
-- [ ] Write rsync + systemd timer on Astra to sync `/etc/pve/` and `/etc/proxmox-backup/`
-      to `/mnt/data/backups/proxmox-configs/`, then declare it as a Zerobyte volume.
-      **Blocker to investigate first:** `/etc/pve` is a FUSE mount (`pmxcfs`), and reading
-      `/etc/pve/storage.cfg` returned `Permission denied` even under `sudo` on 2026-09-09.
+- [x] **Back up the Proxmox configuration** (2026-09-11) — nightly copy of `/etc/pve`,
+      `config.db`, `/etc/proxmox-backup` and host files to `/mnt/data/backups/proxmox-configs/`,
+      picked up by job 13; Uptime Kuma push monitor (§4.2). The `Permission denied` of
+      2026-09-09 did not reproduce: the files are `root:www-data 640`, so any read without
+      `sudo` fails — most likely the second half of a `sudo a; b` command.
+- [ ] Put the B2 key and Zerobyte's restic password somewhere off Astra (Phase 3) — without
+      them no Layer 2 copy, the Proxmox configuration included, can be opened after a total loss
 
 ### Storage — reclaimed 2026-09-09
 
@@ -834,10 +918,11 @@ For each tested restore:
 
 ### Storage — still open
 
-- [ ] **Apply `backup=0` on `scsi1`** — **decided 2026-09-11** (§4.2); verify with
-      `qm config 100 | grep scsi1`
-- [ ] Delete the three surplus Nous Deux archives in Crafty (5 kept, limit now 2; nothing
-      prunes them while the schedule is paused) — byte-identical to the two that remain
+- [x] **Apply `backup=0` on `scsi1`** — applied 2026-09-11 at 11:21 (§4.2). Still to check:
+      the first VM 100 snapshot after it (2026-09-12 03:00) must hold `drive-scsi0` only
+- [x] Delete the three surplus Nous Deux archives in Crafty (2026-09-11) — 2 remain
+- [ ] Restart PBS onto the installed version — `proxmox-backup-server 3.4.9-2` is installed
+      but `3.4.8` is still running (seen 2026-09-08 and again 2026-09-11)
 - [ ] Crafty backups use `compress=1` and `shutdown=0`; Crafty's documentation recommends
       stopping the server during backups and warns compression can damage chunk data
 - [ ] Rotate the passwords from the deleted Google export — it survives in PBS snapshots of

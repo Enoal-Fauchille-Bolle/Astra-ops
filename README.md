@@ -60,7 +60,7 @@ Every piece of this stack was chosen because it forced me to understand somethin
 - **SysAdmin / Linux** — Proxmox VE, VM and LXC provisioning, NVMe storage layout, and keeping a production-like system running continuously on a mini PC.
 - **DevOps** — GitOps with ArgoCD, Renovate for automated dependency updates, and self-hosted GitHub Actions runners on K3s with ARC.
 - **Email infrastructure** — SPF, DKIM, DMARC, routing inbound mail through Cloudflare Email Routing and outbound through an SMTP relay, without ever touching a mail server.
-- **Backup strategy** — designing a 3-2-1 architecture with Proxmox Backup Server for local block-level snapshots and Zerobyte + Rclone + MEGA for offsite cloud backups, including data classification tiers and RTO/RPO planning.
+- **Backup strategy** — designing a 3-2-1 architecture with Proxmox Backup Server for local block-level snapshots and Zerobyte + Rclone + Backblaze B2 and MEGA for offsite cloud backups, including data classification tiers and RTO/RPO planning.
 - **Secrets management** — External Secrets Operator (ESO) syncing secrets from Infisical into Kubernetes, keeping credentials entirely out of Git.
 
 > [!NOTE]
@@ -119,18 +119,19 @@ graph LR
         OS[Proxmox OS + all guest system disks]
         HOT["/opt/k3s-data/ · /opt/docker-data/ — hot data"]
     end
-    subgraph NVMe2["NVMe 2 — Netac 1 To (vault) — 61% used"]
-        COLD["/mnt/data/ — media, PVCs, Crafty volumes — 88G"]
-        PBS["PBS datastore — 468G · backups of every guest"]
+    subgraph NVMe2["NVMe 2 — Netac 1 To (vault) — 63% used"]
+        COLD["/mnt/data/ — media, PVCs, Crafty volumes — 79G · not in PBS"]
+        PBS["PBS datastore — 494G · guest backups"]
         ISO["ISOs — 4.6G"]
     end
 ```
 
-> **The Netac holds both the cold data and every Layer 1 backup of it.** At 468 G the PBS
-> datastore is the single largest consumer of this disk — larger than the cold data it
-> protects. A single Netac failure loses both at once; the off-site Layer 2 is the only
-> mitigation. This is a deliberate trade-off, documented and quantified in
-> [`docs/BACKUP.md` §2.3](docs/BACKUP.md#23-accepted-constraints).
+> **The Netac holds the PBS datastore — every Layer 1 backup — next to the cold data.** At
+> 494 G the datastore is the single largest consumer of this disk. Since 2026-09-11 the cold
+> disk itself is excluded from PBS (`backup=0`): a copy on the same drive never survived its
+> failure. Its irreplaceable content goes off-site through Layer 2 instead. A single Netac
+> failure still loses every PBS snapshot; this is a deliberate trade-off, documented in
+> [`docs/BACKUP.md` §2.3](docs/BACKUP.md#23-accepted-constraints) and §4.2.
 >
 > Both M.2 slots are occupied — two free SATA ports are the only internal expansion path.
 > Sizes measured 2026-09-09.
@@ -174,6 +175,8 @@ astra-ops/
 │   ├── npm/                 # Nginx Proxy Manager
 │   └── portainer/           # Container management UI
 ├── infra/
+│   ├── astra/                    # Host-level files for the Proxmox node (installed by hand)
+│   │   └── proxmox-config-backup.*   # Nightly Proxmox + PBS config copy (see docs/BACKUP.md §4.2)
 │   ├── argocd/
 │   │   ├── argocd-ingress.yaml   # ArgoCD Ingress
 │   │   └── root-app.yaml         # App-of-Apps bootstrap (apply once)
