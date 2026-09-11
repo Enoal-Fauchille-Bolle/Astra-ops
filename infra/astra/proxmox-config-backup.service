@@ -1,0 +1,13 @@
+[Unit]
+Description=Copy the Proxmox VE and PBS configuration to Pulsar for off-site backup
+Documentation=https://github.com/Enoal-Fauchille-Bolle/Astra-ops/blob/main/docs/BACKUP.md
+Wants=network-online.target
+After=network-online.target pve-cluster.service
+
+[Service]
+Type=oneshot
+# PUSH_URL=<Uptime Kuma push URL>, root-only, never committed. Optional: without it the
+# script runs but reports nothing, and the push monitor raises the alert.
+EnvironmentFile=-/etc/default/proxmox-config-backup
+ExecStart=/usr/local/sbin/proxmox-config-backup
+Nice=10
