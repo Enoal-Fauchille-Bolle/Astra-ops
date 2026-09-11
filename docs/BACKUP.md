@@ -1,7 +1,9 @@
 # Backup Architecture — Astra Homelab
 
-> **Status:** Layer 1 operational. Layer 2 partially deployed — see §12.
-> **Last updated:** 2026-09-09 (sizes in §3.2 and §8.1 remeasured; §2.3, §4.2 and §12 revised)
+> **Status:** Layer 1 operational. Layer 2 in service for every Tier 2 path on `/mnt/data`;
+> database dumps and Proxmox config backups still missing — see §12.
+> **Last updated:** 2026-09-11 (§5 rewritten from the live Zerobyte database; all Crafty
+> servers now off-site; `backup=0` on Pulsar's cold disk decided; §2, §3.2, §8.1 remeasured)
 > **Language:** English (technical reference)
 
 ---
@@ -48,9 +50,12 @@ The Astra homelab backup system follows a **3-2-1 strategy** (3 copies, 2 differ
 
 | Rule          | Implementation                                                |
 | ------------- | ------------------------------------------------------------- |
-| **3 copies**  | Production + Layer 1 (PBS, local NVMe) + Layer 2 (MEGA cloud) |
-| **2 media**   | NVMe storage + cloud object storage (MEGA)                    |
-| **1 offsite** | MEGA cloud remotes (off-premises)                             |
+| **3 copies**  | Production + Layer 1 (PBS, local NVMe) + Layer 2 (cloud)      |
+| **2 media**   | NVMe storage + cloud storage (Backblaze B2 and MEGA)          |
+| **1 offsite** | Backblaze B2 bucket + MEGA accounts (off-premises)            |
+
+> Not every path gets all three copies. Since 2026-09-11 Pulsar's cold disk (`/mnt/data`) is
+> excluded from PBS by decision (§4.2): its Tier 2 content has production + cloud only.
 
 ### Architecture Diagram
 
@@ -68,29 +73,30 @@ graph TB
 
         subgraph VAULT["Vault — nvme1n1 (Netac 1To)"]
             VAULT_IMAGES[vm-100-disk-0.qcow2 500G — Pulsar cold disk]
-            PBS_DS[PBS Datastore — 468G · 67% of vault]
+            PBS_DS[PBS Datastore — 494G · 53% of vault]
         end
     end
 
     subgraph PULSAR["Pulsar VM (192.168.1.201)"]
-        subgraph SDA["sda 100G — OS disk → /"]
+        subgraph SDA["sda 200G — OS disk → / (in PBS)"]
             OPT[/opt/k3s-data/ · /opt/docker-data/]
         end
-        subgraph SDB["sdb 500G — cold disk → /mnt/data"]
+        subgraph SDB["sdb 500G — cold disk → /mnt/data (backup=0, decided)"]
             MNT[/mnt/data/k3s-pvc/ · /mnt/data/backups/ · /mnt/data/media/]
             CRAFTY_VOL[/mnt/data/docker-volumes/crafty/]
         end
     end
 
     subgraph CLOUD["Cloud — Layer 2"]
-        MEGA_A[MEGA Account A — Tier 1 Remote A]
-        MEGA_B[MEGA Account B — Tier 1 Remote B]
-        MEGA_C[MEGA Account C — Tier 2]
+        B2[Backblaze B2 — Immich, Crafty backups, backups, photos, Portainer]
+        MEGA_A[MEGA Account A — small configs]
+        MEGA_C[MEGA Account C — Filebrowser]
+        MEGA_D[MEGA Account D — idle since 2026-09-11]
     end
 
     PBS_LXC[LXC 103 — PBS] -->|block-level snapshots| PBS_DS
+    PULSAR -->|file-level · Zerobyte S3| B2
     PULSAR -->|file-level · Zerobyte + Rclone| MEGA_A
-    PULSAR -->|file-level · Zerobyte + Rclone| MEGA_B
     PULSAR -->|file-level · Zerobyte + Rclone| MEGA_C
 ```
 
@@ -123,10 +129,16 @@ nvme0n1 (931G)
     └── vm-103-disk-0     8G  → PBS
 
 nvme1n1 (938G — "vault")
-├── vm-100-disk-0.qcow2  501G declared / 88G allocated  → Pulsar cold disk (= sdb)
+├── vm-100-disk-0.qcow2  501G declared / 79G allocated  → Pulsar cold disk (= sdb)
 ├── template/            4.6G  → ISOs
-└── pbs-datastore/       468G  → PBS backup chunks — largest consumer of this disk
+└── pbs-datastore/       494G  → PBS backup chunks — largest consumer of this disk
 ```
+
+> **Remeasured 2026-09-11.** `vault`: **578G used (63 %)**, 351G free. A second `fstrim -av`
+> on Pulsar, after `/mnt/data/backups` was triaged, shrank the `.qcow2` from 106 571 083 776 to
+> **84 823 097 344 bytes** (−20.25 GiB). The datastore grew from 468G to 494G in two days:
+> Crafty archives on `sdb` were still being backed up by PBS (see §4.2). `pve-data` is at
+> **19.96 %**.
 
 > **Remeasured 2026-09-09.** `vault`: **560G used / 938G (61 %)**, 369G free. The
 > `vm-100-state-*.raw` entry listed here previously no longer exists. `pve-data` is at
@@ -141,10 +153,10 @@ nvme1n1 (938G — "vault")
 
 Pulsar (VM 100) sees two virtual disks:
 
-| Disk                                       | Device | Mount       | Size | Role                                   |
-| ------------------------------------------ | ------ | ----------- | ---- | -------------------------------------- |
-| OS disk (`vm-100-disk-0` on `local-lvm`)   | `sda`  | `/`         | 200G | OS, hot app data, K3s/Docker state     |
-| Cold disk (`vm-100-disk-0.qcow2` on vault) | `sdb`  | `/mnt/data` | 500G | Cold data: media, PVCs, Crafty volumes |
+| Disk                                       | Proxmox | Device | Mount       | Size | Role                                   | In PBS |
+| ------------------------------------------ | ------- | ------ | ----------- | ---- | -------------------------------------- | ------ |
+| OS disk (`vm-100-disk-0` on `local-lvm`)   | `scsi0` | `sda`  | `/`         | 200G | OS, hot app data, K3s/Docker state     | ✅     |
+| Cold disk (`vm-100-disk-0.qcow2` on vault) | `scsi1` | `sdb`  | `/mnt/data` | 500G | Cold data: media, PVCs, Crafty volumes | ❌ `backup=0` — decided 2026-09-11, see §4.2 |
 
 ```txt
 sda (200G) → /
@@ -166,6 +178,8 @@ sdb (500G) → /mnt/data
 > Of `sdb`'s 87G, roughly **73G is reconstructible or derived** (47G of re-downloadable
 > movies, 26G of Crafty archives that are themselves backups). Only about **13G is
 > irreplaceable**.
+>
+> **Remeasured 2026-09-11:** `sda` **107G / 195G (57 %)** · `sdb` **79G / 492G (17 %)**.
 
 ### 2.3 Accepted Constraints
 
@@ -178,6 +192,11 @@ This is a known, accepted constraint given the single-server hardware budget. La
 > without a corresponding volume declaration, so they are **never** backed up off-site:
 > `/mnt/data/backups`, `/mnt/data/media/photos` and `/opt/docker-data/portainer`. Until
 > those are declared, the argument that justifies accepting the co-location does not hold.
+>
+> **Resolved 2026-09-11.** The three volumes were declared on 2026-09-10 and back up nightly to
+> Backblaze. The Crafty backup job, found to cover only one of the three servers, now covers
+> all three (§5.4). Every Tier 2 path on the Netac therefore has an off-site copy, which is
+> what made it acceptable to exclude `sdb` from PBS (§4.2).
 >
 > **Also revised 2026-09-09:** hardware expansion is more constrained than assumed. Both M.2
 > slots are populated (`lspci` shows two NVMe controllers, both occupied); only **two unused
@@ -204,7 +223,7 @@ Live databases and application runtime state. Backed up exclusively by PBS block
 Static personal files, cold PVC data, pre-generated database dumps, and other irreplaceable data that is safe to copy at the file level. This is the only data sent to cloud storage.
 
 **Tier 3 — Disposable (No cloud backup)**
-Bulk data that is either reconstructible (Minecraft servers, Kiwix ZIM archives) or acceptable to lose and re-download (movies). Protected only by PBS snapshots of the Pulsar VM (which includes the `/mnt/data` mount).
+Bulk data that is either reconstructible (Minecraft servers, Kiwix ZIM archives) or acceptable to lose and re-download (movies). Tier 3 data on `sda` (Crafty server worlds, container images) is protected by PBS snapshots of the Pulsar VM. Tier 3 data on `sdb` (`/mnt/data`: movies, Crafty logs) has **no backup at all** once `backup=0` is applied — an accepted loss.
 
 ### 3.2 Complete Data Inventory
 
@@ -223,38 +242,39 @@ Bulk data that is either reconstructible (Minecraft servers, Kiwix ZIM archives)
 | **Uptimekuma** | `/opt/k3s-data/uptimekuma/` | 231M | 1 | dump only | SQLite | May 2026 |
 | **Crowdsec** | `/opt/docker-data/crowdsec/` | 92M | 1 | dump only | SQLite | May 2026 |
 | **SFTPgo** | `/opt/k3s-data/sftpgo/` | 380K | 1 | dump only | SQLite | May 2026 |
-| **Docker Registry** | `/opt/k3s-data/docker-registry/` | 57M | 1 | ✅ files | — | May 2026 |
+| **Docker Registry** | `/opt/k3s-data/docker-registry/` | 57M | 1 | ✅ Mega A | — | 2026-09-11 |
 | **NPM** | `/opt/docker-data/npm/` | 20M | 1 | dump only | SQLite | May 2026 |
-| **Portainer** | `/opt/docker-data/portainer/` | **83M** | 1 | ⚠️ **mounted, never declared** | BoltDB | 2026-09-09 |
+| **Portainer** | `/opt/docker-data/portainer/` | **83M** | 1 | ✅ Backblaze B2 (since 2026-09-10) | BoltDB | 2026-09-11 |
 | **Filebrowser Quantum** | `/opt/k3s-data/filebrowser-quantum/` | 896K | 1 | dump only | SQLite | May 2026 |
 | **Ntfy** | `/opt/k3s-data/ntfy/` | 160K | 1 | dump only | SQLite | May 2026 |
 | `/etc/pve/` | Astra host | ~5M | 1 | ❌ not yet | — | May 2026 |
 | `/etc/proxmox-backup/` | LXC 103 | **60K** | 1 | ❌ not yet | — | 2026-09-09 |
 | **Immich photos** | `/opt/k3s-data/immich/library/` | **31G** | 2 | ✅ Backblaze B2 | — | 2026-09-09 |
-| **Filebrowser files** | `/mnt/data/k3s-pvc/filebrowser/` | **4.7G** | 2 | ✅ files | — | 2026-09-09 |
-| **Homer config** | `/opt/k3s-data/homer/` | 5.3M | 2 | ✅ files | — | May 2026 |
-| **Criteri-fresque** | `/opt/k3s-data/criteri-fresque/` | 38M | 2 | ✅ files | — | May 2026 |
-| **Personal backups** | `/mnt/data/backups/` | **8.8G** | 2 | ⚠️ **mounted, never declared** | — | 2026-09-09 |
-| **Photos** | `/mnt/data/media/photos/` | **946M** | 2 | ⚠️ **mounted, never declared** | — | 2026-09-09 |
+| **Filebrowser files** | `/mnt/data/k3s-pvc/filebrowser/` | **4.7G** | 2 | ✅ Mega C | — | 2026-09-11 |
+| **Homer config** | `/opt/k3s-data/homer/` | 5.3M | 2 | ✅ Mega A | — | May 2026 |
+| **Criteri-fresque** | `/opt/k3s-data/criteri-fresque/` | 38M | 2 | ✅ Mega A | — | May 2026 |
+| **Personal backups** | `/mnt/data/backups/` | **102M** — `OnePlus-10T/` only | 2 | ✅ Backblaze B2 (since 2026-09-10) | — | 2026-09-11 |
+| **Photos** | `/mnt/data/media/photos/` | **946M** | 2 | ✅ Backblaze B2 (since 2026-09-10) | — | 2026-09-11 |
 | **DB dumps** | `/mnt/data/backups/dumps/` | — | 2 | ❌ directory does not exist | — | 2026-09-09 |
 | **Secrets** | `~/astra-secrets/` (workstation) | ~1M | 2 | ❌ not yet | — | May 2026 |
-| **Crafty backups** | `/mnt/data/docker-volumes/crafty/backups/` | **26G** | 2 | ✅ files | — | 2026-09-09 |
-| **Crafty config** | `/opt/docker-data/crafty/config/` | **169M** | 2 | ✅ files | — | 2026-09-09 |
+| **Crafty backups** | `/mnt/data/docker-volumes/crafty/backups/` | **26G** | 2 | ✅ Backblaze B2 — all 3 servers (since 2026-09-11) | — | 2026-09-11 |
+| **Crafty config** | `/opt/docker-data/crafty/config/` | **169M** | 2 | ✅ Mega A | — | 2026-09-09 |
 | **Crafty servers** | `/opt/docker-data/crafty/servers/` | **17G** | ❌ 3 | — | — | 2026-09-09 |
 | **Crafty logs** | `/mnt/data/docker-volumes/crafty/logs/` | **430M** | ❌ 3 | — | — | 2026-09-09 |
 | **Portracker** | `/opt/docker-data/portracker/` | 68K | ❌ 3 | — | — | May 2026 |
 | **Kiwix ZIM** | `/mnt/data/k3s-pvc/kiwix/` | **empty** — 136G deleted 2026-09-09 | ❌ 3 | — | — | 2026-09-09 |
 | **Movies** | `/mnt/data/media/movies/` | **47G** (19 files) | ❌ 3 | — | — | 2026-09-09 |
 
-> **⚠️ The three rows marked "mounted, never declared"** are bind-mounted read-only into the
-> Zerobyte container by `docker/zerobyte/docker-compose.yml`, but no matching *volume* exists
-> in Zerobyte, so no job ever backs them up. Their only protection today is PBS — i.e. the
-> Netac. Note that most of the 8.8G under `/mnt/data/backups/` is a single Minecraft server
-> archive, likely redundant with the Crafty backups; triage before declaring it.
+> **Resolved 2026-09-10 — the three "mounted, never declared" paths.** Portainer, personal
+> backups and photos were bind-mounted into Zerobyte but had no matching *volume*, so no job
+> ever backed them up. `/mnt/data/backups/` was triaged first (8.8G → 102M: a redundant
+> Minecraft archive and a plaintext password export were deleted), then all three were
+> declared. A mount makes a path visible to Zerobyte; only a *schedule* backs it up.
 >
-> **Growth driver, measured 2026-09-09:** Crafty produces **28.6 GiB/week** of new `.zip`
-> archives across three servers, one of them daily. ZIP streams do not deduplicate, so PBS
-> stores each archive whole, every night. Immich by comparison adds 0.86 GiB/week.
+> **Growth driver, measured 2026-09-09, revised 2026-09-11:** Crafty produced **28.6 GiB/week**
+> of new `.zip` archives. By volume the largest producer was **Survie Gay** (~2.9 GiB/day),
+> not the daily Roots SMP (~1.5 GiB/day). Survie Gay and Nous Deux are no longer played; their
+> Crafty backup schedules were paused on 2026-09-11, leaving only Roots SMP's daily archive.
 
 ---
 
@@ -272,10 +292,28 @@ Datastore location: `/mnt/pve/vault/` (Netac NVMe, `nvme1n1`).
 
 | Guest     | ID  | Type | Included                  |
 | --------- | --- | ---- | ------------------------- |
-| Pulsar    | 100 | VM   | ✅ Both disks (OS + cold) |
+| Pulsar    | 100 | VM   | ✅ OS disk `scsi0` only — cold disk `scsi1` set to `backup=0` (decided 2026-09-11, **pending application**) |
 | AdGuard   | 101 | LXC  | ✅                        |
 | Wireguard | 102 | LXC  | ✅                        |
 | PBS       | 103 | LXC  | ❌ Excluded by design     |
+
+**Why Pulsar's cold disk is excluded (decided 2026-09-11).** `scsi1` is a `.qcow2` file on the
+Netac, and PBS wrote its backup to a datastore on the same Netac. That copy never protected
+against the drive failing — only against accidental deletion, which Zerobyte already covers
+for every Tier 2 path on `/mnt/data` (§3.2). Meanwhile each new Crafty `.zip` was stored twice
+on the drive: once in the `.qcow2`, once as fresh PBS chunks (the datastore grew 26G in two
+days). What loses its only backup: movies (47G, re-downloadable) and Crafty logs.
+
+- VM backups cannot exclude directories. `vzdump`'s `exclude-path` applies to containers
+  only; for a VM the unit of exclusion is a whole disk (`backup=<1|0>` on `scsi[n]`).
+  A dedicated third virtual disk for Crafty archives was considered and rejected as too
+  much work for what it would keep.
+- Existing snapshots that include `scsi1` are **not** removed immediately; they age out
+  through the retention policy (§4.3), up to ~6 months for the monthly ones.
+- **Restore caution:** the documentation does not say what happens to an excluded disk when a
+  VM is restored over itself. Restore Pulsar to a **new VMID**, never over VM 100.
+- Apply in the UI (VM 100 → Hardware → `scsi1` → Edit → Advanced → uncheck *Backup*) and
+  verify with `qm config 100 | grep scsi1`, which must end in `backup=0`.
 
 PBS (LXC 103) is intentionally excluded — but **not** for the reason previously given here.
 
@@ -323,9 +361,14 @@ All jobs run nightly during low-activity periods:
 
 | Time         | Job                | Description                                                        |
 | ------------ | ------------------ | ------------------------------------------------------------------ |
-| 03:00 daily  | Backup             | PBS snapshots Pulsar, AdGuard, Wireguard                           |
-| 04:00 daily  | Prune              | Retention policy applied; old index entries dereferenced logically |
-| 05:00 Sunday | Garbage Collection | Orphaned data chunks physically deleted from disk                  |
+| 03:00 daily    | Backup             | PBS snapshots Pulsar, AdGuard, Wireguard                           |
+| 04:00 daily    | Prune              | Retention policy applied; old index entries dereferenced logically |
+| 05:00 Saturday | Verify             | `verify-weekly` re-reads the chunks and checks their checksums     |
+| 05:00 Sunday   | Garbage Collection | Orphaned data chunks physically deleted from disk                  |
+
+> Read from the live configuration on 2026-09-11 (`vzdump` job, `prune.cfg`,
+> `verification.cfg`, `datastore.cfg`). Keep heavy jobs that read the Netac — Zerobyte's
+> Crafty upload, manual `fstrim` — out of the 03:00–05:59 window.
 
 ### 4.5 RTO / RPO
 
@@ -343,22 +386,39 @@ All jobs run nightly during low-activity periods:
 
 Zerobyte is a self-hosted backup automation tool running as a **Docker Compose service on Pulsar**. It provides a web UI over **Restic**, handling scheduling, retention, and monitoring.
 
-Restic operates at the **file level**: it chunks files, deduplicates content across snapshots, compresses with ZSTD, and encrypts with AES-256 before uploading. Rclone provides the transport layer, mapping Restic's backend protocol to MEGA's API.
+Restic operates at the **file level**: it chunks files, deduplicates content across snapshots, compresses with ZSTD, and encrypts with AES-256 before uploading. Rclone provides the transport layer, mapping Restic's backend protocol to MEGA's API. Backblaze B2 is reached directly through Restic's S3 backend, without Rclone.
+
+Because Restic cuts files by **content**, identical files cost nothing twice: on 2026-09-11 the first Crafty upload read 25.2 GiB and stored 12.0 GiB, as the five byte-identical Nous Deux archives were stored once. PBS, which cuts a disk into fixed blocks, gets almost no such benefit from new `.zip` files.
 
 ### 5.2 Cloud Storage Strategy
 
-All cloud storage uses **MEGA** accounts (20 GB free per account). Multiple accounts are used to accommodate the total Tier 2 data volume (~20–25G) and provide redundancy.
+> **Rewritten 2026-09-11 from the live Zerobyte database.** The previous version described an
+> all-MEGA design (`mega-a` + `mega-b` mirrors, ~20G each) that was never deployed as written.
 
-| Remote Name | MEGA Account | Covers                          | Estimated Usage |
-| ----------- | ------------ | ------------------------------- | --------------- |
-| `mega-a`    | Account A    | Tier 2 — all data               | ~20G            |
-| `mega-b`    | Account B    | Tier 2 — same data (redundancy) | ~20G            |
-| `mega-c`    | Account C    | Tier 2 — overflow / Crafty      | ~5G             |
+Two providers, with a clear split:
 
-**Why no other cloud providers?**
-The requirement is zero recurring cost and long-term durability. MEGA's free tier is account-bound and persistent (unlike the Google Workspace student 5TB plan, which expires in December). Multiple MEGA accounts serve as both capacity extension and geographic redundancy.
+- **Backblaze B2** — bucket `astra-pulsar-backup`, about **$0.006/GB/month**, no size limit.
+  Everything large or growing goes here. Two safeguards: the account's spending cap (*Caps &
+  Alerts*) must be raised before adding a large job — it blocked the first Immich upload on
+  2026-09-09 — and the bucket lifecycle rule `daysFromHidingToDeleting: 1` makes deleted
+  data disappear the next day. Zerobyte's S3 connector has no path field, so one Zerobyte
+  repository = one bucket.
+- **MEGA** free accounts (20 GB each) — small, slowly-changing data only. A full MEGA account
+  fails **silently**: Mega B overflowed on 2026-09-03 and nobody noticed. Nothing that grows
+  is sent to MEGA.
 
-**Tier 3 data (Kiwix, movies, Crafty servers) receives no cloud backup.** These are reconstructible from internet sources or from Crafty's own internal backup system. They are covered only by PBS Layer 1 snapshots.
+| Zerobyte repository | Backend | Used (Zerobyte stats, 2026-09-11) | Snapshots | Holds |
+| ------------------- | ------- | --------------------------------- | --------- | ----- |
+| **Backblaze** | S3 (B2) | **43.4 GiB** (~$0.28/month) | 7 | Immich, Crafty backups, personal backups, photos, Portainer |
+| **Mega A** | rclone `mega-a` | 113 MiB | 44 | Homer, Criteri'Fresque, Crafty config, Docker Registry |
+| **Mega C** | rclone `mega-c` | 3.7 GiB | 11 | Filebrowser files |
+| **Mega D** | rclone `mega-d` | 874 MiB | 7 | old Nous Deux snapshots only — its job was disabled on 2026-09-11 |
+| Mega B | rclone `mega-b` | — | 10 | **retired** 2026-09-09: removed from Zerobyte, left intact on MEGA, readable with `restic --no-lock` |
+| `test-backblaze`, `test-local` | — | negligible | — | test repositories |
+
+**Tier 3 data (Kiwix, movies, Crafty server worlds, logs) receives no cloud backup.** Movies
+and Kiwix are re-downloadable. Crafty worlds reach the cloud indirectly, through the `.zip`
+archives Crafty makes of them (Crafty backups job below).
 
 ### 5.3 Rclone Remotes
 
@@ -375,47 +435,84 @@ rclone config
 # Verify
 rclone listremotes
 # mega-a:
-# mega-b:
+# mega-b:   (retired — kept only to read the old snapshots)
 # mega-c:
+# mega-d:
+# backblaze-test:
 ```
 
-The Zerobyte container mounts the rclone config:
+The Zerobyte container mounts the rclone config from a path set in its `.env`
+(`docker/zerobyte/docker-compose.yml`):
 
 ```yaml
 volumes:
-  - /root/.config/rclone:/root/.config/rclone:ro
+  - ${RCLONE_CONFIG_PATH}:/root/.config/rclone:ro
 ```
+
+The Backblaze repository does not use Rclone: its S3 endpoint and key are stored in
+Zerobyte's own (encrypted) configuration.
 
 ### 5.4 Backup Jobs
 
-All jobs run after the DB dump script has completed (see §6). Jobs are defined in the Zerobyte web UI at `zerobyte.lan`.
+Jobs ("schedules") are defined in the Zerobyte web UI at `zerobyte.lan`. Each one links a
+**volume** (a directory bind-mounted into the container, see `docker-compose.yml`) to a
+**repository**. Declaring a volume alone backs up nothing.
 
-#### Tier 2 Jobs — Remote A (mega-a) + Remote B (mega-b)
+State read from `zerobyte.db` on 2026-09-11. Times are Europe/Paris (the container's `TZ`).
+Every active job keeps **7 daily, 4 weekly, 3 monthly** snapshots and was in `success`.
 
-Both remotes receive identical data for redundancy.
+| id | Schedule | Host path | Repository | Cron | State |
+| -- | -------- | --------- | ---------- | ---- | ----- |
+| 4  | Homer | `/opt/k3s-data/homer` | Mega A | `00 01 * * *` | active |
+| 6  | Criteri'Fresque | `/opt/k3s-data/criteri-fresque` | Mega A | `00 01 * * *` | active |
+| 7  | Crafty Config | `/opt/docker-data/crafty/config` | Mega A | `00 01 * * *` | active |
+| 11 | Docker Registry | `/opt/k3s-data/docker-registry` | Mega A | `00 01 * * *` | active |
+| 12 | Portainer | `/opt/docker-data/portainer` | Backblaze | `00 01 * * *` | active — created 2026-09-10 |
+| 8  | Immich Library | `/opt/k3s-data/immich/library` | Backblaze | `00 02 * * *` | active |
+| 10 | Filebrowser Files | `/mnt/data/k3s-pvc/filebrowser` | Mega C | `00 02 * * *` | active |
+| 13 | Backups | `/mnt/data/backups` | Backblaze | `00 02 * * *` | active — created 2026-09-10 |
+| 14 | Photos | `/mnt/data/media/photos` | Backblaze | `00 02 * * *` | active — created 2026-09-10 |
+| 15 | Crafty Backups | `/mnt/data/docker-volumes/crafty/backups` (all servers) | Backblaze | `00 06 * * *` | active — created 2026-09-11 |
+| 9  | Crafty Backups (MEGA) | same volume, Nous Deux folder only | Mega D | `00 03 * * 0` | **disabled** 2026-09-11 |
 
-| Job                     | Source Paths                                                                                                                                                                | Schedule                        | Retention                    |
-| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- | ---------------------------- |
-| `tier2-hot-data`        | `/opt/docker-data/npm/` `/opt/docker-data/portainer/` `/opt/k3s-data/docker-registry/` `/opt/k3s-data/filebrowser-quantum/` `/opt/k3s-data/ntfy/` `/opt/k3s-data/jellyfin/` | Daily 01:00                     | 7 daily, 4 weekly, 3 monthly |
-| `tier2-cold-files`      | `/mnt/data/k3s-pvc/filebrowser/` `/mnt/data/backups/` `/mnt/data/media/photos/`                                                                                             | Daily 02:00                     | 7 daily, 4 weekly, 3 monthly |
-| `tier2-db-dumps`        | `/mnt/data/backups/dumps/`                                                                                                                                                  | Daily 01:30 (after dump script) | 7 daily, 4 weekly, 3 monthly |
-| `tier2-proxmox-configs` | `/etc/pve/` `/etc/proxmox-backup/`                                                                                                                                          | Weekly Sunday 00:00             | 4 weekly, 6 monthly          |
+- **Jobs starting at the same minute on the same repository are fine.** Zerobyte runs the
+  backups in parallel and only queues the retention `forget` runs, one per repository. Four
+  Mega A jobs have started at the same second every night without failure.
+- **Crafty Backups runs at 06:00** because Crafty writes Roots SMP's archive at 04:00: earlier
+  would upload the previous day's archive, 04:00 itself could catch a half-written `.zip`, and
+  05:00 belongs to PBS verify/GC on the same drive.
+- **Why job 9 was replaced:** it was restricted by `include_paths` to Nous Deux
+  (`9ca997b5-…`), so **Survie Gay and Roots SMP had no off-site copy until 2026-09-11**. Crafty
+  names archive folders by server UUID, not by name:
 
-> `/etc/pve/` and `/etc/proxmox-backup/` live on the **Astra host**, not inside Pulsar. To back them up with Zerobyte running on Pulsar, they must be exposed via a mechanism such as: SFTP from Astra, NFS mount, or a dedicated cron job on Astra that rsyncs them to `/mnt/data/backups/proxmox-configs/` before the Zerobyte job runs.
+| UUID | Crafty server | Crafty archive schedule (2026-09-11) |
+| ---- | ------------- | ------------------------------------ |
+| `9ca997b5-937f-4fbd-bf5c-95f5eb06cfb2` | Nous Deux | paused (world unchanged since 2026-08-15), keeps 2 |
+| `69dc796b-62cf-450b-a846-48893db1a6cd` | Survie Gay | paused (world unchanged since 2026-09-07), keeps 2 |
+| `c5da3465-e127-4ad2-9d36-bd313bf3eebe` | Roots SMP (SMP 26.2) | daily 04:00, keeps 3 |
 
-#### Tier 2 Jobs — Remote C (mega-c)
+#### Planned jobs — not created yet
 
-| Job            | Source Paths                                                                         | Schedule            | Retention           |
-| -------------- | ------------------------------------------------------------------------------------ | ------------------- | ------------------- |
-| `tier2-crafty` | `/mnt/data/docker-volumes/crafty/backups/` `/mnt/data/docker-volumes/crafty/config/` | Weekly Sunday 03:00 | 4 weekly, 3 monthly |
+| Job | Source | Blocker |
+| --- | ------ | ------- |
+| Database dumps | `/mnt/data/backups/dumps/` | the dump script (§6) does not exist |
+| Proxmox configs | `/mnt/data/backups/proxmox-configs/` | needs an rsync + timer on Astra; `/etc/pve` read returned `Permission denied` under `sudo` on 2026-09-09 |
+
+> `/etc/pve/` lives on the **Astra host** and `/etc/proxmox-backup/` inside **LXC 103** —
+> neither is visible from Pulsar. The planned route is a cron job on Astra that rsyncs them to `/mnt/data/backups/proxmox-configs/`,
+> which the existing **Backups** job (13) would then pick up with no new volume.
 
 ### 5.5 RTO / RPO
 
 | Metric              | Value            | Notes                                                     |
 | ------------------- | ---------------- | --------------------------------------------------------- |
 | **RPO**             | ≤ 24 hours       | Daily jobs; worst case = ~23h of data loss                |
-| **RTO**             | 4–24 hours       | Depends on upstream bandwidth and total data size (~20G)  |
-| **Backup duration** | 30 min – 2 hours | Incremental via Restic deduplication; first run is longer |
+| **RTO**             | 4–24 hours       | Depends on bandwidth and total data size (~50G across all repositories) |
+| **Backup duration** | seconds – minutes | Nightly runs take 3–30 s; a first upload takes minutes (Crafty: 12 GiB in 201 s) |
+
+> **Known gap — Zerobyte cannot restore in place today.** Every data mount in
+> `docker-compose.yml` is `:ro`, so the container has no writable target. Add a writable
+> restore directory (for example `/mnt/data/restore:/restore`) before you need it.
 
 ---
 
@@ -504,7 +601,7 @@ Pulsar /opt/ (sda — hot)          103G used / 195G (55 %)   [2026-09-09]
 │   └── diun/ 536K · convertx/ 356K · filebrowser/ 64K
 ├── docker-data/
 │   ├── crafty/            17G   └── servers/ 17G (Tier 3) · config/ 169M (Tier 2)
-│   ├── portainer/         83M   ⚠️ mounted in Zerobyte, never declared
+│   ├── portainer/         83M   (Tier 1) → Backblaze since 2026-09-10
 │   ├── crowdsec/          92M
 │   ├── npm/               20M
 │   └── portracker/        68K
@@ -516,18 +613,19 @@ Pulsar /opt/ (sda — hot)          103G used / 195G (55 %)   [2026-09-09]
   /var/lib/docker                     8.0G   (reconstructible)
   /swap.img 4.1G · /usr 3.6G · /var/log 2.7G
 
-Pulsar /mnt/data/ (sdb — cold)     87G used / 492G (19 %)   [2026-09-09]
+Pulsar /mnt/data/ (sdb — cold)     79G used / 492G (17 %)   [2026-09-11]
+                                   not in PBS once backup=0 is applied (§4.2)
 ├── media/
-│   ├── movies/            47G   (Tier 3 — 19 re-downloadable files)
-│   └── photos/           946M   (Tier 2) ⚠️ mounted in Zerobyte, never declared
+│   ├── movies/            47G   (Tier 3 — 19 re-downloadable files, no backup)
+│   └── photos/           946M   (Tier 2) → Backblaze since 2026-09-10
 ├── docker-volumes/crafty/
-│   ├── backups/           26G   (Tier 2) — 28.6 GiB/week of new ZIPs, main growth driver
-│   └── logs/             430M   (Tier 3)
-├── backups/              8.8G   ⚠️ mounted in Zerobyte, never declared
-│   ├── 2026-06-15_*.zip  8.7G   Minecraft server archive — likely redundant with Crafty
-│   └── OnePlus-10T/      102M   phone backup (irreplaceable)
+│   ├── backups/           26G   (Tier 2) → Backblaze since 2026-09-11, all 3 servers
+│   └── logs/             432M   (Tier 3, no backup)
+├── backups/              102M   (Tier 2) → Backblaze since 2026-09-10
+│   └── OnePlus-10T/      102M   phone backup (irreplaceable) — the 8.7G Minecraft
+│                                archive and a password export were deleted 2026-09-10
 └── k3s-pvc/
-    ├── filebrowser/      4.7G   (Tier 2)
+    ├── filebrowser/      4.7G   (Tier 2) → Mega C
     ├── crafty/            92K
     └── kiwix/            empty  (136G deleted 2026-09-09)
 ```
@@ -544,7 +642,9 @@ Pulsar /mnt/data/ (sdb — cold)     87G used / 492G (19 %)   [2026-09-09]
 
 1. Access PBS web UI at `pbs.enoal.fr` (or directly at the LXC IP).
 2. Navigate to the relevant datastore → find the most recent healthy snapshot of Pulsar (VM 100).
-3. If restoring the entire VM: Proxmox UI → VM 100 → Backups → Restore.
+3. If restoring the entire VM: Proxmox UI → VM 100 → Backups → Restore — **to a new VMID**.
+   Snapshots taken after `backup=0` do not contain `scsi1`, and the documentation does not say
+   what an in-place restore does to an excluded disk (§4.2).
 4. If restoring individual files: use `proxmox-backup-client` to mount the snapshot and extract specific paths.
 
 ```bash
@@ -559,6 +659,9 @@ cp -r /mnt/restore-point/mnt/data/k3s-pvc/immich/ /mnt/data/k3s-pvc/immich-resto
 
 1. Restart the affected service.
 2. Validate service health.
+
+**Files under `/mnt/data`** are no longer in PBS once `backup=0` is applied: restore them from
+Zerobyte (§5.4), after adding a writable restore target (§5.5).
 
 **Estimated time:** 15 min – 1 hour depending on restore scope.
 
@@ -576,7 +679,7 @@ cp -r /mnt/restore-point/mnt/data/k3s-pvc/immich/ /mnt/data/k3s-pvc/immich-resto
 **What survives:**
 
 - Pulsar OS disk (`sda`, on `nvme0n1`) — `/opt/k3s-data/`, `/opt/docker-data/`, running services
-- Layer 2 cloud backups (MEGA)
+- Layer 2 cloud backups (Backblaze B2, MEGA)
 
 **Recovery steps:**
 
@@ -585,14 +688,17 @@ cp -r /mnt/restore-point/mnt/data/k3s-pvc/immich/ /mnt/data/k3s-pvc/immich-resto
 3. Create a new PBS LXC (ID 103) and point it to the new datastore — no historical backups, but PBS is operational again.
 4. Add the new drive as a second disk to Pulsar (Proxmox UI → VM 100 → Hardware → Add → Hard Disk).
 5. Inside Pulsar, format and mount the new disk at `/mnt/data`.
-6. Restore Tier 2 data from MEGA via Zerobyte:
+6. Restore Tier 2 data via Zerobyte:
+   - Give the container a writable restore target first (§5.5)
    - Access Zerobyte UI at `zerobyte.lan`
-   - Select the `mega-a` or `mega-b` repository
+   - Pick the repository that holds the path (§5.4): **Backblaze** for `backups/`,
+     `media/photos/` and Crafty backups, **Mega C** for Filebrowser
    - Browse snapshots and restore to `/mnt/data/`
+   - Movies and Crafty logs are not backed up anywhere: re-download or accept the loss
 7. Restore directory structure (`k3s-pvc/`, `backups/`, `media/`, etc.).
 8. Restart services that depend on `/mnt/data/` mounts.
 
-**Estimated time:** 4–24 hours (depends on total data size ~20G and upstream bandwidth).
+**Estimated time:** 4–24 hours (depends on total data size ~35G for `/mnt/data` and bandwidth).
 
 ---
 
@@ -602,7 +708,7 @@ cp -r /mnt/restore-point/mnt/data/k3s-pvc/immich/ /mnt/data/k3s-pvc/immich-resto
 
 **What survives:**
 
-- Layer 2 cloud backups (MEGA) — all Tier 2 data
+- Layer 2 cloud backups (Backblaze B2, MEGA) — all Tier 2 data
 - The `astra-ops` GitOps repository (GitHub) — all manifests, Helm charts, configurations
 - K3s secrets on the operator's computer
 
@@ -613,8 +719,9 @@ cp -r /mnt/restore-point/mnt/data/k3s-pvc/immich/ /mnt/data/k3s-pvc/immich-resto
 3. Recreate the VM/LXC structure (refer to `astra-ops` README and this document).
 4. Create Pulsar VM (Ubuntu Server), install K3s and Docker.
 5. Install Zerobyte (Docker Compose in `docker/zerobyte/`).
-6. Configure rclone remotes (mega-a, mega-b, mega-c) on the new Pulsar.
-7. Restore Tier 2 data from MEGA via Zerobyte.
+6. Configure rclone remotes (`mega-a`, `mega-c`, `mega-d`) on the new Pulsar, and re-create
+   the Backblaze S3 repository in Zerobyte with the B2 key.
+7. Restore Tier 2 data from Backblaze and MEGA via Zerobyte.
 8. Apply K3s secrets from the operator's computer:
 
    ```bash
@@ -639,11 +746,16 @@ cp -r /mnt/restore-point/mnt/data/k3s-pvc/immich/ /mnt/data/k3s-pvc/immich-resto
 
 | Component               | Monitoring Method                  | Alert Channel          |
 | ----------------------- | ---------------------------------- | ---------------------- |
-| Zerobyte job failures   | Zerobyte built-in notifications    | ntfy (`ntfy.enoal.fr`) |
-| PBS backup job status   | PBS web UI + email (if configured) | PBS UI                 |
+| Zerobyte job failures   | Zerobyte built-in notifications    | Discord webhook — ⚠️ **broken for long messages** (below) |
+| PBS backup job status   | PBS notifications                  | Email via Resend (configured 2026-09-09) |
 | Disk usage — Netac      | Dashdot (`dashdot.lan`)            | Visual monitoring      |
 | Disk usage — Pulsar sda | Dashdot + manual check             | Threshold: 85%         |
-| Cloud storage usage     | MEGA web UI                        | Manual quarterly check |
+| Cloud storage usage     | MEGA web UI · B2 *Caps & Alerts*   | Manual quarterly check · B2 spending cap |
+
+> **⚠️ Zerobyte → Discord returns HTTP 400 whenever a message exceeds Discord's 2,000-character
+> limit.** The webhook itself works; the failure messages of 2026-09-09 were 9,741 and 13,379
+> characters long and were never delivered. The loudest failures are exactly the ones that
+> go missing. Not fixed as of 2026-09-11.
 
 > **Recommended:** set a Zerobyte webhook to ntfy for all job completions and failures. This provides a push notification to mobile on every backup cycle.
 
@@ -677,7 +789,7 @@ For each tested restore:
 
 ## 12. Pending Tasks & Future Work
 
-> **Reviewed against the machines on 2026-09-09.** Items are checked only where the state was
+> **Reviewed against the machines on 2026-09-11.** Items are checked only where the state was
 > actually verified, not where it was merely planned.
 
 ### Layer 2 — Zerobyte
@@ -688,9 +800,15 @@ For each tested restore:
 - [x] Add `zerobyte.lan` DNS entry in AdGuard Home
 - [x] Add NPM proxy host for `zerobyte.lan`
 - [x] Move Immich off-site to Backblaze B2 (2026-09-09) — 7/7 schedules now `success`
-- [ ] **Declare the three mounted-but-undeclared volumes**: `/data/backups`,
-      `/data/media/photos`, `/data/portainer`. Triage `/mnt/data/backups/` first — most of its
-      8.8G is a Minecraft archive that is probably redundant.
+- [x] **Declare the three mounted-but-undeclared volumes** (2026-09-10) — `/mnt/data/backups`
+      triaged first (8.8G → 102M), then volumes 11, 12, 13 and jobs 12, 13, 14 to Backblaze.
+      First nightly run 2026-09-11: all `success`.
+- [x] **Send every Crafty server off-site** (2026-09-11) — job 9 (Mega D) only covered Nous
+      Deux; replaced by job 15 to Backblaze covering all three servers, retention 7/4/3.
+- [ ] **Fix Zerobyte → Discord notifications**: messages over 2,000 characters are rejected
+      with HTTP 400 (§10)
+- [ ] **Give Zerobyte a writable restore target** — every data mount is read-only (§5.5)
+- [ ] Decide the fate of `Mega D` (job disabled, 7 dormant Nous Deux snapshots)
 - [ ] Set up ntfy webhook in Zerobyte settings
 - [ ] Create `/mnt/data/backups/dumps/` directory
 - [ ] Create `/mnt/data/backups/proxmox-configs/` directory
@@ -709,14 +827,21 @@ For each tested restore:
 - [x] **`fstrim -av` on Pulsar** — returned **137G** of dead space to `vault` (79 % → 63 %)
 - [x] **`tune2fs -m 1 /dev/nvme1n1p1`** — released **38G** of ext4 root reserve (63 % → 61 %)
 - [x] **AdGuard query log** — retention 90d → 7d and log cleared; LXC 101 went 95 % → 11 %
+- [x] **Second `fstrim -av` on Pulsar** (2026-09-11) — **20.25 GiB** returned after the
+      `/mnt/data/backups` triage (65 % → 63 %)
+- [x] **Cut the growth at the source** (2026-09-11) — Survie Gay and Nous Deux Crafty archive
+      schedules paused (worlds no longer played); only Roots SMP still archives daily.
 
 ### Storage — still open
 
-- [ ] **Cut the growth at the source**: Crafty produces 28.6 GiB/week of non-deduplicating
-      ZIPs. Reduce cadence or retention on the server created 2026-08-31, which alone emits
-      1.5 GiB/day. Nothing else meaningfully slows `vault`.
-- [ ] **Set `backup=0` on `scsi1`** so PBS stops backing up the 500G cold disk that lives on
-      the very drive it writes to. Only after the three Zerobyte volumes above are declared.
+- [ ] **Apply `backup=0` on `scsi1`** — **decided 2026-09-11** (§4.2); verify with
+      `qm config 100 | grep scsi1`
+- [ ] Delete the three surplus Nous Deux archives in Crafty (5 kept, limit now 2; nothing
+      prunes them while the schedule is paused) — byte-identical to the two that remain
+- [ ] Crafty backups use `compress=1` and `shutdown=0`; Crafty's documentation recommends
+      stopping the server during backups and warns compression can damage chunk data
+- [ ] Rotate the passwords from the deleted Google export — it survives in PBS snapshots of
+      VM 100 for up to ~6 months
 - [ ] Decide the fate of LXC 102 (`wireguard`, stopped since 2026-05-04) in the vzdump job
 - [ ] Consider a SATA SSD for the datastore — **both M.2 slots are occupied**, only two SATA
       ports remain free
@@ -752,8 +877,10 @@ For each tested restore:
 
 ### Long-term
 
-- [x] Evaluate Backblaze B2 as a scalable Tier 2 alternative — **adopted for Immich**
-      (bucket `astra-pulsar-backup`, ~30.4 GiB, lifecycle `daysFromHidingToDeleting: 1`)
+- [x] Evaluate Backblaze B2 as a scalable Tier 2 alternative — **adopted** for Immich
+      (2026-09-09), then Portainer, personal backups, photos (2026-09-10) and Crafty backups
+      (2026-09-11). Bucket `astra-pulsar-backup`, 43.4 GiB, lifecycle
+      `daysFromHidingToDeleting: 1`
 - [ ] Decide whether to migrate the remaining MEGA jobs to B2
 - [ ] `Mega B` is **retired**: removed from Zerobyte on 2026-09-09, its 10 snapshots left
       intact on MEGA, neither copied nor purged. Still readable with `restic --no-lock`.
