@@ -535,6 +535,25 @@ infisical-bootstrap.yaml
 infisical-token.yaml
 ```
 
+### Pre-commit secret scan
+
+The gitignore patterns only catch files by name; a key pasted into a committed
+manifest slips through them. The `pre-commit` hook in `.githooks/` scans the staged
+changes with [Betterleaks](https://github.com/betterleaks/betterleaks) and refuses the
+commit when it finds a secret. Enable it once per clone, and install Betterleaks
+(without it, the hook prints a warning and lets the commit through):
+
+```bash
+.githooks/setup-hooks.sh        # Linux/macOS (.githooks\setup-hooks.ps1 on Windows)
+brew install betterleaks        # macOS, Linux
+sudo dnf install betterleaks    # Fedora
+```
+
+On Windows, download `betterleaks_<version>_windows_x64.zip` from the
+[releases](https://github.com/betterleaks/betterleaks/releases) and put
+`betterleaks.exe` on the `PATH`. If the scan flags something that is not a secret,
+end that line with a `betterleaks:allow` comment (`# betterleaks:allow` in YAML).
+
 ---
 
 ## GitOps workflow
