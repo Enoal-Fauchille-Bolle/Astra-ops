@@ -2,9 +2,9 @@
 
 > **Status:** Layer 1 operational. Layer 2 in service for every Tier 2 path on `/mnt/data`
 > and for the Proxmox configuration; database dumps still missing — see §12.
-> **Last updated:** 2026-09-11 (§5 rewritten from the live Zerobyte database; all Crafty
-> servers now off-site; `backup=0` applied on Pulsar's cold disk; nightly Proxmox config
-> copy in service, §4.2 and §9.4; §2, §3.2, §8.1 remeasured)
+> **Last updated:** 2026-09-12 (first night after the 2026-09-11 changes checked: PBS
+> snapshot without the cold disk, Proxmox config copy off-site, job 15; B2 key and restic
+> password recorded off Astra; Discord failure diagnosed, §10)
 > **Language:** English (technical reference)
 
 ---
@@ -249,8 +249,8 @@ Bulk data that is either reconstructible (Minecraft servers, Kiwix ZIM archives)
 | **Portainer** | `/opt/docker-data/portainer/` | **83M** | 1 | ✅ Backblaze B2 (since 2026-09-10) | BoltDB | 2026-09-11 |
 | **Filebrowser Quantum** | `/opt/k3s-data/filebrowser-quantum/` | 896K | 1 | dump only | SQLite | May 2026 |
 | **Ntfy** | `/opt/k3s-data/ntfy/` | 160K | 1 | dump only | SQLite | May 2026 |
-| `/etc/pve/` | Astra host | ~5M | 1 | ❌ not yet | — | May 2026 |
-| `/etc/proxmox-backup/` | LXC 103 | **60K** | 1 | ❌ not yet | — | 2026-09-09 |
+| `/etc/pve/` | Astra host | ~5M | 1 | ✅ Backblaze B2 — nightly copy to Pulsar, job 13 (since 2026-09-11, §4.2) | — | 2026-09-12 |
+| `/etc/proxmox-backup/` | LXC 103 | **60K** | 1 | ✅ Backblaze B2 — nightly copy to Pulsar, job 13 (since 2026-09-11, §4.2) | — | 2026-09-12 |
 | **Immich photos** | `/opt/k3s-data/immich/library/` | **31G** | 2 | ✅ Backblaze B2 | — | 2026-09-09 |
 | **Filebrowser files** | `/mnt/data/k3s-pvc/filebrowser/` | **4.7G** | 2 | ✅ Mega C | — | 2026-09-11 |
 | **Homer config** | `/opt/k3s-data/homer/` | 5.3M | 2 | ✅ Mega A | — | May 2026 |
@@ -316,6 +316,8 @@ days). What loses its only backup: movies (47G, re-downloadable) and Crafty logs
   VM is restored over itself. Restore Pulsar to a **new VMID**, never over VM 100.
 - Applied in the UI on 2026-09-11 at 11:21 (VM 100 → Hardware → `scsi1` → Edit → Advanced →
   uncheck *Backup*). Verify with `qm config 100 | grep scsi1`, which must end in `backup=0`.
+- Confirmed on 2026-09-12: snapshot `vm/100/2026-09-12T01:00:01Z` (03:00) holds
+  `drive-scsi0.img.fidx` only; the one of 2026-09-11 still held `drive-scsi1.img.fidx` too.
 
 PBS (LXC 103) is intentionally excluded — but **not** for the reason previously given here.
 
@@ -349,6 +351,8 @@ about **60 KB** in `/etc/proxmox-backup/`:
 
 A nightly job on Astra copies both configurations to Pulsar, where Zerobyte job 13
 (**Backups**) ships them to Backblaze at 02:00 — no new Zerobyte volume was needed.
+First unattended night, 2026-09-12: copy sent at 01:30:05, Kuma push `up`, and job 13 went
+from 12 to 62 files (50 new) in `succeeded`.
 
 | Piece | Where | What it does |
 | --- | --- | --- |
@@ -525,6 +529,9 @@ Every active job keeps **7 daily, 4 weekly, 3 monthly** snapshots and was in `su
 - **Crafty Backups runs at 06:00** because Crafty writes Roots SMP's archive at 04:00: earlier
   would upload the previous day's archive, 04:00 itself could catch a half-written `.zip`, and
   05:00 belongs to PBS verify/GC on the same drive.
+- **What a day of Crafty costs off-site:** the first scheduled run (2026-09-12 06:00) read
+  7 archives, found one new Roots SMP archive and added **574,541,862 bytes (0.54 GiB)** to
+  the repository in 14 s. The other archives are deduplicated.
 - **Why job 9 was replaced:** it was restricted by `include_paths` to Nous Deux
   (`9ca997b5-…`), so **Survie Gay and Roots SMP had no off-site copy until 2026-09-11**. Crafty
   names archive folders by server UUID, not by name:
@@ -761,10 +768,10 @@ Zerobyte (§5.4), after adding a writable restore target (§5.5).
 
 1. Provision a new server (or reinstall on repaired hardware).
 2. Install Proxmox VE — the version recorded in the config copy's `MANIFEST.txt`.
-3. Recreate the VM/LXC structure from the Proxmox config copy (§9.4). **Catch:** that copy
-   sits in Backblaze, and opening it takes the B2 key and Zerobyte's restic password — both
-   live only on Pulsar today. Without them off-Astra (§12, Phase 3), fall back to the
-   `astra-ops` README and this document.
+3. Recreate the VM/LXC structure from the Proxmox config copy (§9.4). That copy sits in
+   Backblaze, and opening it takes the B2 key and Zerobyte's restic password. Both are kept
+   in the **official Bitwarden cloud** — not in the self-hosted Vaultwarden, which runs on
+   Astra and would be lost with it.
 4. Create Pulsar VM (Ubuntu Server), install K3s and Docker.
 5. Install Zerobyte (Docker Compose in `docker/zerobyte/`).
 6. Configure rclone remotes (`mega-a`, `mega-c`, `mega-d`) on the new Pulsar, and re-create
@@ -857,10 +864,17 @@ Then start both services again. The datastore itself is self-describing (§4.2).
 > depend on itself to resolve. Beszel's *Status* alert only proves the agent answers; the
 > Kuma DNS monitor proves AdGuard actually serves.
 
-> **⚠️ Zerobyte → Discord returns HTTP 400 whenever a message exceeds Discord's 2,000-character
-> limit.** The webhook itself works; the failure messages of 2026-09-09 were 9,741 and 13,379
-> characters long and were never delivered. The loudest failures are exactly the ones that
-> go missing. Not fixed as of 2026-09-11.
+> **⚠️ Zerobyte → Discord loses the start of long messages (HTTP 400).** Diagnosed on
+> 2026-09-12 from the source of Zerobyte v0.42.0 and of Shoutrrr v0.17.0, the sender inside
+> the image; not reproduced against Discord. Zerobyte always sends a title and
+> `splitLines=false`. Shoutrrr then cuts the body into batches of up to 6,000 characters, each
+> sent as one message of embeds. Discord caps the text of all embeds in a message at 6,000
+> characters **including the title**, so every full batch is rejected. A body under ~5,970
+> characters arrives whole; a longer one loses each full 6,000-character batch and only its
+> tail arrives. The failure messages of 2026-09-09 (9,741 and 13,379 characters) hit this —
+> the earlier explanation, Discord's 2,000-character limit, was wrong: Shoutrrr already
+> splits at 2,000. The loudest failures are exactly the ones that lose their beginning. Not
+> fixed as of 2026-09-12.
 
 > **Recommended:** set a Zerobyte webhook to ntfy for all job completions and failures. This provides a push notification to mobile on every backup cycle.
 
@@ -910,8 +924,9 @@ For each tested restore:
       First nightly run 2026-09-11: all `success`.
 - [x] **Send every Crafty server off-site** (2026-09-11) — job 9 (Mega D) only covered Nous
       Deux; replaced by job 15 to Backblaze covering all three servers, retention 7/4/3.
-- [ ] **Fix Zerobyte → Discord notifications**: messages over 2,000 characters are rejected
-      with HTTP 400 (§10)
+- [ ] **Fix Zerobyte → Discord notifications**: a message over ~5,970 characters loses its
+      first 6,000 with HTTP 400 — Shoutrrr does not count the title against Discord's
+      6,000-character embed cap (§10)
 - [ ] **Give Zerobyte a writable restore target** — every data mount is read-only (§5.5)
 - [ ] Decide the fate of `Mega D` (job disabled, 7 dormant Nous Deux snapshots)
 - [ ] Set up ntfy webhook in Zerobyte settings
@@ -921,8 +936,8 @@ For each tested restore:
       picked up by job 13; Uptime Kuma push monitor (§4.2). The `Permission denied` of
       2026-09-09 did not reproduce: the files are `root:www-data 640`, so any read without
       `sudo` fails — most likely the second half of a `sudo a; b` command.
-- [ ] Put the B2 key and Zerobyte's restic password somewhere off Astra (Phase 3) — without
-      them no Layer 2 copy, the Proxmox configuration included, can be opened after a total loss
+- [x] **Put the B2 key and Zerobyte's restic password somewhere off Astra** — both kept in
+      the official Bitwarden cloud, not the self-hosted Vaultwarden (§9.3); recorded 2026-09-12
 
 ### Storage — reclaimed 2026-09-09
 
@@ -941,8 +956,8 @@ For each tested restore:
 
 ### Storage — still open
 
-- [x] **Apply `backup=0` on `scsi1`** — applied 2026-09-11 at 11:21 (§4.2). Still to check:
-      the first VM 100 snapshot after it (2026-09-12 03:00) must hold `drive-scsi0` only
+- [x] **Apply `backup=0` on `scsi1`** — applied 2026-09-11 at 11:21 (§4.2); the 2026-09-12
+      03:00 snapshot of VM 100 holds `drive-scsi0` only
 - [x] Delete the three surplus Nous Deux archives in Crafty (2026-09-11) — 2 remain
 - [ ] Restart PBS onto the installed version — `proxmox-backup-server 3.4.9-2` is installed
       but `3.4.8` is still running (seen 2026-09-08 and again 2026-09-11)
