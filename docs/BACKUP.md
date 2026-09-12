@@ -873,8 +873,9 @@ Then start both services again. The datastore itself is self-describing (§4.2).
 > characters arrives whole; a longer one loses each full 6,000-character batch and only its
 > tail arrives. The failure messages of 2026-09-09 (9,741 and 13,379 characters) hit this —
 > the earlier explanation, Discord's 2,000-character limit, was wrong: Shoutrrr already
-> splits at 2,000. The loudest failures are exactly the ones that lose their beginning. Not
-> fixed as of 2026-09-12.
+> splits at 2,000. The loudest failures are exactly the ones that lose their beginning.
+> **Accepted as is on 2026-09-12:** the title and the tail of the error still arrive, and the
+> full error stays readable in the Zerobyte UI.
 
 > **Recommended:** set a Zerobyte webhook to ntfy for all job completions and failures. This provides a push notification to mobile on every backup cycle.
 
@@ -926,7 +927,7 @@ For each tested restore:
       Deux; replaced by job 15 to Backblaze covering all three servers, retention 7/4/3.
 - [ ] **Fix Zerobyte → Discord notifications**: a message over ~5,970 characters loses its
       first 6,000 with HTTP 400 — Shoutrrr does not count the title against Discord's
-      6,000-character embed cap (§10)
+      6,000-character embed cap (§10). Accepted as is for now (2026-09-12)
 - [ ] **Give Zerobyte a writable restore target** — every data mount is read-only (§5.5)
 - [ ] Decide the fate of `Mega D` (job disabled, 7 dormant Nous Deux snapshots)
 - [ ] Set up ntfy webhook in Zerobyte settings
