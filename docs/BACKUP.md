@@ -290,6 +290,17 @@ Data is hashed, deduplicated, and compressed with **ZSTD** on the fly before bei
 
 Datastore location: `/mnt/pve/vault/` (Netac NVMe, `nvme1n1`).
 
+The container: Debian 12, unprivileged, `features: nesting=1` since 2026-09-12. APT pulls
+from `pbs-no-subscription` only; `pbs-enterprise` is disabled (no subscription, it answered
+`401` on every `apt update`). Proxmox refuses to snapshot it because of the bind mount `mp0`,
+so the safety net before maintenance is `vzdump 103 --mode stop --storage local` — 846 MB and
+19 seconds of downtime on 2026-09-12.
+
+> **`pam_systemd` removed on 2026-05-02.** `/etc/pam.d/common-session` lacks the
+> `session optional pam_systemd.so` line — the usual workaround for logins that hang while
+> `systemd-logind` is dead, which it was until `nesting=1`. A PAM upgrade asks whether to
+> override the local changes: answer **No** unless you mean to restore the line.
+
 ### 4.2 Scope
 
 | Guest     | ID  | Type | Included                  |
@@ -960,8 +971,15 @@ For each tested restore:
 - [x] **Apply `backup=0` on `scsi1`** — applied 2026-09-11 at 11:21 (§4.2); the 2026-09-12
       03:00 snapshot of VM 100 holds `drive-scsi0` only
 - [x] Delete the three surplus Nous Deux archives in Crafty (2026-09-11) — 2 remain
-- [ ] Restart PBS onto the installed version — `proxmox-backup-server 3.4.9-2` is installed
-      but `3.4.8` is still running (seen 2026-09-08 and again 2026-09-11)
+- [x] **Upgrade PBS to 3.4.9** (2026-09-12) — this item used to say 3.4.9-2 was installed and
+      only a restart was missing. Wrong: `dpkg` still had `3.4.8-3`, and
+      `proxmox-backup-manager versions` prints the APT *candidate*, not the installed version.
+      `apt full-upgrade` in LXC 103, the first since install on 2026-04-16 (78 packages);
+      `running version: 3.4.9` afterwards
+- [ ] Delete the safety backup `vzdump-lxc-103-2026_09_12-16_26_15.tar.zst` from `local`
+      (888 MB) once the first nights after the upgrade are checked
+- [ ] Reboot Astra onto kernel `7.0.14-16-pve` — installed with PVE 9.2.11 → 9.2.18 on
+      2026-09-12, `7.0.14-14-pve` still running. The reboot stops Pulsar, AdGuard and PBS
 - [ ] Crafty backups use `compress=1` and `shutdown=0`; Crafty's documentation recommends
       stopping the server during backups and warns compression can damage chunk data
 - [ ] Rotate the passwords from the deleted Google export — it survives in PBS snapshots of
@@ -998,12 +1016,14 @@ For each tested restore:
       threshold to 60 %, which fired at 61.6 %
 - [x] Alert on LXC 101 (`adguard`) — Beszel agent and Kuma DNS monitor, 2026-09-11 (§10)
 - [x] Alert on LXC 103 (`pbs`) — Beszel agent, 2026-09-11 (§10)
-- [ ] Fix the failed units in LXC 103. The container runs without `nesting=1` (LXC 101 has
-      it), so every unit that asks systemd for sandboxing dies with `226/NAMESPACE`:
-      `logrotate` (every night, since install), `man-db`, `systemd-logind`,
-      `systemd-networkd` and its socket. `zfs-mount` and `zfs-share` fail for the reason
-      `zfs-zed` did. The journal is not at risk: it holds at 797.5M, journald's default cap
-      of 10 % of the 7.8G root
+- [x] **Fix the failed units in LXC 103** (2026-09-12) — without `nesting=1`, every unit that
+      asks systemd for sandboxing died with `226/NAMESPACE`: `logrotate` (every night, since
+      install), `man-db`, `systemd-logind`, `systemd-networkd` and its socket. `nesting=1`
+      set and the container rebooted: `systemctl --failed` is empty, `is-system-running`
+      says `running`, and a `systemd-run` with `logrotate`'s sandbox exits 0. `zfs-mount`
+      and `zfs-share` disabled, as `zfs-zed` was. The journal needs nothing: 797.5M is
+      journald's default cap of 10 % of the 7.8G root. First real `logrotate` run: 2026-09-13
+      at 00:00 UTC
 
 ### Long-term
 
