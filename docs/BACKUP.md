@@ -88,8 +88,8 @@ graph TB
     end
 
     subgraph CLOUD["Cloud — Layer 2"]
-        B2[Backblaze B2 — Immich, Crafty backups, backups, photos, Portainer]
-        MEGA_A[MEGA Account A — small configs]
+        B2[Backblaze B2 — every app directory, Immich, Crafty backups, backups, photos]
+        MEGA_A[MEGA Account A — small configs, jobs disabled 2026-09-13]
         MEGA_C[MEGA Account C — Filebrowser]
         MEGA_D[MEGA Account D — idle since 2026-09-11]
     end
@@ -228,6 +228,11 @@ This is a known, accepted constraint given the single-server hardware budget. La
 **Tier 1 — Active System (Layer 1 only)**
 Live databases and application runtime state. Backed up exclusively by PBS block-level snapshots. Rclone/Zerobyte does not touch these directly because live databases cannot be safely copied at the file level without risking corruption. They are covered by the DB dump strategy (see §6) which promotes dump outputs to Tier 2 for cloud upload.
 
+> **Revised 2026-09-13.** Zerobyte now copies every app directory (jobs 16 and 17, §5.4), but
+> excludes the data directories of the live PostgreSQL, MariaDB and Redis servers. SQLite files
+> are copied as they are: usually readable, not guaranteed consistent. The dumps of §6 remain
+> the consistent copy.
+
 **Tier 2 — Critical Vault (Layer 1 + Layer 2)**
 Static personal files, cold PVC data, pre-generated database dumps, and other irreplaceable data that is safe to copy at the file level. This is the only data sent to cloud storage.
 
@@ -236,44 +241,58 @@ Bulk data that is either reconstructible (Minecraft servers, Kiwix ZIM archives)
 
 ### 3.2 Complete Data Inventory
 
-> **Sizes marked `2026-09-09` were remeasured that day; the rest still date from May 2026
-> and should be re-checked before being relied on.**
+> **Sizes marked `2026-09-09` or later were remeasured that day; the rest still date from May
+> 2026 and should be re-checked before being relied on.** "Job 16" and "job 17" are the
+> Zerobyte jobs that copy the whole of `/opt/k3s-data` and `/opt/docker-data` (§5.4). A
+> raw copy of a live SQLite file is usually readable but not guaranteed consistent.
 
 | Service / Path | Location | Size | Tier | Layer 2 | DB dump | Verified |
 | -------------- | -------- | ---- | ---- | ------- | ------- | -------- |
-| **Vaultwarden** | `/opt/k3s-data/vaultwarden/` | 6.7M | 1 | dump only | SQLite | May 2026 |
-| **Immich DB** | `/opt/k3s-data/immich/postgres/` | **295M** | 1 | covered — Immich dumps itself into `library/backups/` | PostgreSQL 14 + vectorchord | 2026-09-09 |
-| **Umami DB** | K3s ns `analytics` | not measured | 1 | ❌ none | PostgreSQL 16 | **added 2026-09-09** |
-| **Infisical DB** | K3s ns `infisical` | not measured | 1 | ❌ none | PostgreSQL 16 | **added 2026-09-09** |
-| **Dawarich DB** | Docker `dawarich_db` | not measured | 1 | ❌ none | PostGIS 17 | **added 2026-09-09** |
-| **n8n** | `/opt/k3s-data/n8n/` | 41M | 1 | dump only | SQLite | May 2026 |
-| **Scanopy** | `/opt/k3s-data/scanopy/` | 68M | 1 | dump only | PostgreSQL — **no running deployment found on 2026-09-09, confirm before scripting** | May 2026 |
-| **Uptimekuma** | `/opt/k3s-data/uptimekuma/` | 231M | 1 | dump only | SQLite | May 2026 |
-| **Crowdsec** | `/opt/docker-data/crowdsec/` | 92M | 1 | dump only | SQLite | May 2026 |
-| **SFTPgo** | `/opt/k3s-data/sftpgo/` | 380K | 1 | dump only | SQLite | May 2026 |
-| **Docker Registry** | `/opt/k3s-data/docker-registry/` | 57M | 1 | ✅ Mega A | — | 2026-09-11 |
-| **NPM** | `/opt/docker-data/npm/` | 20M | 1 | dump only | SQLite | May 2026 |
-| **Portainer** | `/opt/docker-data/portainer/` | **83M** | 1 | ✅ Backblaze B2 (since 2026-09-10) | BoltDB | 2026-09-11 |
-| **Filebrowser Quantum** | `/opt/k3s-data/filebrowser-quantum/` | 896K | 1 | dump only | SQLite | May 2026 |
-| **Ntfy** | `/opt/k3s-data/ntfy/` | 160K | 1 | dump only | SQLite | May 2026 |
+| **Vaultwarden** | `/opt/k3s-data/vaultwarden/` | 8.6M | 1 | ✅ Backblaze B2, job 16 (raw SQLite) | SQLite | 2026-09-13 |
+| **Immich DB** | `/opt/k3s-data/immich/postgres/` | **295M** | 1 | covered — Immich dumps itself into `library/backups/`; raw directory excluded from job 16 | PostgreSQL 14 + vectorchord | 2026-09-13 |
+| **Umami DB** | `/opt/k3s-data/umami/postgres/` | 48M (whole `umami/`) | 1 | ❌ none — excluded from job 16, waits for its dump | PostgreSQL 16 | 2026-09-13 |
+| **Infisical DB** | `/opt/k3s-data/infisical/postgres/` + `redis/` | 157M (whole `infisical/`) | 1 | ❌ none — both excluded from job 16, the database waits for its dump | PostgreSQL 16 | 2026-09-13 |
+| **Dawarich DB** | Docker volume `dawarich_dawarich_db_data` | **586M** | 1 | ❌ none — outside the app roots; app containers stopped since late August, database still running | PostGIS 17 | 2026-09-13 |
+| **Dawarich files** | Docker volumes `dawarich_dawarich_{public,storage,shared,watched}` | 26M | 2 | ❌ none — outside the app roots | — | 2026-09-13 |
+| **n8n** | `/opt/k3s-data/n8n/` | 42M | 1 | ✅ Backblaze B2, job 16 (raw SQLite) | SQLite | 2026-09-13 |
+| **Scanopy** | `/opt/k3s-data/scanopy/` | 68M | 1 | ✅ Backblaze B2, job 16 — not running on 2026-09-13, so the raw PostgreSQL copy is consistent | PostgreSQL | 2026-09-13 |
+| **AppFlowy** | `/opt/k3s-data/appflowy/` | 52M | 1 | ✅ Backblaze B2, job 16 — not running on 2026-09-13, raw copy consistent | PostgreSQL | 2026-09-13 |
+| **Uptimekuma** | `/opt/k3s-data/uptimekuma/` | 311M | 1 | ✅ Backblaze B2, job 16, **except** `mariadb/`, which waits for its dump | **embedded MariaDB** (`db-config.json`, Uptime Kuma 2.5.3) — not SQLite; `kuma.db` is empty | 2026-09-13 |
+| **Crowdsec** | `/opt/docker-data/crowdsec/` | 110M | 1 | ✅ Backblaze B2, job 17 (raw SQLite) | SQLite | 2026-09-13 |
+| **SFTPgo** | `/opt/k3s-data/sftpgo/` | 380K | 1 | ✅ Backblaze B2, job 16 (raw SQLite) | SQLite | 2026-09-13 |
+| **Docker Registry** | `/opt/k3s-data/docker-registry/` | 57M | 1 | ✅ Backblaze B2, job 16 (Mega A job 11 disabled 2026-09-13) | — | 2026-09-13 |
+| **NPM** | `/opt/docker-data/npm/` | 17M | 1 | ✅ Backblaze B2, job 17 (raw SQLite) | SQLite | 2026-09-13 |
+| **Portainer** | `/opt/docker-data/portainer/` | 76M | 1 | ✅ Backblaze B2, job 17 (job 12 disabled 2026-09-13) | BoltDB | 2026-09-13 |
+| **Filebrowser Quantum** | `/opt/k3s-data/filebrowser-quantum/` | 1.1M | 1 | ✅ Backblaze B2, job 16 (raw SQLite) | SQLite | 2026-09-13 |
+| **Ntfy** | `/opt/k3s-data/ntfy/` | 160K | 1 | ✅ Backblaze B2, job 16 — not running on 2026-09-13 | SQLite | 2026-09-13 |
+| **Every other app directory** | `/opt/k3s-data/*`, `/opt/docker-data/*` — CouchDB, Jellyfin, Beszel, Homarr, Speedtest Tracker, Wallos, Loandash, Diun, ConvertX, Scrutiny… | ~100M | 1–2 | ✅ Backblaze B2, jobs 16 and 17 — any new directory is picked up automatically | mostly SQLite | 2026-09-13 |
+| **Termix** | `/opt/ops/docker/termix/data/` | 15M | 1 | ❌ none — outside the app roots | — | 2026-09-13 |
 | `/etc/pve/` | Astra host | ~5M | 1 | ✅ Backblaze B2 — nightly copy to Pulsar, job 13 (since 2026-09-11, §4.2) | — | 2026-09-12 |
 | `/etc/proxmox-backup/` | LXC 103 | **60K** | 1 | ✅ Backblaze B2 — nightly copy to Pulsar, job 13 (since 2026-09-11, §4.2) | — | 2026-09-12 |
-| **Immich photos** | `/opt/k3s-data/immich/library/` | **31G** | 2 | ✅ Backblaze B2 | — | 2026-09-09 |
+| **Immich photos** | `/opt/k3s-data/immich/library/` | **31G** | 2 | ✅ Backblaze B2, job 8 — excluded from job 16 | — | 2026-09-13 |
 | **Filebrowser files** | `/mnt/data/k3s-pvc/filebrowser/` | **4.7G** | 2 | ✅ Mega C | — | 2026-09-11 |
-| **Homer config** | `/opt/k3s-data/homer/` | 5.3M | 2 | ✅ Mega A | — | May 2026 |
-| **Criteri-fresque** | `/opt/k3s-data/criteri-fresque/` | 38M | 2 | ✅ Mega A | — | May 2026 |
+| **Homer config** | `/opt/k3s-data/homer/` | 5.3M | 2 | ✅ Backblaze B2, job 16 (Mega A job 4 disabled 2026-09-13) | — | 2026-09-13 |
+| **Criteri-fresque** | `/opt/k3s-data/criteri-fresque/` | 41M | 2 | ✅ Backblaze B2, job 16 (Mega A job 6 disabled 2026-09-13) | — | 2026-09-13 |
 | **Personal backups** | `/mnt/data/backups/` | **102M** — `OnePlus-10T/` only | 2 | ✅ Backblaze B2 (since 2026-09-10) | — | 2026-09-11 |
 | **Photos** | `/mnt/data/media/photos/` | **946M** | 2 | ✅ Backblaze B2 (since 2026-09-10) | — | 2026-09-11 |
 | **DB dumps** | `/mnt/data/backups/dumps/` | — | 2 | ❌ directory does not exist | — | 2026-09-09 |
 | **Secrets** | `~/astra-secrets/` (workstation) | ~1M | 2 | ❌ not yet | — | May 2026 |
 | **Crafty backups** | `/mnt/data/docker-volumes/crafty/backups/` | **26G** | 2 | ✅ Backblaze B2 — all 3 servers (since 2026-09-11) | — | 2026-09-11 |
-| **Crafty config** | `/opt/docker-data/crafty/config/` | **169M** | 2 | ✅ Mega A | — | 2026-09-09 |
-| **Crafty servers** | `/opt/docker-data/crafty/servers/` | **17G** | ❌ 3 | — | — | 2026-09-09 |
+| **Crafty config** | `/opt/docker-data/crafty/config/` | **186M** | 2 | ✅ Backblaze B2, job 17 (Mega A job 7 disabled 2026-09-13) | SQLite | 2026-09-13 |
+| **Crafty servers** | `/opt/docker-data/crafty/servers/` | **17G** | ❌ 3 | — excluded from job 17; the worlds leave through Crafty's archives (job 15) | — | 2026-09-13 |
 | **Crafty logs** | `/mnt/data/docker-volumes/crafty/logs/` | **430M** | ❌ 3 | — | — | 2026-09-09 |
-| **Portracker** | `/opt/docker-data/portracker/` | 68K | ❌ 3 | — | — | May 2026 |
+| **Portracker** | `/opt/docker-data/portracker/` | 72K | ❌ 3 | in job 17 anyway (whole root) | — | 2026-09-13 |
 | **Kiwix ZIM** | `/mnt/data/k3s-pvc/kiwix/` | **empty** — 136G deleted 2026-09-09 | ❌ 3 | — | — | 2026-09-09 |
 | **Movies** | `/mnt/data/media/movies/` | **47G** (19 files) | ❌ 3 | — | — | 2026-09-09 |
 
+> **2026-09-13 — every app directory off-site.** Until then only 11 directories reached the
+> cloud, and about 25 app directories (Vaultwarden, Infisical, CouchDB, n8n, Umami, Uptime
+> Kuma, NPM…) existed only inside Astra: on the WD and in PBS, both in the same box. Jobs 16
+> and 17 now copy the two app roots whole, so a new app is covered without any Zerobyte
+> change. Still without an off-site copy: the live PostgreSQL and MariaDB databases (Umami,
+> Infisical, Uptime Kuma, Dawarich) until their dumps exist (§6), and Termix and Dawarich's
+> files, which live outside the two roots.
+>
 > **Resolved 2026-09-10 — the three "mounted, never declared" paths.** Portainer, personal
 > backups and photos were bind-mounted into Zerobyte but had no matching *volume*, so no job
 > ever backed them up. `/mnt/data/backups/` was triaged first (8.8G → 102M: a redundant
@@ -486,8 +505,8 @@ Two providers, with a clear split:
 
 | Zerobyte repository | Backend | Used (Zerobyte stats, 2026-09-11) | Snapshots | Holds |
 | ------------------- | ------- | --------------------------------- | --------- | ----- |
-| **Backblaze** | S3 (B2) | **43.4 GiB** (~$0.28/month) | 7 | Immich, Crafty backups, personal backups, photos, Portainer |
-| **Mega A** | rclone `mega-a` | 113 MiB | 44 | Homer, Criteri'Fresque, Crafty config, Docker Registry |
+| **Backblaze** | S3 (B2) | **43.4 GiB** (~$0.28/month) | 7 | Immich, Crafty backups, personal backups, photos, and since 2026-09-13 every app directory (jobs 16, 17) |
+| **Mega A** | rclone `mega-a` | 113 MiB | 44 | Homer, Criteri'Fresque, Crafty config, Docker Registry — **jobs disabled 2026-09-13**, snapshots kept until about 2026-12-13 |
 | **Mega C** | rclone `mega-c` | 3.7 GiB | 11 | Filebrowser files |
 | **Mega D** | rclone `mega-d` | 874 MiB | 7 | old Nous Deux snapshots only — its job was disabled on 2026-09-11 |
 | Mega B | rclone `mega-b` | — | 10 | **retired** 2026-09-09: removed from Zerobyte, left intact on MEGA, readable with `restic --no-lock` |
@@ -535,16 +554,18 @@ Jobs ("schedules") are defined in the Zerobyte web UI at `zerobyte.lan`. Each on
 **volume** (a directory bind-mounted into the container, see `docker-compose.yml`) to a
 **repository**. Declaring a volume alone backs up nothing.
 
-State read from `zerobyte.db` on 2026-09-11. Times are Europe/Paris (the container's `TZ`).
-Every active job keeps **7 daily, 4 weekly, 3 monthly** snapshots and was in `success`.
+State read from `zerobyte.db` on 2026-09-13. Times are Europe/Paris (the container's `TZ`).
+Every job keeps **7 daily, 4 weekly, 3 monthly** snapshots and was in `success`.
 
 | id | Schedule | Host path | Repository | Cron | State |
 | -- | -------- | --------- | ---------- | ---- | ----- |
-| 4  | Homer | `/opt/k3s-data/homer` | Mega A | `00 01 * * *` | active |
-| 6  | Criteri'Fresque | `/opt/k3s-data/criteri-fresque` | Mega A | `00 01 * * *` | active |
-| 7  | Crafty Config | `/opt/docker-data/crafty/config` | Mega A | `00 01 * * *` | active |
-| 11 | Docker Registry | `/opt/k3s-data/docker-registry` | Mega A | `00 01 * * *` | active |
-| 12 | Portainer | `/opt/docker-data/portainer` | Backblaze | `00 01 * * *` | active — created 2026-09-10 |
+| 16 | K3s Data | `/opt/k3s-data` (whole root) | Backblaze | `00 01 * * *` | active — created 2026-09-13 |
+| 17 | Docker Data | `/opt/docker-data` (whole root) | Backblaze | `00 01 * * *` | active — created 2026-09-13 |
+| 4  | Homer | `/opt/k3s-data/homer` | Mega A | `00 01 * * *` | **disabled** 2026-09-13 — covered by job 16 |
+| 6  | Criteri'Fresque | `/opt/k3s-data/criteri-fresque` | Mega A | `00 01 * * *` | **disabled** 2026-09-13 — covered by job 16 |
+| 7  | Crafty Config | `/opt/docker-data/crafty/config` | Mega A | `00 01 * * *` | **disabled** 2026-09-13 — covered by job 17 |
+| 11 | Docker Registry | `/opt/k3s-data/docker-registry` | Mega A | `00 01 * * *` | **disabled** 2026-09-13 — covered by job 16 |
+| 12 | Portainer | `/opt/docker-data/portainer` | Backblaze | `00 01 * * *` | **disabled** 2026-09-13 — covered by job 17 |
 | 8  | Immich Library | `/opt/k3s-data/immich/library` | Backblaze | `00 02 * * *` | active |
 | 10 | Filebrowser Files | `/mnt/data/k3s-pvc/filebrowser` | Mega C | `00 02 * * *` | active |
 | 13 | Backups | `/mnt/data/backups` | Backblaze | `00 02 * * *` | active — created 2026-09-10 |
@@ -552,6 +573,33 @@ Every active job keeps **7 daily, 4 weekly, 3 monthly** snapshots and was in `su
 | 15 | Crafty Backups | `/mnt/data/docker-volumes/crafty/backups` (all servers) | Backblaze | `00 06 * * *` | active — created 2026-09-11 |
 | 9  | Crafty Backups (MEGA) | same volume, Nous Deux folder only | Mega D | `00 03 * * 0` | **disabled** 2026-09-11 |
 
+- **Jobs 16 and 17 copy the app roots whole, minus what is covered elsewhere or unsafe to
+  copy live** (decided 2026-09-13, following the value-based layout of §12). Exclusion
+  patterns, one per line in the job:
+  - job 16: `/immich/library` (job 8), `/immich/model-cache` (re-downloaded),
+    `/immich/postgres` (Immich dumps itself), `/umami/postgres`, `/infisical/postgres`,
+    `/infisical/redis`, `/uptimekuma/mariadb` (live servers, waiting for their dumps, §6);
+  - job 17: `/crafty/servers` (Crafty's archives, job 15), `/homarr/redis`.
+
+  A leading `/` anchors a pattern to the **volume root** (Zerobyte's `processPattern`); without
+  it, restic matches the name at any depth, so `postgres` would drop every directory of that
+  name. Restic does not warn when a pattern matches nothing. The first runs (2026-09-13,
+  22:29) prove the patterns work: restic read **8,418 files / 445,536,710 bytes** (job 16)
+  and **4,600 files** (job 17), exactly what `find` counts on disk with those paths pruned.
+  Uploaded after compression: 181 MB and 70 MB.
+- **Stopped databases stay in the copy on purpose.** Scanopy and AppFlowy have no running
+  deployment, so their PostgreSQL files are cold and the raw copy is consistent. The dump
+  script cannot export a database that is not running.
+- **Disabled jobs keep their snapshots, frozen.** Zerobyte runs retention right after each
+  backup and only for that job's tag (`forget --group-by tags --tag <short_id>`), so a
+  disabled job's snapshots are never pruned. Kept until about **2026-12-13**, when job 16/17
+  has built its own three months of history; then delete job 12 and its snapshots, remove
+  `Mega A` from Zerobyte, and drop the per-app mounts from `docker-compose.yml` that no
+  volume uses any more.
+- **Do not keep more than two or three Zerobyte tabs open.** Each tab holds an `EventSource`
+  stream; `zerobyte.lan` is plain HTTP/1.1, where Chrome allows 6 connections per host across
+  all tabs. With five tabs open on 2026-09-13 the site looked dead while the container
+  answered in 1.5 ms. Closing tabs is enough.
 - **Jobs starting at the same minute on the same repository are fine.** Zerobyte runs the
   backups in parallel and only queues the retention `forget` runs, one per repository. Four
   Mega A jobs have started at the same second every night without failure.
@@ -571,15 +619,15 @@ Every active job keeps **7 daily, 4 weekly, 3 monthly** snapshots and was in `su
 | `69dc796b-62cf-450b-a846-48893db1a6cd` | Survie Gay | paused (world unchanged since 2026-09-07), keeps 2 |
 | `c5da3465-e127-4ad2-9d36-bd313bf3eebe` | Roots SMP (SMP 26.2) | daily 04:00, keeps 3 |
 
-#### Planned jobs — not created yet
+#### No job planned
 
-| Job | Source | Blocker |
-| --- | ------ | ------- |
-| Database dumps | `/mnt/data/backups/dumps/` | the dump script (§6) does not exist |
+Two kinds of data reach the cloud through the existing **Backups** job (13) instead of a job
+of their own:
 
-> The Proxmox configuration needs no job of its own: Astra copies it nightly into
-> `/mnt/data/backups/proxmox-configs/`, which the existing **Backups** job (13) already covers
-> (§4.2).
+- the Proxmox configuration, which Astra copies nightly into
+  `/mnt/data/backups/proxmox-configs/` (§4.2);
+- the database dumps, once the script of §6 writes them to `/mnt/data/backups/dumps/` — decided
+  2026-09-13, replacing the `tier2-db-dumps` job planned earlier.
 
 ### 5.5 RTO / RPO
 
@@ -597,7 +645,7 @@ Every active job keeps **7 daily, 4 weekly, 3 monthly** snapshots and was in `su
 
 ## 6. Database Dump Strategy
 
-Live databases cannot be safely copied at the file level while running — doing so risks backing up a partially-written, corrupt state. Instead, a dump script runs **before** Zerobyte jobs and writes cold, consistent export files to `/mnt/data/backups/dumps/`. Zerobyte then backs up this directory as part of the `tier2-db-dumps` job.
+Live databases cannot be safely copied at the file level while running — doing so risks backing up a partially-written, corrupt state. Instead, a dump script runs **before** Zerobyte jobs and writes cold, consistent export files to `/mnt/data/backups/dumps/`. Zerobyte then backs up this directory as part of the existing **Backups** job (13, 02:00). A dump is a copy, so its place is the Netac (§12, disk layout).
 
 > **Phase:** DB dump automation is planned for a future phase. Current Layer 2 setup covers file-based data only.
 
@@ -609,18 +657,23 @@ Live databases cannot be safely copied at the file level while running — doing
 | Scanopy             | PostgreSQL | `/opt/k3s-data/scanopy/`             | `pg_dump -U scanopy scanopy > scanopy.sql`                                                                       | `/mnt/data/backups/dumps/scanopy.sql`                      |
 | Vaultwarden         | SQLite     | `/opt/k3s-data/vaultwarden/`         | `sqlite3 db.sqlite3 .dump > vaultwarden.sql`                                                                     | `/mnt/data/backups/dumps/vaultwarden.sql`                  |
 | n8n                 | SQLite     | `/opt/k3s-data/n8n/`                 | `sqlite3 database.sqlite .dump > n8n.sql`                                                                        | `/mnt/data/backups/dumps/n8n.sql`                          |
-| Uptimekuma          | SQLite     | `/opt/k3s-data/uptimekuma/`          | `sqlite3 kuma.db .dump > uptimekuma.sql`                                                                         | `/mnt/data/backups/dumps/uptimekuma.sql`                   |
+| Uptimekuma          | **MariaDB** (embedded, Uptime Kuma 2.5.3) | `/opt/k3s-data/uptimekuma/mariadb/` | `mariadb-dump` of database `kuma` — command to be written and tested; `kuma.db` is empty since the move to MariaDB | `/mnt/data/backups/dumps/uptimekuma.sql`                   |
 | Crowdsec            | SQLite     | `/opt/docker-data/crowdsec/`         | `sqlite3 crowdsec.db .dump > crowdsec.sql`                                                                       | `/mnt/data/backups/dumps/crowdsec.sql`                     |
 | SFTPgo              | SQLite     | `/opt/k3s-data/sftpgo/`              | `sqlite3 sftpgo.db .dump > sftpgo.sql`                                                                           | `/mnt/data/backups/dumps/sftpgo.sql`                       |
 | NPM                 | SQLite     | `/opt/docker-data/npm/`              | `sqlite3 /data/database.sqlite .dump > npm.sql`                                                                  | `/mnt/data/backups/dumps/npm.sql`                          |
 | Filebrowser Quantum | SQLite     | `/opt/k3s-data/filebrowser-quantum/` | `sqlite3 /data/database.db .dump > filebrowser-quantum.sql`                                                      | `/mnt/data/backups/dumps/filebrowser-quantum.sql`          |
 | Ntfy                | SQLite     | `/opt/k3s-data/ntfy/`                | `sqlite3 /var/cache/ntfy/cache.db .dump > ntfy-cache.sql && sqlite3 /var/lib/ntfy/user.db .dump > ntfy-user.sql` | `/mnt/data/backups/dumps/ntfy-cache.sql` + `ntfy-user.sql` |
 
-> If additional services with databases are added in the future, add them to this table and to the dump script. The script itself should run at 01:00 daily (before the `tier2-db-dumps` Zerobyte job at 01:30).
+> If additional services with databases are added in the future, add them to this table and to the dump script. The script itself should run at 01:00 daily, before the **Backups** job (13) at 02:00.
+>
+> **Missing from this table (2026-09-13):** Umami and Infisical (PostgreSQL, in
+> `/opt/k3s-data/<app>/postgres/`) and Dawarich (PostGIS, container `dawarich_db`). Their raw
+> data directories are excluded from Zerobyte (§5.4), so the dump is their only way off-site.
+> Scanopy is listed above but not running: its raw files are copied by job 16 instead.
 
 ### Dump Script Location
 
-The script lives at `/opt/ops/docker/zerobyte/dump-databases.sh` and is executed by a systemd timer on Pulsar (or a cron job). It must run inside or alongside the relevant containers to access the database files.
+The script lives at `/opt/ops/docker/zerobyte/dump-databases.sh` and is executed by a **systemd timer on Pulsar** at 01:00 (decided 2026-09-13). When every dump succeeds, it pushes to an Uptime Kuma push monitor, which alerts on Discord when no push arrives — the pattern already used by the Proxmox configuration copy (§4.2). It must run inside or alongside the relevant containers to access the database files.
 
 ---
 
@@ -664,7 +717,7 @@ This sync will be automated via a **systemd timer on my workstation** (daily or 
 
 ```txt
 Pulsar /opt/ (sda — hot)          103G used / 195G (55 %)   [2026-09-09]
-├── k3s-data/
+├── k3s-data/                    → Backblaze, job 16, since 2026-09-13 (exclusions §5.4)
 │   ├── immich/            32G   ├── library/upload   29G   (Tier 2)
 │   │                            ├── library/thumbs  1.5G   (Tier 3, regenerable)
 │   │                            ├── model-cache     786M   (Tier 3, re-downloaded)
@@ -678,9 +731,9 @@ Pulsar /opt/ (sda — hot)          103G used / 195G (55 %)   [2026-09-09]
 │   ├── homer/            5.3M
 │   ├── filebrowser-quantum/ 896K · sftpgo/ 380K · ntfy/ 160K
 │   └── diun/ 536K · convertx/ 356K · filebrowser/ 64K
-├── docker-data/
+├── docker-data/                 → Backblaze, job 17, since 2026-09-13 (exclusions §5.4)
 │   ├── crafty/            17G   └── servers/ 17G (Tier 3) · config/ 169M (Tier 2)
-│   ├── portainer/         83M   (Tier 1) → Backblaze since 2026-09-10
+│   ├── portainer/         83M   (Tier 1)
 │   ├── crowdsec/          92M
 │   ├── npm/               20M
 │   └── portracker/        68K
@@ -1040,9 +1093,15 @@ No hardware purchase: both M.2 slots are taken and the case has no room for a SA
 Backblaze carries the off-site copy of 3-2-1. A dead disk is handled by restoring within
 hours, not by a mirror, so ZFS was ruled out.
 
-- [ ] **Send every app directory off-site** — only 11 directories reach Backblaze or MEGA;
-      Vaultwarden, Infisical, CouchDB, n8n, Umami, Uptime Kuma, NPM and about 20 others
-      (~1 GB) exist only inside Astra. Restorable only with the database dumps of Phase 2
+- [x] **Send every app directory off-site** (2026-09-13) — jobs 16 and 17 copy
+      `/opt/k3s-data` and `/opt/docker-data` whole to Backblaze, with 9 exclusions (§5.4); the
+      five per-app jobs they replace (4, 6, 7, 11, 12) are disabled. The live PostgreSQL and
+      MariaDB directories are excluded and wait for Phase 2
+- [ ] Delete job 12 and its snapshots, remove `Mega A` from Zerobyte and drop the unused
+      per-app mounts from `docker-compose.yml` — **about 2026-12-13**, once jobs 16 and 17
+      hold three months of history (§5.4)
+- [ ] Bring Termix (`/opt/ops/docker/termix/data`, 15M) and Dawarich's file volumes (26M)
+      under the app roots — both are outside them and have no off-site copy
 - [ ] Move `/mnt/data/media/photos` and `/mnt/data/k3s-pvc/filebrowser` under `/opt/k3s-data`
       — unique data on the Netac, which PBS no longer backs up
 - [ ] Move the lab VMs to `vault`. Template 105 is undecided, and 106 is a linked clone of it
@@ -1063,10 +1122,14 @@ hours, not by a mirror, so ZFS was ruled out.
       vanilla PostgreSQL can restore. Immich already dumps itself into `library/backups/`,
       which Backblaze covers.
 - [ ] **Add Umami, Infisical and Dawarich** — absent from the §6 table, and unprotected today
-- [ ] Confirm whether Scanopy still runs before scripting its dump
+- [ ] **Dump Uptime Kuma with `mariadb-dump`** — it runs embedded MariaDB, not SQLite (§6)
+- [x] Confirm whether Scanopy still runs before scripting its dump — not running on
+      2026-09-13 (nor AppFlowy): no dump, their cold raw files are copied by job 16
 - [ ] Test each dump command individually
-- [ ] Set up systemd timer on Pulsar to run dumps at 01:00 daily
-- [ ] Add `tier2-db-dumps` job in Zerobyte pointing to `/mnt/data/backups/dumps/`
+- [ ] Set up systemd timer on Pulsar to run dumps at 01:00 daily, with an Uptime Kuma push
+      monitor on full success (decided 2026-09-13)
+- [x] ~~Add `tier2-db-dumps` job in Zerobyte~~ — not needed: `/mnt/data/backups/dumps/` is
+      inside job 13 (decided 2026-09-13)
 - [ ] Validate end to end: dump → Zerobyte backup → restore dump → import to DB
 
 ### Phase 3 — Secrets sync
@@ -1098,6 +1161,8 @@ hours, not by a mirror, so ZFS was ruled out.
       (2026-09-09), then Portainer, personal backups, photos (2026-09-10) and Crafty backups
       (2026-09-11). Bucket `astra-pulsar-backup`, 43.4 GiB, lifecycle
       `daysFromHidingToDeleting: 1`
-- [ ] Decide whether to migrate the remaining MEGA jobs to B2
+- [ ] Decide whether to migrate the remaining MEGA jobs to B2 — Mega A's four jobs moved to
+      jobs 16 and 17 on 2026-09-13; Mega C (Filebrowser) follows once its files move under
+      `/opt/k3s-data`
 - [ ] `Mega B` is **retired**: removed from Zerobyte on 2026-09-09, its 10 snapshots left
       intact on MEGA, neither copied nor purged. Still readable with `restic --no-lock`.
