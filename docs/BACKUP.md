@@ -2,9 +2,7 @@
 
 > **Status:** Layer 1 operational. Layer 2 in service for every Tier 2 path on `/mnt/data`
 > and for the Proxmox configuration; database dumps still missing — see §12.
-> **Last updated:** 2026-09-12 (first night after the 2026-09-11 changes checked: PBS
-> snapshot without the cold disk, Proxmox config copy off-site, job 15; B2 key and restic
-> password recorded off Astra; Discord failure diagnosed, §10)
+> **Last updated:** 2026-09-13 (PVE and PBS mail notifications restricted to failures, §10)
 > **Language:** English (technical reference)
 
 ---
@@ -846,7 +844,8 @@ Then start both services again. The datastore itself is self-describing (§4.2).
 | Component               | Monitoring Method                  | Alert Channel          |
 | ----------------------- | ---------------------------------- | ---------------------- |
 | Zerobyte job failures   | Zerobyte built-in notifications    | Discord webhook — ⚠️ **broken for long messages** (below) |
-| PBS backup job status   | PBS notifications                  | Email via Resend (configured 2026-09-09) |
+| PVE backup job (vzdump) | PVE notifications, `default-matcher` | Email, **errors only**: target `mail-to-root` → root@pam's address, sent by Postfix through Resend |
+| PBS jobs (GC, verify, prune) | PBS notifications, `default-matcher` | Email, **errors only**: SMTP target `resend` (configured 2026-09-09) |
 | Proxmox config copy     | Uptime Kuma push monitor (§4.2)    | Discord (`APS #monitoring`): `down` pushed on failure, or no push for 25 h |
 | Disk usage — `vault`    | Beszel agent on Astra, drop-in below | Discord (`APS #monitoring`, Beszel webhook): above 75 % |
 | Disk usage — Pulsar sda | Beszel agent on Pulsar             | Discord (Beszel): above 85 % |
@@ -854,6 +853,13 @@ Then start both services again. The datastore itself is self-describing (§4.2).
 | AdGuard DNS answers     | Uptime Kuma DNS monitor **AdGuard DNS**: resolves `beszel.lan` through `192.168.1.202` | Discord (`APS #monitoring`) |
 | LXC 103 `pbs`           | Beszel agent in the container      | Discord (Beszel): disk above 80 %, memory above 80 % for 10 min |
 | Cloud storage usage     | MEGA web UI · B2 *Caps & Alerts*   | Manual quarterly check · B2 spending cap |
+
+> **PVE and PBS mail only failures since 2026-09-13.** Each `default-matcher` keeps a single
+> rule, `match-severity error`: every job success is `info`, every failure `error`, so success
+> mails stop — and so do the *package updates available* ones, also `info`. Both matchers are
+> now `modified-builtin`; *Reset* in the GUI brings back the built-in one, which sends
+> everything. A job that never starts sends nothing either: silence does not prove the backup
+> ran.
 
 > **Until 2026-09-11 no disk alert existed.** Dashdot only draws graphs: `vault` reached 79 %
 > and LXC 101 95 % without a single message. The Beszel alerts above replace it.
