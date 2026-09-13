@@ -623,17 +623,25 @@ as a Helm chart Application pointing to the cowboysysop registry.
 This project uses the **Gitmoji** convention:
 
 ```text
-<gitmoji> [<scope>] <subject>
+<gitmoji> [<scope>] <Subject>
 ```
 
-- Imperative mood, under 100 characters, no body
-- Scope from directory or module (e.g., `[SFTPGo]`, `[Homer]`, `[Docker/NPM]`)
+- A gitmoji from the [official list](https://gitmoji.dev)
+- Scope from the app or area touched, in letters, digits and hyphens starting with a
+  letter (e.g., `[SFTPGo]`, `[Homer]`, `[Roots-SMP-Web]`)
+- Imperative mood, capitalised, no trailing period, around 60 characters
+- A body only when the subject cannot carry the reason, after a blank line
 
 Examples:
 
 - `✨ [Vaultwarden] Migrate to Helm chart`
 - `🐛 [n8n] Fix volume mount path`
 - `🔧 [ArgoCD] Update ingress hosts`
+
+The `commit-msg` hook in `.githooks/` enforces these rules once the hooks are enabled
+(see [Pre-commit secret scan](#pre-commit-secret-scan)). A subject over 72 characters
+only draws a warning, and the messages git writes itself (merges, reverts, `fixup!`)
+are left alone.
 
 ---
 

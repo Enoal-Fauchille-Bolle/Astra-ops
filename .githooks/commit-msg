@@ -1,0 +1,150 @@
+#!/usr/bin/env sh
+# Git commit-msg hook
+#
+# Validates the Gitmoji convention described in README.md:
+#   <gitmoji> [<scope>] <Subject>
+# One line, imperative, capitalised, no trailing period. A subject over 72
+# characters only draws a warning. A body is allowed when separated from the
+# subject by a blank line.
+
+# Set up colors
+RED_BOLD="\033[1;31m"
+GREEN_BOLD="\033[1;32m"
+BLUE_BOLD="\033[1;34m"
+GOLD_BOLD="\033[1;33m"
+WHITE_BOLD="\033[1;37m"
+RESET="\033[0m"
+
+# The official list from gitmoji.dev (packages/gitmojis/src/gitmojis.json, 75
+# entries). Kept as a closed set on purpose: a hook without an allowlist would
+# happily accept any first word.
+GITMOJIS="🎨 ⚡️ 🔥 🐛 🚑️ ✨ 📝 🚀 💄 🎉 ✅ 🔒️ 🔐 🔖 🚨 🚧 💚 ⬇️ ⬆️ 📌 👷 📈 ♻️ ➕ ➖ 🔧 🔨 🌐 ✏️ 💩 ⏪️ 🔀 📦️ 👽️ 🚚 📄 💥 🍱 ♿️ 💡 🍻 💬 🗃️ 🔊 🔇 👥 🚸 🏗️ 📱 🤡 🥚 🙈 📸 ⚗️ 🔍️ 🏷️ 🌱 🚩 🥅 💫 🗑️ 🛂 🩹 🧐 ⚰️ 🧪 👔 🩺 🧱 🧑‍💻 💸 🧵 🦺 ✈️ 🦖"
+
+# U+FE0F, the invisible selector that asks for the colour glyph. Keyboards and
+# emoji pickers add it or not ('🔒' and '🔒️' are both in the history), so it
+# is stripped from both sides before comparing.
+VS16="$(printf '\357\270\217')"
+
+msg_file="$1"
+
+# The subject is the first line that is neither blank nor a comment, which is
+# what git's default cleanup will keep as the subject too.
+subject="$(grep -v '^#' "$msg_file" | tr -d '\r' | grep -v '^[[:space:]]*$' | head -n 1)"
+
+# Nothing to validate: git aborts empty commit messages on its own, with a
+# clearer error than anything this hook could print.
+if [ -z "$subject" ]; then
+    exit 0
+fi
+
+# Bypass the messages git writes itself. Merges, reverts and rebase autosquash
+# markers cannot follow the convention and are never typed by hand; MERGE_HEAD
+# is the reliable signal, the prefixes catch the cases where it is already gone.
+if [ -f "$(git rev-parse --git-dir)/MERGE_HEAD" ]; then
+    printf "${GOLD_BOLD}Merge in progress, bypassing commit-msg checks.${RESET}\n"
+    exit 0
+fi
+case "$subject" in
+  "Merge "*|"Revert "*|"fixup! "*|"squash! "*|"amend! "*)
+    printf "${GOLD_BOLD}Generated message ('%.20s...'), bypassing commit-msg checks.${RESET}\n" "$subject"
+    exit 0
+    ;;
+esac
+
+printf "${BLUE_BOLD}Running commit-msg checks...${RESET}\n"
+
+# No double spaces. Checked before the format so that the usual slip, two
+# spaces after an emoji that the terminal draws one column too narrow, gets
+# named for what it is.
+if printf "%s" "$subject" | grep -Eq '  +'; then
+    printf "${RED_BOLD}Subject contains multiple consecutive spaces.${RESET}\n"
+    exit 1
+fi
+
+# Gitmoji, then a scope made of letters, digits and hyphens that starts with a
+# letter: '[Roots-SMP-Web]' and '[n8n]' pass, '[K3s Secrets]' and '[k3s/cv]' do not.
+if ! printf "%s" "$subject" | grep -Eq '^[^ ]+ \[[A-Za-z][A-Za-z0-9-]*\] [^ ].*$'; then
+    printf "${RED_BOLD}Subject does not match the format: <gitmoji> [<scope>] <Subject>${RESET}\n"
+    printf "${WHITE_BOLD}  scope: letters, digits and hyphens, starting with a letter${RESET}\n"
+    printf "${WHITE_BOLD}  e.g. '✨ [Vaultwarden] Migrate to Helm chart'${RESET}\n"
+    exit 1
+fi
+
+gitmoji="${subject%% *}"
+bare="$(printf "%s" "$gitmoji" | sed "s/$VS16//g")"
+case " $(printf "%s" "$GITMOJIS" | sed "s/$VS16//g") " in
+  *" $bare "*) ;;
+  *)
+    printf "${RED_BOLD}'%s' is not in the official gitmoji list (https://gitmoji.dev).${RESET}\n" "$gitmoji"
+    exit 1
+    ;;
+esac
+
+# Length over 72 only warns. Counted with 'wc -m' rather than ${#subject}: dash,
+# the sh of Debian, counts bytes there, and every emoji or arrow would weigh four
+# times its width. Without a UTF-8 locale 'wc -m' counts bytes too, which can
+# only make the warning appear early, never hide it.
+len="$(printf "%s" "$subject" | LC_ALL=C.UTF-8 wc -m 2>/dev/null | tr -d '[:space:]')"
+if [ "${len:-0}" -gt 72 ]; then
+    printf "${GOLD_BOLD}Subject exceeds 72 characters (actual: %s). Consider shortening it.${RESET}\n" "$len"
+fi
+
+# A body must be separated from the subject by a blank line, so that git and
+# every tool downstream can tell the two apart. Checked on the raw line right
+# after the subject: once comments are stripped, 'git commit -v' would leave its
+# diff behind and make a well-formed message look like it had a body glued to
+# the subject. Found the same way as the subject, so that a comment above it
+# does not shift the check onto the subject itself.
+if ! tr -d '\r' < "$msg_file" | awk '
+    !found && !/^#/ && !/^[[:space:]]*$/ { found = 1; next }
+    found { exit !(/^[[:space:]]*$/ || /^#/) }
+'; then
+    printf "${RED_BOLD}Separate the subject from the body with a blank line.${RESET}\n"
+    exit 1
+fi
+
+# Everything below speaks about the description rather than the whole subject,
+# so that the brackets around the scope are never mistaken for the writer's.
+description="${subject#*] }"
+first_word="${description%% *}"
+
+# Last character must be a letter or a number: this is what rules out the
+# trailing period, and any other stray punctuation with it. A closing
+# parenthesis is the one exception, for the '(#264)' GitHub appends to a pull
+# request and for code named in the subject.
+if ! printf "%s" "$description" | grep -Eq '[a-zA-Z0-9]\)?$'; then
+    printf "${RED_BOLD}Subject must end with a letter, a number or ')' (no trailing period).${RESET}\n"
+    exit 1
+fi
+
+# That exception only holds for a parenthesis the description itself opened, so
+# the two counts must match: a stray ')' is a typo, not code, and so is a '('
+# left open.
+opens="$(printf "%s" "$description" | tr -cd '(' | wc -c | tr -d '[:space:]')"
+closes="$(printf "%s" "$description" | tr -cd ')' | wc -c | tr -d '[:space:]')"
+if [ "$opens" -ne "$closes" ]; then
+    printf "${RED_BOLD}Subject has unbalanced parentheses (%s '(' for %s ')').${RESET}\n" "$opens" "$closes"
+    exit 1
+fi
+
+# Check that the first word is capitalised
+if ! printf "%s" "$first_word" | grep -q '^[A-Z]'; then
+    printf "${RED_BOLD}The first word of the subject ('%s') must start with a capital letter.${RESET}\n" "$first_word"
+    exit 1
+fi
+
+# Basic check for imperative mood (not ending in -ed, -ing, or third-person -s).
+# Uses es$|[^s]s$ to avoid rejecting imperatives that end in double-s (address,
+# process, compress). The allowlist covers the imperatives the pattern would
+# otherwise reject on their spelling alone.
+IMPERATIVES="pass|focus|bypass|alias|express|bring|string|ring|spring|swing|sing|seed|feed|embed|speed|spread|shed|exceed|proceed|succeed"
+lower_word="$(printf "%s" "$first_word" | tr 'A-Z' 'a-z')"
+if printf "%s" "$lower_word" | grep -Eq '(ed|ing|es|[^s]s)$' && ! printf "%s" "$lower_word" | grep -Eq "^($IMPERATIVES)$"; then
+    printf "${RED_BOLD}The first word of the subject ('%s') must be in the imperative mood (e.g., 'Add' instead of 'Added' or 'Adds').${RESET}\n" "$first_word"
+    exit 1
+fi
+
+printf "${GREEN_BOLD}All commit-msg checks passed successfully!${RESET}\n"
+
+# Output success
+exit 0
