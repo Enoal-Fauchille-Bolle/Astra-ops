@@ -62,7 +62,7 @@ The Astra homelab backup system follows a **3-2-1 strategy** (3 copies, 2 differ
 ```mermaid
 graph TB
     subgraph ASTRA["Astra — Proxmox Host (192.168.1.200)"]
-        subgraph PROD["Production — nvme0n1 (WD Blue 1To)"]
+        subgraph PROD["Production — WD Blue SN580 1To"]
             PVE_OS[Proxmox OS — pve-root 96G]
             LVM[local-lvm pool 793G]
             LVM --> DISK0[vm-100-disk-0 200G — Pulsar OS]
@@ -71,7 +71,7 @@ graph TB
             LVM --> DISK3[vm-103-disk-0 16G — PBS]
         end
 
-        subgraph VAULT["Vault — nvme1n1 (Netac 1To)"]
+        subgraph VAULT["Vault — Netac 1To"]
             VAULT_IMAGES[vm-100-disk-0.qcow2 500G — Pulsar cold disk]
             PBS_DS[PBS Datastore — 494G · 53% of vault]
         end
@@ -113,13 +113,22 @@ graph TB
 
 ### 2.1 Astra — Proxmox Host
 
-| Disk              | Device    | Mount                    | Role                                           |
-| ----------------- | --------- | ------------------------ | ---------------------------------------------- |
-| WD Blue SN580 1To | `nvme0n1` | `pve-root` + `local-lvm` | Proxmox OS + VM/LXC virtual disks (production) |
-| Netac 1To         | `nvme1n1` | `/mnt/pve/vault`         | Pulsar cold disk (qcow2) + PBS datastore       |
+| Disk              | Model in `lsblk`    | Mount                    | Role                                           |
+| ----------------- | ------------------- | ------------------------ | ---------------------------------------------- |
+| WD Blue SN580 1To | `WD Blue SN580 1TB` | `pve-root` + `local-lvm` | Proxmox OS + VM/LXC virtual disks (production) |
+| Netac 1To         | `G932E1Q 1T`        | `/mnt/pve/vault`         | Pulsar cold disk (qcow2) + PBS datastore       |
+
+> **Kernel names are not stable — found 2026-09-13.** Linux names NVMe drives in the order
+> they answer at boot. Until then the WD Blue was `nvme0n1` and the Netac `nvme1n1`; on the
+> 2026-09-13 reboot they came up the other way round. Nothing broke: `vault` mounts by
+> filesystem UUID (`mnt-pve-vault.mount`,
+> `What=/dev/disk/by-uuid/78f0c026-a80f-4a58-be0c-36734be85c5a`), LVM finds `pve` by its own
+> UUIDs, and Beszel watches the path `/mnt/pve/vault`. This document therefore names drives
+> by model. Before any command on a drive, check `lsblk -d -o NAME,MODEL` and address it as
+> `/dev/disk/by-id/nvme-<model>_…` or by UUID, never as `nvmeXn1`.
 
 ```txt
-nvme0n1 (931G)
+WD Blue SN580 (931G)
 ├── pve-swap        8G
 ├── pve-root       96G   → Proxmox OS (/etc/pve, /etc/proxmox-backup)
 └── pve-data      793G   → local-lvm pool
@@ -128,7 +137,7 @@ nvme0n1 (931G)
     ├── vm-102-disk-0     4G  → Wireguard
     └── vm-103-disk-0    16G  → PBS (8G until 2026-09-13)
 
-nvme1n1 (938G — "vault")
+Netac (938G — "vault")
 ├── vm-100-disk-0.qcow2  501G declared / 79G allocated  → Pulsar cold disk (= sdb)
 ├── template/            4.6G  → ISOs
 └── pbs-datastore/       494G  → PBS backup chunks — largest consumer of this disk
@@ -183,7 +192,7 @@ sdb (500G) → /mnt/data
 
 ### 2.3 Accepted Constraints
 
-The Netac NVMe (`nvme1n1`) hosts both the Pulsar cold disk and the PBS datastore. This means Layer 1 backups and the associated production data reside on the same physical device. A single Netac failure would result in simultaneous loss of Pulsar's cold data AND its Layer 1 backups.
+The Netac NVMe hosts both the Pulsar cold disk and the PBS datastore. This means Layer 1 backups and the associated production data reside on the same physical device. A single Netac failure would result in simultaneous loss of Pulsar's cold data AND its Layer 1 backups.
 
 This is a known, accepted constraint given the single-server hardware budget. Layer 2 (cloud) is the mitigation.
 
@@ -206,8 +215,8 @@ This is a known, accepted constraint given the single-server hardware budget. La
 > **9.38 GiB/day**, projecting saturation around 30 September 2026. Two non-destructive
 > reclaims brought it to **61 % (369 GB free)**: `fstrim -av` on Pulsar returned **137 GB**
 > of dead space still allocated in the `.qcow2` after the Kiwix deletion, and
-> `tune2fs -m 1 /dev/nvme1n1p1` released **38 GB** of ext4 root reserve that PBS — running as
-> uid `100034` — could never use. The growth rate is unchanged; see
+> `tune2fs -m 1 /dev/nvme1n1p1` (the Netac's name that day, see §2.1) released **38 GB** of
+> ext4 root reserve that PBS — running as uid `100034` — could never use. The growth rate is unchanged; see
 > `~/.claude/exports/plan-stockage-astra-2026-09-09.md` for the remaining steps.
 
 ---
@@ -286,7 +295,7 @@ PBS (LXC 103 on Astra) operates at the **block level**. It uses QEMU dirty bitma
 
 Data is hashed, deduplicated, and compressed with **ZSTD** on the fly before being written to the datastore. Backups are taken in **snapshot mode**: the hypervisor momentarily freezes VM/LXC state (RAM + filesystem), reads the data, then releases the snapshot. Services continue running with no downtime.
 
-Datastore location: `/mnt/pve/vault/` (Netac NVMe, `nvme1n1`).
+Datastore location: `/mnt/pve/vault/` (Netac NVMe).
 
 The container: Debian 13 (trixie) and PBS 4.2.5 since 2026-09-13 — upgraded from Debian 12 /
 PBS 3.4.9, which reached end of life in 2026-08. Unprivileged, `features: nesting=1` since
@@ -740,7 +749,7 @@ Zerobyte (§5.4), after adding a writable restore target (§5.5).
 
 ### 9.2 Scenario B — Netac NVMe Failure
 
-**Trigger:** `nvme1n1` (Netac) fails. Both Pulsar's cold disk (`/mnt/data`) and the PBS datastore are lost simultaneously.
+**Trigger:** The Netac NVMe fails. Both Pulsar's cold disk (`/mnt/data`) and the PBS datastore are lost simultaneously.
 
 **What is lost:**
 
@@ -749,7 +758,7 @@ Zerobyte (§5.4), after adding a writable restore target (§5.5).
 
 **What survives:**
 
-- Pulsar OS disk (`sda`, on `nvme0n1`) — `/opt/k3s-data/`, `/opt/docker-data/`, running services
+- Pulsar OS disk (`sda`, on the WD Blue) — `/opt/k3s-data/`, `/opt/docker-data/`, running services
 - Layer 2 cloud backups (Backblaze B2, MEGA)
 
 **Recovery steps:**
@@ -976,7 +985,8 @@ For each tested restore:
 - [x] Move `/mnt/data/k3s-pvc/criteri-fresque/` → `/opt/k3s-data/criteri-fresque/`
 - [x] Delete residue `/opt/k3s-data/crafty/`
 - [x] **`fstrim -av` on Pulsar** — returned **137G** of dead space to `vault` (79 % → 63 %)
-- [x] **`tune2fs -m 1 /dev/nvme1n1p1`** — released **38G** of ext4 root reserve (63 % → 61 %)
+- [x] **`tune2fs -m 1 /dev/nvme1n1p1`** — released **38G** of ext4 root reserve (63 % → 61 %).
+      `nvme1n1` was the Netac then; the name now points at the WD Blue (§2.1)
 - [x] **AdGuard query log** — retention 90d → 7d and log cleared; LXC 101 went 95 % → 11 %
 - [x] **Second `fstrim -av` on Pulsar** (2026-09-11) — **20.25 GiB** returned after the
       `/mnt/data/backups` triage (65 % → 63 %)
@@ -1010,7 +1020,7 @@ For each tested restore:
 - [x] **Reboot Astra onto kernel `7.0.14-16-pve`** (2026-09-13, 15:38) — installed with
       PVE 9.2.11 → 9.2.18 on 2026-09-12. Pulsar, AdGuard and PBS came back on their own
       (`onboot: 1`), `systemctl --failed` empty on the host, `pvesm list pbs-local` lists the
-      51 snapshots
+      51 snapshots. The two NVMe drives swapped kernel names on this boot (§2.1)
 - [ ] Crafty backups use `compress=1` and `shutdown=0`; Crafty's documentation recommends
       stopping the server during backups and warns compression can damage chunk data
 - [ ] Rotate the passwords from the deleted Google export — it survives in PBS snapshots of
