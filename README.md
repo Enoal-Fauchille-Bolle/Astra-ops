@@ -540,7 +540,7 @@ infisical-token.yaml
 The gitignore patterns only catch files by name; a key pasted into a committed
 manifest slips through them. The `pre-commit` hook in `.githooks/` scans the staged
 changes with [Betterleaks](https://github.com/betterleaks/betterleaks) and refuses the
-commit when it finds a secret. Enable it once per clone, and install Betterleaks
+commit when it finds a secret. Enable the hooks once per clone, and install Betterleaks
 (without it, the hook prints a warning and lets the commit through):
 
 ```bash
@@ -617,6 +617,24 @@ kubectl describe vpa <service> -n <namespace>
 VPA objects live in `infra/vpa/` (one file per deployment) and are deployed by the
 `vpa-objects` ArgoCD Application. The operator itself (`vpa-system`) is managed separately
 as a Helm chart Application pointing to the cowboysysop registry.
+
+### Pre-commit checks
+
+Portainer and ArgoCD only reject a broken file after the push. Once the hooks are
+enabled (see [Pre-commit secret scan](#pre-commit-secret-scan)), the `pre-commit` hook
+checks the staged version of what the commit touches:
+
+- **Docker Compose files** in `docker/` must not use `build:`. Portainer redeploys every
+  stack every five minutes and recreates a built service each time, which wipes its
+  state: publish the image and reference its tag instead. The file is then validated
+  with `docker compose config --no-interpolate`, which ignores the `.env` files.
+- **Helm charts** in `k3s/` must pass `helm lint` and render with `helm template`.
+- **ArgoCD Applications** in `apps/` must point to a path that exists in the commit,
+  which catches a chart renamed or removed while its Application still points to it.
+
+The Compose validation needs `docker compose`, the chart checks need `helm`; without
+them, the hook prints a warning and lets the commit through. The `build:` rule needs
+neither.
 
 ### Commit convention
 

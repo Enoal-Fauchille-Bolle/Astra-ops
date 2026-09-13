@@ -4,17 +4,29 @@
 # Scans the staged changes for secrets with betterleaks and refuses the commit when
 # one is found. A key pushed to a public repository is compromised whatever the
 # branch, and removing it from the history afterwards does not make it secret again.
-# When betterleaks is missing it warns and steps aside instead of failing: a hook
+#
+# Then checks what Portainer and ArgoCD would otherwise only reject after the push:
+# the Docker Compose files and the Helm charts the commit touches, and the path of
+# every ArgoCD Application. Those checks read the staged version of the files,
+# exported to a temporary directory, so that an unstaged fix in the working tree
+# cannot hide a broken commit.
+#
+# When a tool is missing its check warns and steps aside instead of failing: a hook
 # that fails on a missing tool blocks a correct commit for a reason that is not the
-# code. Installing it, and handling false positives, is explained in README.md.
+# code. Installing the tools, and handling false positives, is explained in README.md.
 
 # Set up colors
 RED_BOLD="\033[1;31m"
+GREEN_BOLD="\033[1;32m"
+BLUE_BOLD="\033[1;34m"
 GOLD_BOLD="\033[1;33m"
 WHITE_BOLD="\033[1;37m"
 RESET="\033[0m"
 
-printf "${WHITE_BOLD}Scanning for secrets...${RESET}\n"
+printf "${BLUE_BOLD}Running pre-commit checks...${RESET}\n"
+
+# Scan the staged changes for secrets
+printf "${WHITE_BOLD}[1/4] Scanning for secrets...${RESET}\n"
 if command -v betterleaks >/dev/null 2>&1; then
     if ! betterleaks git . --pre-commit --staged --no-banner --redact --verbose --log-level warn; then
         printf "${RED_BOLD}Secret detected. Remove it from the staged changes (see README.md for false positives).${RESET}\n"
@@ -24,4 +36,98 @@ else
     printf "${GOLD_BOLD}betterleaks not installed, skipping the secret scan (see README.md).${RESET}\n"
 fi
 
+# Files the commit adds or modifies, and every path it touches, deletions and both
+# sides of a rename included: removing a chart must still check who points at it.
+changed="$(git diff --cached --name-only --diff-filter=ACMR)"
+touched="$(git diff --cached --name-only --no-renames)"
+
+compose_files="$(printf '%s\n' "$changed" | grep -E '^docker/[^/]+/(docker-)?compose\.ya?ml$')"
+charts=""
+for dir in $(printf '%s\n' "$changed" | sed -n 's|^\(k3s/[^/]*\)/.*|\1|p' | sort -u); do
+    # Only the directories that are Helm charts; the others hold values for a
+    # remote chart or plain manifests.
+    if git cat-file -e ":$dir/Chart.yaml" 2>/dev/null; then
+        charts="$charts $dir"
+    fi
+done
+
+# Export the index once for the Compose and Helm checks
+if [ -n "$compose_files" ] || [ -n "$charts" ]; then
+    staged_tree="$(mktemp -d)"
+    trap 'rm -rf "$staged_tree"' EXIT
+    git checkout-index --all --prefix="$staged_tree/"
+fi
+
+# Docker Compose. 'build:' is refused outright: Portainer redeploys every stack
+# every five minutes, and a built service is recreated each time, losing its state.
+# The file is then validated without interpolation, so that the result does not
+# depend on the .env files, which never reach the repository.
+printf "${WHITE_BOLD}[2/4] Checking Docker Compose files...${RESET}\n"
+if [ -n "$compose_files" ]; then
+    failed=0
+    for file in $compose_files; do
+        if grep -n '^[[:space:]]*build:' "$staged_tree/$file"; then
+            printf "${RED_BOLD}%s uses 'build:'. Publish the image and reference its tag instead (see README.md).${RESET}\n" "$file"
+            failed=1
+        fi
+    done
+    if docker compose version >/dev/null 2>&1; then
+        for file in $compose_files; do
+            if ! docker compose -f "$staged_tree/$file" config --quiet --no-interpolate; then
+                printf "${RED_BOLD}%s is not a valid Compose file.${RESET}\n" "$file"
+                failed=1
+            fi
+        done
+    else
+        printf "${GOLD_BOLD}docker compose not installed, skipping the Compose validation (see README.md).${RESET}\n"
+    fi
+    if [ "$failed" -ne 0 ]; then
+        exit 1
+    fi
+fi
+
+# Helm charts. 'helm lint' checks the chart itself, 'helm template' renders it the
+# way ArgoCD will, which is where a broken template shows up.
+printf "${WHITE_BOLD}[3/4] Checking Helm charts...${RESET}\n"
+if [ -n "$charts" ]; then
+    if command -v helm >/dev/null 2>&1; then
+        failed=0
+        for chart in $charts; do
+            if ! helm lint --quiet "$staged_tree/$chart" || ! helm template "$staged_tree/$chart" >/dev/null; then
+                printf "${RED_BOLD}%s does not lint or render.${RESET}\n" "$chart"
+                failed=1
+            fi
+        done
+        if [ "$failed" -ne 0 ]; then
+            exit 1
+        fi
+    else
+        printf "${GOLD_BOLD}helm not installed, skipping the chart checks (see README.md).${RESET}\n"
+    fi
+fi
+
+# ArgoCD Applications. Every source path must exist in the commit, not merely on
+# disk: ArgoCD reads GitHub, and a directory that was never added would pass a
+# check on the working tree. Paths starting with '/' are ingress paths in inline
+# Helm values, not sources.
+printf "${WHITE_BOLD}[4/4] Checking ArgoCD application paths...${RESET}\n"
+if printf '%s\n' "$touched" | grep -Eq '^(apps|k3s|infra)/'; then
+    failed=0
+    for app in $(git ls-files apps | grep -E '^apps/[^/]+\.ya?ml$'); do
+        for path in $(git show ":$app" | sed -n 's/^[[:space:]]*path:[[:space:]]*//p' | tr -d "\"'" | sed 's|/*[[:space:]]*$||'); do
+            case "$path" in
+              /*) continue ;;
+            esac
+            if [ -z "$(git ls-files -- "$path" | head -n 1)" ]; then
+                printf "${RED_BOLD}%s points to '%s', which is not in the commit.${RESET}\n" "$app" "$path"
+                failed=1
+            fi
+        done
+    done
+    if [ "$failed" -ne 0 ]; then
+        exit 1
+    fi
+fi
+
+printf "${GREEN_BOLD}All pre-commit checks passed successfully!${RESET}\n"
 exit 0
