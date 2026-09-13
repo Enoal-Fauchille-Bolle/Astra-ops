@@ -18,6 +18,8 @@ services:
       - /var/lib/zerobyte:/var/lib/zerobyte
       - ${RCLONE_CONFIG_PATH}:/root/.config/rclone:ro
       # Read-only mounts for various services
+      - /opt/k3s-data:/data/k3s-data:ro # Every k3s app directory
+      - /opt/docker-data:/data/docker-data:ro # Every Docker app directory
       - /opt/k3s-data/homer:/data/homer:ro # Homer
       - /opt/docker-data/portainer:/data/portainer:ro # Portainer
       - /opt/k3s-data/docker-registry:/data/docker-registry:ro # Docker Registry
