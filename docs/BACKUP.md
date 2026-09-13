@@ -68,7 +68,7 @@ graph TB
             LVM --> DISK0[vm-100-disk-0 200G — Pulsar OS]
             LVM --> DISK1[vm-101-disk-0 8G — AdGuard]
             LVM --> DISK2[vm-102-disk-0 4G — Wireguard]
-            LVM --> DISK3[vm-103-disk-0 8G — PBS]
+            LVM --> DISK3[vm-103-disk-0 16G — PBS]
         end
 
         subgraph VAULT["Vault — nvme1n1 (Netac 1To)"]
@@ -126,7 +126,7 @@ nvme0n1 (931G)
     ├── vm-100-disk-0   200G  → Pulsar OS disk (= sda in Pulsar)
     ├── vm-101-disk-0     8G  → AdGuard
     ├── vm-102-disk-0     4G  → Wireguard
-    └── vm-103-disk-0     8G  → PBS
+    └── vm-103-disk-0    16G  → PBS (8G until 2026-09-13)
 
 nvme1n1 (938G — "vault")
 ├── vm-100-disk-0.qcow2  501G declared / 79G allocated  → Pulsar cold disk (= sdb)
@@ -291,9 +291,13 @@ Datastore location: `/mnt/pve/vault/` (Netac NVMe, `nvme1n1`).
 The container: Debian 13 (trixie) and PBS 4.2.5 since 2026-09-13 — upgraded from Debian 12 /
 PBS 3.4.9, which reached end of life in 2026-08. Unprivileged, `features: nesting=1` since
 2026-09-12, time zone `timezone: host` (Europe/Paris) since 2026-09-13; it was `Etc/UTC`
-before, which shifted every PBS schedule by two hours (§4.4). APT pulls
+before, which shifted every PBS schedule by two hours (§4.4). Root disk 16G since
+2026-09-13 (was 8G). APT pulls
 from `pbs-no-subscription` only; `pbs-enterprise` is disabled (no subscription, it answered
-`401` on every `apt update`). Proxmox refuses to snapshot it because of the bind mount `mp0`,
+`401` on every `apt update`). The PBS 4 upgrade brought it back as a new, **enabled**
+`/etc/apt/sources.list.d/pbs-enterprise.sources`; the commented-out `.list` did not carry
+over. Disabled again in the PBS UI (Administration → Repositories → Disable), which writes
+`Enabled: false`. Proxmox refuses to snapshot it because of the bind mount `mp0`,
 so the safety net before maintenance is `vzdump 103 --mode stop --storage local` — 846 MB and
 19 seconds of downtime on 2026-09-12.
 
@@ -338,7 +342,7 @@ PBS (LXC 103) is intentionally excluded — but **not** for the reason previousl
 > through a *bind mount* (`mp0: /mnt/pve/vault/pbs-datastore,mp=/mnt/datastore`), and the
 > Proxmox VE documentation is explicit: *"The contents of bind mount points are not backed up
 > when using vzdump."* The `backup=1` option exists only for **volume** mount points. A
-> `vzdump` of LXC 103 would therefore capture its 8 GB rootfs and nothing else — no recursion
+> `vzdump` of LXC 103 would therefore capture its 16 GB rootfs and nothing else — no recursion
 > is possible.
 
 The real reason to exclude it: a backup of LXC 103 would live **inside the datastore it is
@@ -993,13 +997,20 @@ For each tested restore:
       (888 MB) once the first nights after the upgrade are checked — deleted 2026-09-13
 - [x] **Upgrade PBS to 4** (2026-09-13) — Debian 12 → 13, PBS 3.4.9 → 4.2.5. Safety net
       first: `vzdump-lxc-103-2026_09_13-15_12_10.tar.zst` (1.07 GB). Local versions kept for
-      `/etc/pam.d/common-session`, `/etc/crontab` and `/etc/cron.d/e2scrub_all`
+      `/etc/pam.d/common-session`, `/etc/issue`, `/etc/crontab` and `/etc/cron.d/e2scrub_all`.
+      Root disk grown 8G → 16G beforehand (UI: Resources → Root Disk → Volume Action →
+      Resize): the guide asks for 10 GB free and there were 3.9, eaten by kernel packages the
+      container never boots. 11G free afterwards. `pbs3to4 --full` still warns about NTP and
+      `grub-efi-amd64`; both are moot in a container, which uses the host's clock and never
+      boots through GRUB — do not install `grub-efi-amd64`
 - [x] **Put LXC 103 on Paris time** (2026-09-13) — `pct set 103 --timezone host`. Prune
       "04:00" had been running at 06:00 Paris, verify and GC "05:00" at 07:00
 - [ ] Delete the safety backup `vzdump-lxc-103-2026_09_13-15_12_10.tar.zst` from `local`
       once the first night on PBS 4 is checked
-- [ ] Reboot Astra onto kernel `7.0.14-16-pve` — installed with PVE 9.2.11 → 9.2.18 on
-      2026-09-12, `7.0.14-14-pve` still running. The reboot stops Pulsar, AdGuard and PBS
+- [x] **Reboot Astra onto kernel `7.0.14-16-pve`** (2026-09-13, 15:38) — installed with
+      PVE 9.2.11 → 9.2.18 on 2026-09-12. Pulsar, AdGuard and PBS came back on their own
+      (`onboot: 1`), `systemctl --failed` empty on the host, `pvesm list pbs-local` lists the
+      51 snapshots
 - [ ] Crafty backups use `compress=1` and `shutdown=0`; Crafty's documentation recommends
       stopping the server during backups and warns compression can damage chunk data
 - [ ] Rotate the passwords from the deleted Google export — it survives in PBS snapshots of
@@ -1043,7 +1054,7 @@ For each tested restore:
       says `running`, and a `systemd-run` with `logrotate`'s sandbox exits 0. `zfs-mount`
       and `zfs-share` disabled, as `zfs-zed` was. The journal needs nothing: 797.5M is
       journald's default cap of 10 % of the 7.8G root. First real `logrotate` run: 2026-09-13
-      at 00:00 UTC
+      at 00:00 UTC. Since the root went to 16G (2026-09-13), that cap is ~1.6G
 
 ### Long-term
 
