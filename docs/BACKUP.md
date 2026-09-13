@@ -288,7 +288,10 @@ Data is hashed, deduplicated, and compressed with **ZSTD** on the fly before bei
 
 Datastore location: `/mnt/pve/vault/` (Netac NVMe, `nvme1n1`).
 
-The container: Debian 12, unprivileged, `features: nesting=1` since 2026-09-12. APT pulls
+The container: Debian 13 (trixie) and PBS 4.2.5 since 2026-09-13 — upgraded from Debian 12 /
+PBS 3.4.9, which reached end of life in 2026-08. Unprivileged, `features: nesting=1` since
+2026-09-12, time zone `timezone: host` (Europe/Paris) since 2026-09-13; it was `Etc/UTC`
+before, which shifted every PBS schedule by two hours (§4.4). APT pulls
 from `pbs-no-subscription` only; `pbs-enterprise` is disabled (no subscription, it answered
 `401` on every `apt update`). Proxmox refuses to snapshot it because of the bind mount `mp0`,
 so the safety net before maintenance is `vzdump 103 --mode stop --storage local` — 846 MB and
@@ -424,8 +427,12 @@ All jobs run nightly during low-activity periods:
 | 05:00 Sunday   | Garbage Collection | Orphaned data chunks physically deleted from disk                  |
 
 > Read from the live configuration on 2026-09-11 (`vzdump` job, `prune.cfg`,
-> `verification.cfg`, `datastore.cfg`). Keep heavy jobs that read the Netac — Zerobyte's
-> Crafty upload, manual `fstrim` — out of the 03:00–05:59 window.
+> `verification.cfg`, `datastore.cfg`). **PBS reads these times on its own clock.** LXC 103
+> was on `Etc/UTC` until 2026-09-13, so prune actually ran at 06:00 Paris and verify/GC at
+> 07:00 (task history 2026-08-12 → 2026-09-13); in winter the Saturday verify would have met
+> the 06:00 Crafty upload. Since `timezone: host`, the times above are Paris time all year.
+> Keep heavy jobs that read the Netac — Zerobyte's Crafty upload, manual `fstrim` — out of
+> the 03:00–05:59 window; the Saturday verify takes ~38 min (2026-09-12).
 
 ### 4.5 RTO / RPO
 
@@ -982,8 +989,15 @@ For each tested restore:
       `proxmox-backup-manager versions` prints the APT *candidate*, not the installed version.
       `apt full-upgrade` in LXC 103, the first since install on 2026-04-16 (78 packages);
       `running version: 3.4.9` afterwards
-- [ ] Delete the safety backup `vzdump-lxc-103-2026_09_12-16_26_15.tar.zst` from `local`
-      (888 MB) once the first nights after the upgrade are checked
+- [x] Delete the safety backup `vzdump-lxc-103-2026_09_12-16_26_15.tar.zst` from `local`
+      (888 MB) once the first nights after the upgrade are checked — deleted 2026-09-13
+- [x] **Upgrade PBS to 4** (2026-09-13) — Debian 12 → 13, PBS 3.4.9 → 4.2.5. Safety net
+      first: `vzdump-lxc-103-2026_09_13-15_12_10.tar.zst` (1.07 GB). Local versions kept for
+      `/etc/pam.d/common-session`, `/etc/crontab` and `/etc/cron.d/e2scrub_all`
+- [x] **Put LXC 103 on Paris time** (2026-09-13) — `pct set 103 --timezone host`. Prune
+      "04:00" had been running at 06:00 Paris, verify and GC "05:00" at 07:00
+- [ ] Delete the safety backup `vzdump-lxc-103-2026_09_13-15_12_10.tar.zst` from `local`
+      once the first night on PBS 4 is checked
 - [ ] Reboot Astra onto kernel `7.0.14-16-pve` — installed with PVE 9.2.11 → 9.2.18 on
       2026-09-12, `7.0.14-14-pve` still running. The reboot stops Pulsar, AdGuard and PBS
 - [ ] Crafty backups use `compress=1` and `shutdown=0`; Crafty's documentation recommends
