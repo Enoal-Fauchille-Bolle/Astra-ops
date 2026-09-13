@@ -1026,8 +1026,34 @@ For each tested restore:
 - [ ] Rotate the passwords from the deleted Google export — it survives in PBS snapshots of
       VM 100 for up to ~6 months
 - [ ] Decide the fate of LXC 102 (`wireguard`, stopped since 2026-05-04) in the vzdump job
-- [ ] Consider a SATA SSD for the datastore — **both M.2 slots are occupied**, only two SATA
-      ports remain free
+
+### Disk layout — decided 2026-09-13
+
+Data is placed by its value, not by the service it belongs to. Inside Pulsar:
+
+- **Irreplaceable** (databases, configs, photos, Minecraft worlds) → `/opt/k3s-data` or
+  `/opt/docker-data`, on the WD Blue. Three copies: the disk, PBS on the Netac, Backblaze.
+- **Replaceable, or already a copy** (films, ISOs, lab VMs, Crafty archives, the PBS
+  datastore) → `/mnt/data` or `vault`, on the Netac. No backup required.
+
+No hardware purchase: both M.2 slots are taken and the case has no room for a SATA drive.
+Backblaze carries the off-site copy of 3-2-1. A dead disk is handled by restoring within
+hours, not by a mirror, so ZFS was ruled out.
+
+- [ ] **Send every app directory off-site** — only 11 directories reach Backblaze or MEGA;
+      Vaultwarden, Infisical, CouchDB, n8n, Umami, Uptime Kuma, NPM and about 20 others
+      (~1 GB) exist only inside Astra. Restorable only with the database dumps of Phase 2
+- [ ] Move `/mnt/data/media/photos` and `/mnt/data/k3s-pvc/filebrowser` under `/opt/k3s-data`
+      — unique data on the Netac, which PBS no longer backs up
+- [ ] Move the lab VMs to `vault`. Template 105 is undecided, and 106 is a linked clone of it
+- [ ] **Split the Netac with LVM** — a fixed LV for the PBS datastore, a thin pool for the
+      rest. Today both share one ext4 filesystem, and the cold disk (500G declared) plus the
+      datastore (482G) exceed the 938G drive. Measure first what the datastore weighs without
+      the `scsi1` history (backed up until 2026-09-11, kept by `keep-monthly 6` until about
+      2027-03): parking its content on the WD would fill that thin pool to about 92 %
+- [ ] Later: a PBS 4 datastore on Backblaze (S3 backend) to restore whole VMs after losing
+      Astra. It needs a 64–128 GiB local cache; support status and B2 compatibility unchecked
+- Films (`/mnt/data/media/movies`, 47G) are replaceable: no backup, by decision
 
 ### Phase 2 — Database dumps
 
