@@ -695,7 +695,8 @@ Not dumped, on purpose:
   Portracker and old copies. Jobs 16 and 17 copy them raw. Decided 2026-09-14: any dump can
   raise the alert, so the script only lists data worth one.
 - **Filebrowser Quantum** — no SQLite: its `database.db` is a BoltDB file, copied raw by
-  job 16. The removed classic app left `filebrowser/filebrowser.db` (BoltDB, 64K).
+  job 16. The removed classic app's `filebrowser/filebrowser.db` (BoltDB, 64K) was deleted on
+  2026-09-14; job 16's snapshots still hold it.
 - **Redis** (Infisical, Homarr, Dawarich) — caches and queues.
 
 A new app with a database needs a line in the script; jobs 16 and 17 already copy its raw files.
@@ -788,7 +789,7 @@ Pulsar /opt/ (sda — hot)          103G used / 195G (55 %)   [2026-09-09]
 │   ├── vaultwarden/      6.7M
 │   ├── homer/            5.3M
 │   ├── filebrowser-quantum/ 896K · sftpgo/ 380K · ntfy/ 160K
-│   └── diun/ 536K · convertx/ 356K · filebrowser/ 64K (app removed 2026-09-14)
+│   └── diun/ 536K · convertx/ 356K
 ├── docker-data/                 → Backblaze, job 17, since 2026-09-13 (exclusions §5.4)
 │   ├── crafty/            17G   └── servers/ 17G (Tier 3) · config/ 169M (Tier 2)
 │   ├── portainer/         83M   (Tier 1)
@@ -1177,11 +1178,13 @@ hours, not by a mirror, so ZFS was ruled out.
       recreated. Checked after ArgoCD's sync: no classic Deployment, Service, Ingress or VPA
       left, `drive.enoal.fr` answers with Quantum, whose pod sees `OnePlus-10T/` and no
       `dumps/`. Login is a personal account (`enoal`) created by Enoal; `filebrowser.lan`
-      now gets NPM's default 404 page (proxy host 34 removed). Kuma monitor 13 already probed
-      `https://drive.enoal.fr`
+      now gets NPM's default 404 page (proxy host 34 removed). Kuma: Enoal deleted monitor 13
+      and pointed monitor 15 ("Filebrowser Quantum") at `https://drive.enoal.fr`; no monitor
+      probes `filebrowser-quantum.lan` any more (checked 2026-09-14)
 - [ ] Run Filebrowser Quantum as non-root (it runs with `runAsUser: 0`) — needs new owners
       on `/mnt/data/k3s-pvc/filebrowser`, which SFTPGo mounts too; kept apart from the switch
-- [ ] Decide what to do with `/opt/k3s-data/filebrowser` (64K), the removed app's database
+- [x] **Delete `/opt/k3s-data/filebrowser`** (64K, the removed app's database, 2026-09-14) —
+      no pod, container or open file used it; job 16 had already copied it to Backblaze
 - [ ] Move `/mnt/data/media/photos` and `/mnt/data/k3s-pvc/filebrowser` under `/opt/k3s-data`
       — unique data on the Netac, which PBS no longer backs up
 - [ ] Move the lab VMs to `vault`. Template 105 is undecided, and 106 is a linked clone of it
