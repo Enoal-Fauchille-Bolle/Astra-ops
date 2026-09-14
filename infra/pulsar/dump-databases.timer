@@ -1,0 +1,10 @@
+[Unit]
+Description=Nightly database dumps, before Zerobyte job 13 at 02:00
+
+[Timer]
+OnCalendar=*-*-* 01:00:00
+# Catches up at boot if Pulsar was off at 01:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target
