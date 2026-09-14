@@ -4,8 +4,8 @@
 > every app directory, the Proxmox configuration and, since 2026-09-14, the database dumps
 > (restore not tested yet) — see §12.
 > **Last updated:** 2026-09-14 (nightly database dumps, Filebrowser mounts, the classic
-> Filebrowser's removal and Quantum as non-root, restore test of the Obsidian notes — §6,
-> §9.5, §12)
+> Filebrowser's removal and Quantum as non-root, restore test of the Obsidian notes, Zerobyte's
+> restore directory — §6, §9.5, §9.6, §12)
 > **Language:** English (technical reference)
 
 ---
@@ -42,6 +42,7 @@
    - 9.3 [Scenario C — Total Loss of Astra](#93-scenario-c--total-loss-of-astra)
    - 9.4 [Restoring the Proxmox configuration](#94-restoring-the-proxmox-configuration)
    - 9.5 [Restoring the Obsidian notes (CouchDB)](#95-restoring-the-obsidian-notes-couchdb)
+   - 9.6 [Restoring files with Zerobyte](#96-restoring-files-with-zerobyte)
 10. [Monitoring & Alerts](#10-monitoring--alerts)
 11. [Restore Testing](#11-restore-testing)
 12. [Pending Tasks & Future Work](#12-pending-tasks--future-work)
@@ -643,9 +644,9 @@ of their own:
 | **RTO**             | 4–24 hours       | Depends on bandwidth and total data size (~50G across all repositories) |
 | **Backup duration** | seconds – minutes | Nightly runs take 3–30 s; a first upload takes minutes (Crafty: 12 GiB in 201 s) |
 
-> **Known gap — Zerobyte cannot restore in place today.** Every data mount in
-> `docker-compose.yml` is `:ro`, so the container has no writable target. Add a writable
-> restore directory (for example `/mnt/data/restore:/restore`) before you need it.
+> **Restores go through `/restore`.** Every data mount in `docker-compose.yml` is `:ro`, so
+> Zerobyte restores into its one writable directory, `/mnt/data/restore` (since 2026-09-14),
+> and the files are copied into place by hand — §9.6.
 
 ---
 
@@ -863,7 +864,7 @@ cp -r /mnt/restore-point/mnt/data/k3s-pvc/immich/ /mnt/data/k3s-pvc/immich-resto
 2. Validate service health.
 
 **Files under `/mnt/data`** are no longer in PBS since `backup=0` (2026-09-11): restore them from
-Zerobyte (§5.4), after adding a writable restore target (§5.5).
+Zerobyte (§5.4) through its restore directory (§9.6).
 
 **Estimated time:** 15 min – 1 hour depending on restore scope.
 
@@ -892,11 +893,11 @@ Zerobyte (§5.4), after adding a writable restore target (§5.5).
 4. Add the new drive as a second disk to Pulsar (Proxmox UI → VM 100 → Hardware → Add → Hard Disk).
 5. Inside Pulsar, format and mount the new disk at `/mnt/data`.
 6. Restore Tier 2 data via Zerobyte:
-   - Give the container a writable restore target first (§5.5)
+   - Recreate the restore directory first: `sudo install -d -m 700 -o root -g root /mnt/data/restore`
    - Access Zerobyte UI at `zerobyte.lan`
    - Pick the repository that holds the path (§5.4): **Backblaze** for `backups/`,
      `media/photos/` and Crafty backups, **Mega C** for Filebrowser
-   - Browse snapshots and restore to `/mnt/data/`
+   - Restore each path into its own subfolder of `/restore`, then move it into `/mnt/data/` (§9.6)
    - Movies and Crafty logs are not backed up anywhere: re-download or accept the loss
 7. Restore directory structure (`k3s-pvc/`, `backups/`, `media/`, etc.).
 8. Restart services that depend on `/mnt/data/` mounts.
@@ -927,7 +928,7 @@ Zerobyte (§5.4), after adding a writable restore target (§5.5).
 5. Install Zerobyte (Docker Compose in `docker/zerobyte/`).
 6. Configure rclone remotes (`mega-a`, `mega-c`, `mega-d`) on the new Pulsar, and re-create
    the Backblaze S3 repository in Zerobyte with the B2 key.
-7. Restore Tier 2 data from Backblaze and MEGA via Zerobyte.
+7. Restore Tier 2 data from Backblaze and MEGA via Zerobyte, through `/mnt/data/restore` (§9.6).
 8. Apply K3s secrets from the operator's computer:
 
    ```bash
@@ -1089,6 +1090,46 @@ also assessed: no published release, a daemon mode that deleted documents at sta
 #1143, open), and a `sync` that writes checkpoints into the remote database (issue #846). A
 copy made from the laptop was offered and declined. The readable copies are the devices.
 
+### 9.6 Restoring files with Zerobyte
+
+Every data mount of the Zerobyte container is read-only, so a backup can never damage its
+source — and Zerobyte cannot restore to the *original location* either. Since 2026-09-14 it
+has one writable directory for that: `/mnt/data/restore` on Pulsar (root, `700`), mounted at
+**`/restore`** in the container. Restore there, check, then copy into place by hand.
+
+1. Open `http://zerobyte.lan/backups/<job short id>/<snapshot short id>/restore` (page
+   *Restore Snapshot*). A job's short id is in `zerobyte.db` (`backup_schedules_table.short_id`,
+   `2JsgS07p` for job 13 *Backups*); a snapshot's is the first 8 hex characters of its id.
+2. Under *Select Files to Restore*, tick the folders wanted.
+3. Under *Restore Location*, choose **Custom location** and give a **subfolder per restore**,
+   e.g. `/restore/crafty`. Zerobyte writes the *contents* of the ticked folder straight into
+   the target, without the `/data/...` path above it, so two restores into `/restore` itself
+   end up mixed together.
+4. Wait for **Restore completed**, then from Pulsar compare and move the files into place,
+   for example `sudo diff -r /mnt/data/restore/crafty <destination>`. Owners, modes and
+   modification times are kept (uid `1000` for Quantum and SFTPGo, root for the rest), so no
+   `chown` is needed after the copy.
+5. Empty the directory afterwards: `sudo find /mnt/data/restore -mindepth 1 -delete`. A plain
+   `sudo rm -rf /mnt/data/restore/*` removes nothing — the `*` is expanded by the user's shell,
+   which cannot read a root-only directory.
+
+Where it lives, and why: on the Netac with the data it usually restores (a move into
+`/mnt/data` is then instant), 390 GB free on 2026-09-14, and outside PBS (`scsi1`,
+`backup=0`), so a forgotten restore is not kept for months in Layer 1. It is not a Zerobyte
+volume, so nothing restored there is ever backed up again. After a Netac failure (§9.2),
+recreate it on the new disk before Zerobyte starts: `sudo install -d -m 700 -o root -g root
+/mnt/data/restore`.
+
+Zerobyte refuses only its own directories as a target (read in v0.42's code): its database
+and repository directories under `/var/lib/zerobyte`, the restic cache, the rclone
+configuration, `/app` and the temporary directory.
+
+**Tested on 2026-09-14.** Job 13's snapshot `156b3871` (02:00), folder `proxmox-configs`,
+restored from Backblaze into `/restore` in 2.5 s: 53 files, 70 KB, identical to
+`/mnt/data/backups/proxmox-configs` in content (`diff -r`) and in owner, mode and
+modification time. The end-to-end test of the database dumps (import into a throwaway
+database) is still open (§12, Phase 2).
+
 ---
 
 ## 10. Monitoring & Alerts
@@ -1198,7 +1239,8 @@ For each tested restore:
 - [ ] **Fix Zerobyte → Discord notifications**: a message over ~5,970 characters loses its
       first 6,000 with HTTP 400 — Shoutrrr does not count the title against Discord's
       6,000-character embed cap (§10). Accepted as is for now (2026-09-12)
-- [ ] **Give Zerobyte a writable restore target** — every data mount is read-only (§5.5)
+- [x] **Give Zerobyte a writable restore target** (2026-09-14) — `/mnt/data/restore` (root
+      `700`) mounted at `/restore`; restore from Backblaze tested, identical to the original (§9.6)
 - [ ] Decide the fate of `Mega D` (job disabled, 7 dormant Nous Deux snapshots)
 - [ ] `zerobyte.db` has no off-site copy — `/var/lib/zerobyte` (28M) lies outside every
       Zerobyte volume, so only PBS holds it. §9.3 rebuilds Zerobyte by hand; a copy would keep
