@@ -27,9 +27,11 @@ volumes:
   media:
     hostPath: /mnt/data/media
     mountPath: /srv/Media
+  # The phone backups only: the rest of /mnt/data/backups holds the database dumps and the
+  # Proxmox configuration copy, secrets this root container could read and serve
   backups:
-    hostPath: /mnt/data/backups
-    mountPath: /srv/Backups
+    hostPath: /mnt/data/backups/OnePlus-10T
+    mountPath: /srv/Backups/OnePlus-10T
   db:
     hostPath: /opt/k3s-data/filebrowser
     mountPath: /database
