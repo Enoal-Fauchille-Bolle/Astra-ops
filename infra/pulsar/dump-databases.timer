@@ -2,7 +2,9 @@
 Description=Nightly database dumps, before Zerobyte job 13 at 02:00
 
 [Timer]
-OnCalendar=*-*-* 01:00:00
+# Pulsar's clock is UTC, while Zerobyte schedules in Paris time: pin the zone, so the dumps
+# stay one hour ahead of job 13 across daylight saving changes
+OnCalendar=*-*-* 01:00:00 Europe/Paris
 # Catches up at boot if Pulsar was off at 01:00
 Persistent=true
 
