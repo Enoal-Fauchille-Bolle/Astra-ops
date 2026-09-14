@@ -28,7 +28,7 @@ volumes:
     hostPath: /mnt/data/media
     mountPath: /srv/Media
   # The phone backups only: the rest of /mnt/data/backups holds the database dumps and the
-  # Proxmox configuration copy, secrets this root container could read and serve
+  # Proxmox configuration copy, secrets this container must never read or serve
   backups:
     hostPath: /mnt/data/backups/OnePlus-10T
     mountPath: /srv/Backups/OnePlus-10T
@@ -36,8 +36,17 @@ volumes:
     hostPath: /opt/k3s-data/filebrowser-quantum
     mountPath: /home/filebrowser/data/
 
+# 1000 is the image's own `filebrowser` user and owns /mnt/data/media on pulsar. hostPath
+# volumes ignore fsGroup, so the other mounted directories were chowned to 1000 by hand,
+# and SFTPGo's user carries uid/gid 1000 so that its uploads stay readable here
 securityContext:
-  runAsUser: 0
+  runAsUser: 1000
+  runAsGroup: 1000
+  runAsNonRoot: true
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
 
 resources:
   requests:
