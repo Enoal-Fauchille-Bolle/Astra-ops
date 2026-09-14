@@ -3,7 +3,8 @@
 > **Status:** Layer 1 operational. Layer 2 in service for every Tier 2 path on `/mnt/data`,
 > every app directory, the Proxmox configuration and, since 2026-09-14, the database dumps
 > (restore not tested yet) — see §12.
-> **Last updated:** 2026-09-14 (nightly database dumps and Filebrowser mounts, §6)
+> **Last updated:** 2026-09-14 (nightly database dumps, Filebrowser mounts and the classic
+> Filebrowser's removal, §6, §12)
 > **Language:** English (technical reference)
 
 ---
@@ -668,7 +669,9 @@ Filebrowser apps (`runAsUser: 0`) mounted that whole directory: the dumps and th
 configuration copy (§4.2) could be browsed and downloaded, from the Internet through
 `drive.enoal.fr` for the classic one. Since commit `f6d4527` both mount
 `/mnt/data/backups/OnePlus-10T` only; checked after ArgoCD's sync, neither pod sees `dumps/`
-or `proxmox-configs/` any more. **Never mount `/mnt/data/backups` whole into an app.**
+or `proxmox-configs/` any more. The classic app was removed the same day (`ca56a5a`) and
+`drive.enoal.fr` now reaches Quantum, which still runs as root. **Never mount
+`/mnt/data/backups` whole into an app.**
 The script is installed by copy, not run from `/opt/ops`: that clone is updated by hand (last
 pull 2026-08-31) and owned by `enoal`, and root must not run a file a user account can edit.
 
@@ -691,8 +694,8 @@ Not dumped, on purpose:
   `crafty_server_stats.sqlite`, 132 MB for Roots SMP), indexes, CrowdSec, Scrutiny, ConvertX,
   Portracker and old copies. Jobs 16 and 17 copy them raw. Decided 2026-09-14: any dump can
   raise the alert, so the script only lists data worth one.
-- **Filebrowser and Filebrowser Quantum** — no SQLite: Quantum's `database.db` is a BoltDB
-  file, copied raw by job 16.
+- **Filebrowser Quantum** — no SQLite: its `database.db` is a BoltDB file, copied raw by
+  job 16. The removed classic app left `filebrowser/filebrowser.db` (BoltDB, 64K).
 - **Redis** (Infisical, Homarr, Dawarich) — caches and queues.
 
 A new app with a database needs a line in the script; jobs 16 and 17 already copy its raw files.
@@ -785,7 +788,7 @@ Pulsar /opt/ (sda — hot)          103G used / 195G (55 %)   [2026-09-09]
 │   ├── vaultwarden/      6.7M
 │   ├── homer/            5.3M
 │   ├── filebrowser-quantum/ 896K · sftpgo/ 380K · ntfy/ 160K
-│   └── diun/ 536K · convertx/ 356K · filebrowser/ 64K
+│   └── diun/ 536K · convertx/ 356K · filebrowser/ 64K (app removed 2026-09-14)
 ├── docker-data/                 → Backblaze, job 17, since 2026-09-13 (exclusions §5.4)
 │   ├── crafty/            17G   └── servers/ 17G (Tier 3) · config/ 169M (Tier 2)
 │   ├── portainer/         83M   (Tier 1)
@@ -1167,9 +1170,18 @@ hours, not by a mirror, so ZFS was ruled out.
       hold three months of history (§5.4)
 - [ ] Bring Termix (`/opt/ops/docker/termix/data`, 15M) and Dawarich's file volumes (26M)
       under the app roots — both are outside them and have no off-site copy
-- [ ] **Remove the classic Filebrowser and serve `drive.enoal.fr` from Filebrowser Quantum**
-      (announced 2026-09-14). Both share `/mnt/data/k3s-pvc/filebrowser`, so no file moves.
-      Quantum still runs as root (`runAsUser: 0`)
+- [x] **Remove the classic Filebrowser and serve `drive.enoal.fr` from Filebrowser Quantum**
+      (2026-09-14, `ca56a5a`) — the classic project was archived on 2026-09-01 and gets no
+      security fixes. Both apps shared `/mnt/data/k3s-pvc/filebrowser`, so no file moved; the
+      classic app had no share links, and its `test` account (an empty folder) was not
+      recreated. Checked after ArgoCD's sync: no classic Deployment, Service, Ingress or VPA
+      left, `drive.enoal.fr` answers with Quantum, whose pod sees `OnePlus-10T/` and no
+      `dumps/`. Login is a personal account (`enoal`) created by Enoal; `filebrowser.lan`
+      now gets NPM's default 404 page (proxy host 34 removed). Kuma monitor 13 already probed
+      `https://drive.enoal.fr`
+- [ ] Run Filebrowser Quantum as non-root (it runs with `runAsUser: 0`) — needs new owners
+      on `/mnt/data/k3s-pvc/filebrowser`, which SFTPGo mounts too; kept apart from the switch
+- [ ] Decide what to do with `/opt/k3s-data/filebrowser` (64K), the removed app's database
 - [ ] Move `/mnt/data/media/photos` and `/mnt/data/k3s-pvc/filebrowser` under `/opt/k3s-data`
       — unique data on the Netac, which PBS no longer backs up
 - [ ] Move the lab VMs to `vault`. Template 105 is undecided, and 106 is a linked clone of it
@@ -1211,8 +1223,8 @@ hours, not by a mirror, so ZFS was ruled out.
 - [x] **Hide the dumps from Filebrowser** (2026-09-14, `f6d4527`) — both apps run as root and
       mounted `/mnt/data/backups` whole, dumps and Proxmox configuration copy included (§6).
       They now mount `OnePlus-10T/` only. Side effects: `Nexus Backup/` and `Snapchat/`, which
-      the old mount hid in `/mnt/data/k3s-pvc/filebrowser/Backups/`, show again in the classic
-      app, and an empty `OnePlus-10T/` mount point was created there
+      the old mount hid in `/mnt/data/k3s-pvc/filebrowser/Backups/`, show again (kept there,
+      decided 2026-09-14), and an empty `OnePlus-10T/` mount point was created there
 
 ### Phase 3 — Secrets sync
 
