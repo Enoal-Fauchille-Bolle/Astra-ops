@@ -1,8 +1,9 @@
 # Backup Architecture — Astra Homelab
 
-> **Status:** Layer 1 operational. Layer 2 in service for every Tier 2 path on `/mnt/data`
-> and for the Proxmox configuration; database dumps still missing — see §12.
-> **Last updated:** 2026-09-13 (PVE and PBS mail notifications restricted to failures, §10)
+> **Status:** Layer 1 operational. Layer 2 in service for every Tier 2 path on `/mnt/data`,
+> every app directory, the Proxmox configuration and, since 2026-09-14, the database dumps
+> (restore not tested yet) — see §12.
+> **Last updated:** 2026-09-14 (nightly database dumps, §6)
 > **Language:** English (technical reference)
 
 ---
@@ -248,24 +249,24 @@ Bulk data that is either reconstructible (Minecraft servers, Kiwix ZIM archives)
 
 | Service / Path | Location | Size | Tier | Layer 2 | DB dump | Verified |
 | -------------- | -------- | ---- | ---- | ------- | ------- | -------- |
-| **Vaultwarden** | `/opt/k3s-data/vaultwarden/` | 8.6M | 1 | ✅ Backblaze B2, job 16 (raw SQLite) | SQLite | 2026-09-13 |
+| **Vaultwarden** | `/opt/k3s-data/vaultwarden/` | 8.6M | 1 | ✅ Backblaze B2, job 16 (raw SQLite) | SQLite — dumped nightly (§6) | 2026-09-14 |
 | **Immich DB** | `/opt/k3s-data/immich/postgres/` | **295M** | 1 | covered — Immich dumps itself into `library/backups/`; raw directory excluded from job 16 | PostgreSQL 14 + vectorchord | 2026-09-13 |
-| **Umami DB** | `/opt/k3s-data/umami/postgres/` | 48M (whole `umami/`) | 1 | ❌ none — excluded from job 16, waits for its dump | PostgreSQL 16 | 2026-09-13 |
-| **Infisical DB** | `/opt/k3s-data/infisical/postgres/` + `redis/` | 157M (whole `infisical/`) | 1 | ❌ none — both excluded from job 16, the database waits for its dump | PostgreSQL 16 | 2026-09-13 |
-| **Dawarich DB** | Docker volume `dawarich_dawarich_db_data` | **586M** | 1 | ❌ none — outside the app roots; app containers stopped since late August, database still running | PostGIS 17 | 2026-09-13 |
+| **Umami DB** | `/opt/k3s-data/umami/postgres/` | 48M (whole `umami/`) | 1 | its dump, job 13 (first upload 2026-09-15) — raw directory excluded from job 16 | PostgreSQL 16.14 — dumped nightly (§6) | 2026-09-14 |
+| **Infisical DB** | `/opt/k3s-data/infisical/postgres/` + `redis/` | 157M (whole `infisical/`) | 1 | its dump, job 13 (first upload 2026-09-15) — both directories excluded from job 16 | PostgreSQL 16.14 — dumped nightly (§6) | 2026-09-14 |
+| **Dawarich DB** | Docker volume `dawarich_dawarich_db_data` | **586M** | 1 | its dump, job 13 (first upload 2026-09-15) — the volume is outside the app roots; app containers stopped since late August, database still running | PostGIS 17.11 — dumped nightly (§6) | 2026-09-14 |
 | **Dawarich files** | Docker volumes `dawarich_dawarich_{public,storage,shared,watched}` | 26M | 2 | ❌ none — outside the app roots | — | 2026-09-13 |
-| **n8n** | `/opt/k3s-data/n8n/` | 42M | 1 | ✅ Backblaze B2, job 16 (raw SQLite) | SQLite | 2026-09-13 |
+| **n8n** | `/opt/k3s-data/n8n/` | 42M | 1 | ✅ Backblaze B2, job 16 (raw SQLite) | SQLite — dumped nightly (§6) | 2026-09-14 |
 | **Scanopy** | `/opt/k3s-data/scanopy/` | 68M | 1 | ✅ Backblaze B2, job 16 — not running on 2026-09-13, so the raw PostgreSQL copy is consistent | PostgreSQL | 2026-09-13 |
 | **AppFlowy** | `/opt/k3s-data/appflowy/` | 52M | 1 | ✅ Backblaze B2, job 16 — not running on 2026-09-13, raw copy consistent | PostgreSQL | 2026-09-13 |
-| **Uptimekuma** | `/opt/k3s-data/uptimekuma/` | 311M | 1 | ✅ Backblaze B2, job 16, **except** `mariadb/`, which waits for its dump | **embedded MariaDB** (`db-config.json`, Uptime Kuma 2.5.3) — not SQLite; `kuma.db` is empty | 2026-09-13 |
+| **Uptimekuma** | `/opt/k3s-data/uptimekuma/` | 311M | 1 | ✅ Backblaze B2, job 16, **except** `mariadb/`, which leaves as its dump through job 13 (first upload 2026-09-15) | **embedded MariaDB** 10.11.14 (`db-config.json`, Uptime Kuma 2.5.3) — not SQLite; `kuma.db` is empty; dumped nightly (§6) | 2026-09-14 |
 | **Crowdsec** | `/opt/docker-data/crowdsec/` | 110M | 1 | ✅ Backblaze B2, job 17 (raw SQLite) | SQLite | 2026-09-13 |
-| **SFTPgo** | `/opt/k3s-data/sftpgo/` | 380K | 1 | ✅ Backblaze B2, job 16 (raw SQLite) | SQLite | 2026-09-13 |
+| **SFTPgo** | `/opt/k3s-data/sftpgo/` | 380K | 1 | ✅ Backblaze B2, job 16 (raw SQLite) | SQLite — dumped nightly (§6) | 2026-09-14 |
 | **Docker Registry** | `/opt/k3s-data/docker-registry/` | 57M | 1 | ✅ Backblaze B2, job 16 (Mega A job 11 disabled 2026-09-13) | — | 2026-09-13 |
-| **NPM** | `/opt/docker-data/npm/` | 17M | 1 | ✅ Backblaze B2, job 17 (raw SQLite) | SQLite | 2026-09-13 |
+| **NPM** | `/opt/docker-data/npm/` | 17M | 1 | ✅ Backblaze B2, job 17 (raw SQLite) | SQLite — dumped nightly (§6) | 2026-09-14 |
 | **Portainer** | `/opt/docker-data/portainer/` | 76M | 1 | ✅ Backblaze B2, job 17 (job 12 disabled 2026-09-13) | BoltDB | 2026-09-13 |
-| **Filebrowser Quantum** | `/opt/k3s-data/filebrowser-quantum/` | 1.1M | 1 | ✅ Backblaze B2, job 16 (raw SQLite) | SQLite | 2026-09-13 |
-| **Ntfy** | `/opt/k3s-data/ntfy/` | 160K | 1 | ✅ Backblaze B2, job 16 — not running on 2026-09-13 | SQLite | 2026-09-13 |
-| **Every other app directory** | `/opt/k3s-data/*`, `/opt/docker-data/*` — CouchDB, Jellyfin, Beszel, Homarr, Speedtest Tracker, Wallos, Loandash, Diun, ConvertX, Scrutiny… | ~100M | 1–2 | ✅ Backblaze B2, jobs 16 and 17 — any new directory is picked up automatically | mostly SQLite | 2026-09-13 |
+| **Filebrowser Quantum** | `/opt/k3s-data/filebrowser-quantum/` | 1.1M | 1 | ✅ Backblaze B2, job 16 (raw) | BoltDB — `database.db` is not SQLite (checked 2026-09-14) | 2026-09-14 |
+| **Ntfy** | `/opt/k3s-data/ntfy/` | 160K | 1 | ✅ Backblaze B2, job 16 — not running on 2026-09-14 | SQLite — `user.db` dumped nightly, `cache.db` not (§6) | 2026-09-14 |
+| **Every other app directory** | `/opt/k3s-data/*`, `/opt/docker-data/*` — CouchDB, Jellyfin, Beszel, Homarr, Speedtest Tracker, Wallos, Loandash, Diun, ConvertX, Scrutiny… | ~100M | 1–2 | ✅ Backblaze B2, jobs 16 and 17 — any new directory is picked up automatically | mostly SQLite — Jellyfin, Beszel, Homarr, Speedtest Tracker, Wallos and Loandash dumped nightly (§6) | 2026-09-14 |
 | **Termix** | `/opt/ops/docker/termix/data/` | 15M | 1 | ❌ none — outside the app roots | — | 2026-09-13 |
 | `/etc/pve/` | Astra host | ~5M | 1 | ✅ Backblaze B2 — nightly copy to Pulsar, job 13 (since 2026-09-11, §4.2) | — | 2026-09-12 |
 | `/etc/proxmox-backup/` | LXC 103 | **60K** | 1 | ✅ Backblaze B2 — nightly copy to Pulsar, job 13 (since 2026-09-11, §4.2) | — | 2026-09-12 |
@@ -275,10 +276,10 @@ Bulk data that is either reconstructible (Minecraft servers, Kiwix ZIM archives)
 | **Criteri-fresque** | `/opt/k3s-data/criteri-fresque/` | 41M | 2 | ✅ Backblaze B2, job 16 (Mega A job 6 disabled 2026-09-13) | — | 2026-09-13 |
 | **Personal backups** | `/mnt/data/backups/` | **102M** — `OnePlus-10T/` only | 2 | ✅ Backblaze B2 (since 2026-09-10) | — | 2026-09-11 |
 | **Photos** | `/mnt/data/media/photos/` | **946M** | 2 | ✅ Backblaze B2 (since 2026-09-10) | — | 2026-09-11 |
-| **DB dumps** | `/mnt/data/backups/dumps/` | — | 2 | ❌ directory does not exist | — | 2026-09-09 |
+| **DB dumps** | `/mnt/data/backups/dumps/` | **156M** (16 files) | 2 | job 13 — first upload 2026-09-15 at 02:00 | — | 2026-09-14 |
 | **Secrets** | `~/astra-secrets/` (workstation) | ~1M | 2 | ❌ not yet | — | May 2026 |
 | **Crafty backups** | `/mnt/data/docker-volumes/crafty/backups/` | **26G** | 2 | ✅ Backblaze B2 — all 3 servers (since 2026-09-11) | — | 2026-09-11 |
-| **Crafty config** | `/opt/docker-data/crafty/config/` | **186M** | 2 | ✅ Backblaze B2, job 17 (Mega A job 7 disabled 2026-09-13) | SQLite | 2026-09-13 |
+| **Crafty config** | `/opt/docker-data/crafty/config/` | **186M** | 2 | ✅ Backblaze B2, job 17 (Mega A job 7 disabled 2026-09-13) | SQLite — `crafty.sqlite` dumped nightly (§6) | 2026-09-14 |
 | **Crafty servers** | `/opt/docker-data/crafty/servers/` | **17G** | ❌ 3 | — excluded from job 17; the worlds leave through Crafty's archives (job 15) | — | 2026-09-13 |
 | **Crafty logs** | `/mnt/data/docker-volumes/crafty/logs/` | **430M** | ❌ 3 | — | — | 2026-09-09 |
 | **Portracker** | `/opt/docker-data/portracker/` | 72K | ❌ 3 | in job 17 anyway (whole root) | — | 2026-09-13 |
@@ -289,9 +290,9 @@ Bulk data that is either reconstructible (Minecraft servers, Kiwix ZIM archives)
 > cloud, and about 25 app directories (Vaultwarden, Infisical, CouchDB, n8n, Umami, Uptime
 > Kuma, NPM…) existed only inside Astra: on the WD and in PBS, both in the same box. Jobs 16
 > and 17 now copy the two app roots whole, so a new app is covered without any Zerobyte
-> change. Still without an off-site copy: the live PostgreSQL and MariaDB databases (Umami,
-> Infisical, Uptime Kuma, Dawarich) until their dumps exist (§6), and Termix and Dawarich's
-> files, which live outside the two roots.
+> change. The live PostgreSQL and MariaDB databases (Umami, Infisical, Uptime Kuma, Dawarich)
+> leave as nightly dumps since 2026-09-14 (§6). Still without an off-site copy: Termix and
+> Dawarich's files, which live outside the two roots.
 >
 > **Resolved 2026-09-10 — the three "mounted, never declared" paths.** Portainer, personal
 > backups and photos were bind-mounted into Zerobyte but had no matching *volume*, so no job
@@ -578,7 +579,7 @@ Every job keeps **7 daily, 4 weekly, 3 monthly** snapshots and was in `success`.
   patterns, one per line in the job:
   - job 16: `/immich/library` (job 8), `/immich/model-cache` (re-downloaded),
     `/immich/postgres` (Immich dumps itself), `/umami/postgres`, `/infisical/postgres`,
-    `/infisical/redis`, `/uptimekuma/mariadb` (live servers, waiting for their dumps, §6);
+    `/infisical/redis`, `/uptimekuma/mariadb` (live servers; the databases leave as dumps, §6);
   - job 17: `/crafty/servers` (Crafty's archives, job 15), `/homarr/redis`.
 
   A leading `/` anchors a pattern to the **volume root** (Zerobyte's `processPattern`); without
@@ -626,8 +627,8 @@ of their own:
 
 - the Proxmox configuration, which Astra copies nightly into
   `/mnt/data/backups/proxmox-configs/` (§4.2);
-- the database dumps, once the script of §6 writes them to `/mnt/data/backups/dumps/` — decided
-  2026-09-13, replacing the `tier2-db-dumps` job planned earlier.
+- the database dumps, which the script of §6 writes to `/mnt/data/backups/dumps/` at 01:00
+  since 2026-09-14 — decided 2026-09-13, replacing the `tier2-db-dumps` job planned earlier.
 
 ### 5.5 RTO / RPO
 
@@ -647,33 +648,78 @@ of their own:
 
 Live databases cannot be safely copied at the file level while running — doing so risks backing up a partially-written, corrupt state. Instead, a dump script runs **before** Zerobyte jobs and writes cold, consistent export files to `/mnt/data/backups/dumps/`. Zerobyte then backs up this directory as part of the existing **Backups** job (13, 02:00). A dump is a copy, so its place is the Netac (§12, disk layout).
 
-> **Phase:** DB dump automation is planned for a future phase. Current Layer 2 setup covers file-based data only.
+> **In service since 2026-09-14.** First run by hand at 14:27 Paris: 16 dumps, 156 MB, 8 s,
+> Kuma push `up`. The first nightly run and its upload by job 13 are on 2026-09-15, and the
+> restore has not been tested yet (§12, Phase 2).
 
-### Services Requiring Dumps
+| Piece | Where | What it does |
+| --- | --- | --- |
+| Script | `infra/pulsar/dump-databases.sh` → `/usr/local/sbin/dump-databases` on Pulsar (root, `755`) | dumps each database on its own, checks the result, then replaces the previous dump |
+| Timer | `infra/pulsar/dump-databases.{service,timer}` | daily at **01:00 Europe/Paris**, `Persistent=true` (catches up at boot) |
+| Destination | `/mnt/data/backups/dumps/` | root, directory `700`, files `600`; one file per database, replaced every night |
+| Alerting | Uptime Kuma push monitor **Database Dumps** (id 38) | `up` when all 16 succeed, `down` naming the failed ones, alert on Discord if no push for 25 h (§10) |
 
-| Service             | DB Type    | Active Data Path                     | Dump Command                                                                                                     | Dump Output                                                |
-| ------------------- | ---------- | ------------------------------------ | ---------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
-| Immich              | PostgreSQL | `/opt/k3s-data/immich/`              | `pg_dump -U immich immich > immich.sql`                                                                          | `/mnt/data/backups/dumps/immich.sql`                       |
-| Scanopy             | PostgreSQL | `/opt/k3s-data/scanopy/`             | `pg_dump -U scanopy scanopy > scanopy.sql`                                                                       | `/mnt/data/backups/dumps/scanopy.sql`                      |
-| Vaultwarden         | SQLite     | `/opt/k3s-data/vaultwarden/`         | `sqlite3 db.sqlite3 .dump > vaultwarden.sql`                                                                     | `/mnt/data/backups/dumps/vaultwarden.sql`                  |
-| n8n                 | SQLite     | `/opt/k3s-data/n8n/`                 | `sqlite3 database.sqlite .dump > n8n.sql`                                                                        | `/mnt/data/backups/dumps/n8n.sql`                          |
-| Uptimekuma          | **MariaDB** (embedded, Uptime Kuma 2.5.3) | `/opt/k3s-data/uptimekuma/mariadb/` | `mariadb-dump` of database `kuma` — command to be written and tested; `kuma.db` is empty since the move to MariaDB | `/mnt/data/backups/dumps/uptimekuma.sql`                   |
-| Crowdsec            | SQLite     | `/opt/docker-data/crowdsec/`         | `sqlite3 crowdsec.db .dump > crowdsec.sql`                                                                       | `/mnt/data/backups/dumps/crowdsec.sql`                     |
-| SFTPgo              | SQLite     | `/opt/k3s-data/sftpgo/`              | `sqlite3 sftpgo.db .dump > sftpgo.sql`                                                                           | `/mnt/data/backups/dumps/sftpgo.sql`                       |
-| NPM                 | SQLite     | `/opt/docker-data/npm/`              | `sqlite3 /data/database.sqlite .dump > npm.sql`                                                                  | `/mnt/data/backups/dumps/npm.sql`                          |
-| Filebrowser Quantum | SQLite     | `/opt/k3s-data/filebrowser-quantum/` | `sqlite3 /data/database.db .dump > filebrowser-quantum.sql`                                                      | `/mnt/data/backups/dumps/filebrowser-quantum.sql`          |
-| Ntfy                | SQLite     | `/opt/k3s-data/ntfy/`                | `sqlite3 /var/cache/ntfy/cache.db .dump > ntfy-cache.sql && sqlite3 /var/lib/ntfy/user.db .dump > ntfy-user.sql` | `/mnt/data/backups/dumps/ntfy-cache.sql` + `ntfy-user.sql` |
+The push URL lives in `/etc/default/dump-databases` (root, `600`), outside this repository.
+The script is installed by copy, not run from `/opt/ops`: that clone is updated by hand (last
+pull 2026-08-31) and owned by `enoal`, and root must not run a file a user account can edit.
 
-> If additional services with databases are added in the future, add them to this table and to the dump script. The script itself should run at 01:00 daily, before the **Backups** job (13) at 02:00.
->
-> **Missing from this table (2026-09-13):** Umami and Infisical (PostgreSQL, in
-> `/opt/k3s-data/<app>/postgres/`) and Dawarich (PostGIS, container `dawarich_db`). Their raw
-> data directories are excluded from Zerobyte (§5.4), so the dump is their only way off-site.
-> Scanopy is listed above but not running: its raw files are copied by job 16 instead.
+### What is dumped
 
-### Dump Script Location
+| Dump | Source | Engine | How |
+| --- | --- | --- | --- |
+| `umami.sql` | deployment `analytics/umami-postgres` | PostgreSQL 16.14 | `pg_dump` inside the pod, as `$POSTGRES_USER` on `$POSTGRES_DB` |
+| `infisical.sql` | deployment `infisical/infisical-postgres` | PostgreSQL 16.14 | same |
+| `dawarich.sql` | Docker container `dawarich_db` | PostgreSQL 17.11 + PostGIS 3.5.7 | same, through `docker exec` |
+| `uptimekuma.sql` | deployment `monitoring/uptimekuma`, socket `/app/data/run/mariadb.sock` | embedded MariaDB 10.11.14 | `mariadb-dump -u root --single-transaction --databases kuma` — its 28 tables are all InnoDB, so the dump is consistent without locking |
+| `<app>.sqlite` × 12 | Vaultwarden, n8n, SFTPGo, ntfy `user.db`, Jellyfin, NPM, Homarr, Wallos, Crafty `crafty.sqlite`, Beszel `data.db`, Speedtest Tracker, Loandash — paths in the script | SQLite | Python's online backup API (no `sqlite3` binary on Pulsar), run as the file's owner |
 
-The script lives at `/opt/ops/docker/zerobyte/dump-databases.sh` and is executed by a **systemd timer on Pulsar** at 01:00 (decided 2026-09-13). When every dump succeeds, it pushes to an Uptime Kuma push monitor, which alerts on Discord when no push arrives — the pattern already used by the Proxmox configuration copy (§4.2). It must run inside or alongside the relevant containers to access the database files.
+Not dumped, on purpose:
+
+- **Immich** — `postgres:14-vectorchord…`: a plain `pg_dump` cannot be restored on vanilla
+  PostgreSQL. Immich dumps itself into `library/backups/` (job 8).
+- **Scanopy, AppFlowy** — not running; their cold raw files are copied by job 16.
+- **The other SQLite files** — caches (ntfy `cache.db`), statistics (Crafty's
+  `crafty_server_stats.sqlite`, 132 MB for Roots SMP), indexes, CrowdSec, Scrutiny, ConvertX,
+  Portracker and old copies. Jobs 16 and 17 copy them raw. Decided 2026-09-14: any dump can
+  raise the alert, so the script only lists data worth one.
+- **Filebrowser and Filebrowser Quantum** — no SQLite: Quantum's `database.db` is a BoltDB
+  file, copied raw by job 16.
+- **Redis** (Infisical, Homarr, Dawarich) — caches and queues.
+
+A new app with a database needs a line in the script; jobs 16 and 17 already copy its raw files.
+
+### How a dump is checked
+
+- **One database at a time.** A failure keeps that database's previous dump, lets the others
+  through, and reports `down` with the failed names.
+- **Written aside, renamed once checked.** Each dump goes to `.<name>.tmp` first:
+  - SQL dumps must end with the tool's marker (`-- PostgreSQL database dump complete`,
+    `-- Dump completed`) and contain a `CREATE TABLE`. A crash or a timeout (15 min per dump)
+    leaves no marker; an empty database has no table.
+  - SQLite copies must pass `PRAGMA integrity_check` and hold a table. They are opened with
+    `mode=rw`, so a wrong path fails instead of creating an empty database.
+- **SQLite copies run as the file's owner** (`setpriv`). Opening a WAL database may create its
+  `-wal` and `-shm` files, and root-owned ones would lock the app out of its own database.
+  Checked on 2026-09-14: every companion file kept its owner.
+- **No compression.** restic deduplicates plain dumps from one night to the next and compresses
+  them itself; a `.gz` would be uploaded whole every night.
+- **Pulsar's clock is UTC**, Zerobyte's schedules are Paris time: the timer pins
+  `Europe/Paris`. Without it the dumps ran at 03:00 Paris, after job 13.
+
+### Restoring
+
+> Not tested yet — see the end-to-end item in §12, Phase 2.
+
+- **PostgreSQL:** `psql -U <user> -d <empty database> -f <app>.sql`, with **`psql` 16.10 / 17.6
+  or newer**: the dumps open with `\restrict` and close with `\unrestrict`, which older clients
+  reject. Dawarich needs a PostGIS image (`postgis/postgis:17-3.5-alpine`).
+- **Uptime Kuma:** `mariadb -u root < uptimekuma.sql` into the same MariaDB; the dump creates
+  database `kuma`. Its first line, `/*M!999999\- enable the sandbox mode */`, is only
+  understood by recent MariaDB clients.
+- **SQLite:** stop the app, replace its database file with the copy (same owner and mode),
+  delete any leftover `-wal` and `-shm`, start the app. Six copies keep their original's WAL
+  flag (Beszel, Crafty, Jellyfin, Loandash, n8n, Vaultwarden) — harmless in place; to read one
+  elsewhere, open it with `?immutable=1`.
 
 ---
 
@@ -920,6 +966,7 @@ Then start both services again. The datastore itself is self-describing (§4.2).
 | PVE backup job (vzdump) | PVE notifications, `default-matcher` | Email, **errors only**: target `mail-to-root` → root@pam's address, sent by Postfix through Resend |
 | PBS jobs (GC, verify, prune) | PBS notifications, `default-matcher` | Email, **errors only**: SMTP target `resend` (configured 2026-09-09) |
 | Proxmox config copy     | Uptime Kuma push monitor (§4.2)    | Discord (`APS #monitoring`): `down` pushed on failure, or no push for 25 h |
+| Database dumps          | Uptime Kuma push monitor **Database Dumps**, id 38 (§6) | Discord (`APS #monitoring`): `down` pushed on failure, naming the databases, or no push for 25 h |
 | Disk usage — `vault`    | Beszel agent on Astra, drop-in below | Discord (`APS #monitoring`, Beszel webhook): above 75 % |
 | Disk usage — Pulsar sda | Beszel agent on Pulsar             | Discord (Beszel): above 85 % |
 | LXC 101 `adguard`       | Beszel agent in the container      | Discord (Beszel): disk or memory above 80 % |
@@ -1021,7 +1068,8 @@ For each tested restore:
 - [ ] **Give Zerobyte a writable restore target** — every data mount is read-only (§5.5)
 - [ ] Decide the fate of `Mega D` (job disabled, 7 dormant Nous Deux snapshots)
 - [ ] Set up ntfy webhook in Zerobyte settings
-- [ ] Create `/mnt/data/backups/dumps/` directory
+- [x] Create `/mnt/data/backups/dumps/` directory — created by the dump script on its first run
+      (2026-09-14), root `700`
 - [x] **Back up the Proxmox configuration** (2026-09-11) — nightly copy of `/etc/pve`,
       `config.db`, `/etc/proxmox-backup` and host files to `/mnt/data/backups/proxmox-configs/`,
       picked up by job 13; Uptime Kuma push monitor (§4.2). The `Permission denied` of
@@ -1068,8 +1116,12 @@ For each tested restore:
       boots through GRUB — do not install `grub-efi-amd64`
 - [x] **Put LXC 103 on Paris time** (2026-09-13) — `pct set 103 --timezone host`. Prune
       "04:00" had been running at 06:00 Paris, verify and GC "05:00" at 07:00
-- [ ] Delete the safety backup `vzdump-lxc-103-2026_09_13-15_12_10.tar.zst` from `local`
-      once the first night on PBS 4 is checked
+- [x] Delete the safety backup `vzdump-lxc-103-2026_09_13-15_12_10.tar.zst` from `local`
+      once the first night on PBS 4 is checked — deleted 2026-09-14. That night: vzdump 03:00
+      `OK` (VM 100, CT 101, CT 102 in PBS), prune at **04:00** Paris, logrotate at 00:00,
+      `systemctl --failed` empty
+- [ ] **First verify and GC under PBS 4**, in Paris time — Saturday 2026-09-19 and Sunday
+      2026-09-20 at 05:00. The last runs (12 and 13 September, 07:00) were still on PBS 3
 - [x] **Reboot Astra onto kernel `7.0.14-16-pve`** (2026-09-13, 15:38) — installed with
       PVE 9.2.11 → 9.2.18 on 2026-09-12. Pulsar, AdGuard and PBS came back on their own
       (`onboot: 1`), `systemctl --failed` empty on the host, `pvesm list pbs-local` lists the
@@ -1096,7 +1148,8 @@ hours, not by a mirror, so ZFS was ruled out.
 - [x] **Send every app directory off-site** (2026-09-13) — jobs 16 and 17 copy
       `/opt/k3s-data` and `/opt/docker-data` whole to Backblaze, with 9 exclusions (§5.4); the
       five per-app jobs they replace (4, 6, 7, 11, 12) are disabled. The live PostgreSQL and
-      MariaDB directories are excluded and wait for Phase 2
+      MariaDB directories are excluded; their dumps (Phase 2, since 2026-09-14) are the copy.
+      First nightly run 2026-09-14 at 01:00: both `success`, same file counts as the manual run
 - [ ] Delete job 12 and its snapshots, remove `Mega A` from Zerobyte and drop the unused
       per-app mounts from `docker-compose.yml` — **about 2026-12-13**, once jobs 16 and 17
       hold three months of history (§5.4)
@@ -1116,18 +1169,27 @@ hours, not by a mirror, so ZFS was ruled out.
 
 ### Phase 2 — Database dumps
 
-- [ ] Write `/opt/ops/docker/zerobyte/dump-databases.sh`
-- [ ] **Exclude Immich from the script** — its database runs on
+- [x] **Write the dump script** (2026-09-14) — `infra/pulsar/dump-databases.sh`, installed as
+      `/usr/local/sbin/dump-databases`, not run from `/opt/ops` as first planned (§6)
+- [x] **Exclude Immich from the script** — its database runs on
       `postgres:14-vectorchord0.4.3-pgvectors0.2.0`, and a plain `pg_dump` produces a file no
       vanilla PostgreSQL can restore. Immich already dumps itself into `library/backups/`,
       which Backblaze covers.
-- [ ] **Add Umami, Infisical and Dawarich** — absent from the §6 table, and unprotected today
-- [ ] **Dump Uptime Kuma with `mariadb-dump`** — it runs embedded MariaDB, not SQLite (§6)
+- [x] **Add Umami, Infisical and Dawarich** (2026-09-14)
+- [x] **Dump Uptime Kuma with `mariadb-dump`** (2026-09-14) — present in the image, root reaches
+      the embedded MariaDB over its socket without a password
+- [x] **Choose the SQLite databases** (2026-09-14) — the 12 worth a guaranteed copy, out of the
+      25 SQLite files found by their header under the app roots (§6)
 - [x] Confirm whether Scanopy still runs before scripting its dump — not running on
       2026-09-13 (nor AppFlowy): no dump, their cold raw files are copied by job 16
-- [ ] Test each dump command individually
-- [ ] Set up systemd timer on Pulsar to run dumps at 01:00 daily, with an Uptime Kuma push
-      monitor on full success (decided 2026-09-13)
+- [x] Test each dump command individually (2026-09-14) — a test run into `/tmp`, then checked:
+      every SQL dump ends with its marker, Umami's table row counts equal the dump's `COPY`
+      rows, every SQLite copy passes `integrity_check`, no `-wal`/`-shm` changed owner
+- [x] Set up systemd timer on Pulsar to run dumps at 01:00 daily, with an Uptime Kuma push
+      monitor on full success (2026-09-14) — 01:00 **Europe/Paris**, monitor 38; first run by
+      hand: 16/16, push `up`
+- [ ] **Check the first nightly run** — dumps at 01:00 on 2026-09-15, then job 13 at 02:00 picks
+      up `dumps/` (16 new files expected)
 - [x] ~~Add `tier2-db-dumps` job in Zerobyte~~ — not needed: `/mnt/data/backups/dumps/` is
       inside job 13 (decided 2026-09-13)
 - [ ] Validate end to end: dump → Zerobyte backup → restore dump → import to DB
