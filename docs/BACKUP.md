@@ -3,7 +3,7 @@
 > **Status:** Layer 1 operational. Layer 2 in service for every Tier 2 path on `/mnt/data`,
 > every app directory, the Proxmox configuration and, since 2026-09-14, the database dumps
 > (restore not tested yet) — see §12.
-> **Last updated:** 2026-09-14 (nightly database dumps, §6)
+> **Last updated:** 2026-09-14 (nightly database dumps and Filebrowser mounts, §6)
 > **Language:** English (technical reference)
 
 ---
@@ -433,7 +433,8 @@ confines a script mistake or a leaked key to one directory.
 **Secrets.** The copy contains private keys, password hashes, the PBS storage password and
 the Resend API key. They are protected by file permissions on Pulsar and by restic encryption
 off-site — no second encryption layer, since Zerobyte on Pulsar already holds the keys to
-every repository. The push URL lives in `/etc/default/proxmox-config-backup` (root, `600`),
+every repository. File permissions do not stop a container running as root: both Filebrowser
+apps could browse this copy until 2026-09-14 (§6, *Who else can read the dumps*). The push URL lives in `/etc/default/proxmox-config-backup` (root, `600`),
 outside this repository.
 
 **Failure behaviour.** Every step runs under `set -e` and the transfer comes last: if one step
@@ -660,6 +661,14 @@ Live databases cannot be safely copied at the file level while running — doing
 | Alerting | Uptime Kuma push monitor **Database Dumps** (id 38) | `up` when all 16 succeed, `down` naming the failed ones, alert on Discord if no push for 25 h (§10) |
 
 The push URL lives in `/etc/default/dump-databases` (root, `600`), outside this repository.
+
+**Who else can read the dumps.** Root, and any container running as root that mounts
+`/mnt/data/backups` — the `700`/`600` modes stop users, not root. Until 2026-09-14 both
+Filebrowser apps (`runAsUser: 0`) mounted that whole directory: the dumps and the Proxmox
+configuration copy (§4.2) could be browsed and downloaded, from the Internet through
+`drive.enoal.fr` for the classic one. Since commit `f6d4527` both mount
+`/mnt/data/backups/OnePlus-10T` only; checked after ArgoCD's sync, neither pod sees `dumps/`
+or `proxmox-configs/` any more. **Never mount `/mnt/data/backups` whole into an app.**
 The script is installed by copy, not run from `/opt/ops`: that clone is updated by hand (last
 pull 2026-08-31) and owned by `enoal`, and root must not run a file a user account can edit.
 
@@ -1067,6 +1076,9 @@ For each tested restore:
       6,000-character embed cap (§10). Accepted as is for now (2026-09-12)
 - [ ] **Give Zerobyte a writable restore target** — every data mount is read-only (§5.5)
 - [ ] Decide the fate of `Mega D` (job disabled, 7 dormant Nous Deux snapshots)
+- [ ] `zerobyte.db` has no off-site copy — `/var/lib/zerobyte` (28M) lies outside every
+      Zerobyte volume, so only PBS holds it. §9.3 rebuilds Zerobyte by hand; a copy would keep
+      the 13 jobs and their exclusion patterns (found 2026-09-14)
 - [ ] Set up ntfy webhook in Zerobyte settings
 - [x] Create `/mnt/data/backups/dumps/` directory — created by the dump script on its first run
       (2026-09-14), root `700`
@@ -1155,6 +1167,9 @@ hours, not by a mirror, so ZFS was ruled out.
       hold three months of history (§5.4)
 - [ ] Bring Termix (`/opt/ops/docker/termix/data`, 15M) and Dawarich's file volumes (26M)
       under the app roots — both are outside them and have no off-site copy
+- [ ] **Remove the classic Filebrowser and serve `drive.enoal.fr` from Filebrowser Quantum**
+      (announced 2026-09-14). Both share `/mnt/data/k3s-pvc/filebrowser`, so no file moves.
+      Quantum still runs as root (`runAsUser: 0`)
 - [ ] Move `/mnt/data/media/photos` and `/mnt/data/k3s-pvc/filebrowser` under `/opt/k3s-data`
       — unique data on the Netac, which PBS no longer backs up
 - [ ] Move the lab VMs to `vault`. Template 105 is undecided, and 106 is a linked clone of it
@@ -1193,6 +1208,11 @@ hours, not by a mirror, so ZFS was ruled out.
 - [x] ~~Add `tier2-db-dumps` job in Zerobyte~~ — not needed: `/mnt/data/backups/dumps/` is
       inside job 13 (decided 2026-09-13)
 - [ ] Validate end to end: dump → Zerobyte backup → restore dump → import to DB
+- [x] **Hide the dumps from Filebrowser** (2026-09-14, `f6d4527`) — both apps run as root and
+      mounted `/mnt/data/backups` whole, dumps and Proxmox configuration copy included (§6).
+      They now mount `OnePlus-10T/` only. Side effects: `Nexus Backup/` and `Snapchat/`, which
+      the old mount hid in `/mnt/data/k3s-pvc/filebrowser/Backups/`, show again in the classic
+      app, and an empty `OnePlus-10T/` mount point was created there
 
 ### Phase 3 — Secrets sync
 
