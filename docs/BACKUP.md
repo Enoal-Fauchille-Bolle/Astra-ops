@@ -4,7 +4,7 @@
 > every app directory, the Proxmox configuration and, since 2026-09-14, the database dumps
 > (restore not tested yet) — see §12.
 > **Last updated:** 2026-09-14 (nightly database dumps, Filebrowser mounts and the classic
-> Filebrowser's removal, §6, §12)
+> Filebrowser's removal, restore test of the Obsidian notes — §6, §9.5, §12)
 > **Language:** English (technical reference)
 
 ---
@@ -40,6 +40,7 @@
    - 9.2 [Scenario B — Netac NVMe Failure](#92-scenario-b--netac-nvme-failure)
    - 9.3 [Scenario C — Total Loss of Astra](#93-scenario-c--total-loss-of-astra)
    - 9.4 [Restoring the Proxmox configuration](#94-restoring-the-proxmox-configuration)
+   - 9.5 [Restoring the Obsidian notes (CouchDB)](#95-restoring-the-obsidian-notes-couchdb)
 10. [Monitoring & Alerts](#10-monitoring--alerts)
 11. [Restore Testing](#11-restore-testing)
 12. [Pending Tasks & Future Work](#12-pending-tasks--future-work)
@@ -267,7 +268,8 @@ Bulk data that is either reconstructible (Minecraft servers, Kiwix ZIM archives)
 | **Portainer** | `/opt/docker-data/portainer/` | 76M | 1 | ✅ Backblaze B2, job 17 (job 12 disabled 2026-09-13) | BoltDB | 2026-09-13 |
 | **Filebrowser Quantum** | `/opt/k3s-data/filebrowser-quantum/` | 1.1M | 1 | ✅ Backblaze B2, job 16 (raw) | BoltDB — `database.db` is not SQLite (checked 2026-09-14) | 2026-09-14 |
 | **Ntfy** | `/opt/k3s-data/ntfy/` | 160K | 1 | ✅ Backblaze B2, job 16 — not running on 2026-09-14 | SQLite — `user.db` dumped nightly, `cache.db` not (§6) | 2026-09-14 |
-| **Every other app directory** | `/opt/k3s-data/*`, `/opt/docker-data/*` — CouchDB, Jellyfin, Beszel, Homarr, Speedtest Tracker, Wallos, Loandash, Diun, ConvertX, Scrutiny… | ~100M | 1–2 | ✅ Backblaze B2, jobs 16 and 17 — any new directory is picked up automatically | mostly SQLite — Jellyfin, Beszel, Homarr, Speedtest Tracker, Wallos and Loandash dumped nightly (§6) | 2026-09-14 |
+| **CouchDB (Obsidian notes)** | `/opt/k3s-data/couchdb/` | 5.1M | 1 | ✅ Backblaze B2, job 16 (raw `.couch` files) — end-to-end encrypted by LiveSync, restore tested 2026-09-14 (§9.5) | — not dumped, on purpose (§6) | 2026-09-14 |
+| **Every other app directory** | `/opt/k3s-data/*`, `/opt/docker-data/*` — Jellyfin, Beszel, Homarr, Speedtest Tracker, Wallos, Loandash, Diun, ConvertX, Scrutiny… | ~100M | 1–2 | ✅ Backblaze B2, jobs 16 and 17 — any new directory is picked up automatically | mostly SQLite — Jellyfin, Beszel, Homarr, Speedtest Tracker, Wallos and Loandash dumped nightly (§6) | 2026-09-14 |
 | **Termix** | `/opt/ops/docker/termix/data/` | 15M | 1 | ❌ none — outside the app roots | — | 2026-09-13 |
 | `/etc/pve/` | Astra host | ~5M | 1 | ✅ Backblaze B2 — nightly copy to Pulsar, job 13 (since 2026-09-11, §4.2) | — | 2026-09-12 |
 | `/etc/proxmox-backup/` | LXC 103 | **60K** | 1 | ✅ Backblaze B2 — nightly copy to Pulsar, job 13 (since 2026-09-11, §4.2) | — | 2026-09-12 |
@@ -698,6 +700,13 @@ Not dumped, on purpose:
   job 16. The removed classic app's `filebrowser/filebrowser.db` (BoltDB, 64K) was deleted on
   2026-09-14; job 16's snapshots still hold it.
 - **Redis** (Infisical, Homarr, Dawarich) — caches and queues.
+- **CouchDB** (Obsidian notes, §9.5) — decided 2026-09-14. The CouchDB documentation
+  (*Maintenance → Backing up CouchDB*) states that copying `.couch` files while the server runs
+  is safe, the format being append-only, so job 16's raw copy is consistent. The order it
+  recommends, secondary indexes before databases, does not apply: `courses` has no design
+  document, hence no `data/.shards`. A replication to a backup database was rejected:
+  replication never copies `_local` documents, and LiveSync keeps half of its encryption key
+  there (§9.5). The content is end-to-end encrypted either way.
 
 A new app with a database needs a line in the script; jobs 16 and 17 already copy its raw files.
 
@@ -971,6 +980,116 @@ Then start both services again. The datastore itself is self-describing (§4.2).
 
 ---
 
+### 9.5 Restoring the Obsidian notes (CouchDB)
+
+The course notes (Obsidian vault `~/Documents/Courses` on the laptop, also on the phone) sync
+through Self-hosted LiveSync and the CouchDB of `k3s/couchdb` (namespace `productivity`,
+`couchdb.enoal.fr`), in a single database, `courses`. Job 16 copies `/opt/k3s-data/couchdb/`
+(`data/` and `etc/`) to Backblaze every night at 01:00. Nothing else does: no dump (§6), no
+readable export (below).
+
+**What it takes to read the copy** — all three in the official Bitwarden cloud since
+2026-09-14, because Vaultwarden runs on Astra:
+
+| Secret | Needed for |
+| --- | --- |
+| LiveSync end-to-end encryption passphrase | reading anything — without it the copy stays unreadable |
+| Setup URI and its own passphrase | reconnecting a device in one step |
+| CouchDB account (`enoal`) | reconnecting the devices to a restored server |
+
+**The passphrase is only half of the key.** Every chunk is encrypted (`encrypt: true`,
+`E2EEAlgorithm: v2`, paths obfuscated — read from `_local/obsydian_livesync_milestone` on
+2026-09-14). The key is derived from the passphrase **and** a salt kept in
+`_local/obsidian_livesync_sync_parameters`. `_local` documents live in the `.couch` files, so
+the raw copy has the salt. CouchDB replication never copies them: a replicated copy decrypts
+to garbage, with an error that reads exactly like a wrong passphrase (livesync-bridge issue
+#72).
+
+**CouchDB is not a history.** CouchDB 3 compacts its databases on its own (default `smoosh`
+settings) and drops old revisions on the way. An older version of a note comes from an older
+job 16 snapshot.
+
+#### Reading the notes from a backup — tested 2026-09-14
+
+For a partial loss (a note deleted or damaged): restore into a throwaway CouchDB on the
+workstation, read the note in a test vault, copy it back by hand into the real vault. Leave
+the production database alone: a deletion made on any device is a newer revision and would
+win again.
+
+1. Zerobyte → repository **Backblaze** → a **K3s Data** snapshot from before the incident →
+   folder `couchdb` → **Download**. The archive holds `couchdb/data/` (`_dbs.couch`,
+   `_nodes.couch`, `shards/*/courses.<n>.couch`) and `couchdb/etc/`.
+2. Load it into Docker volumes — the image `chown`s its data directory, which would hand
+   files in a home directory over to uid 5984:
+
+   ```bash
+   docker volume create restore-test-couchdb-data
+   docker volume create restore-test-couchdb-etc
+   docker run --rm -v restore-test-couchdb-data:/data -v restore-test-couchdb-etc:/etc-out \
+     -v ~/Downloads/snapshot-<id>.tar:/in.tar:ro couchdb:3.5.2.1 sh -c \
+     'tar -xf /in.tar -C /data --strip-components=2 couchdb/data &&
+      tar -xf /in.tar -C /etc-out --strip-components=2 couchdb/etc/10-livesync.ini'
+   ```
+
+3. Start a throwaway CouchDB bound to the workstation only, with a throwaway admin (the
+   production admin lives in `etc/docker.ini`, left out on purpose):
+
+   ```bash
+   docker run -d --name restore-test-couchdb -p 127.0.0.1:15984:5984 \
+     -e COUCHDB_USER=restoretest -e COUCHDB_PASSWORD=<throwaway> \
+     -v restore-test-couchdb-data:/opt/couchdb/data \
+     -v restore-test-couchdb-etc:/opt/couchdb/etc/local.d couchdb:3.5.2.1
+   curl -s -u restoretest:<throwaway> http://127.0.0.1:15984/courses
+   curl -s -u restoretest:<throwaway> \
+     http://127.0.0.1:15984/courses/_local/obsidian_livesync_sync_parameters   # must exist
+   ```
+
+4. Build a test vault in its own folder (`~/restore-test-courses`):
+   - copy the plugin's `main.js`, `manifest.json` and `styles.css` from the real vault —
+     **not** `data.json`, whose connection points at production and is encrypted per device;
+   - list `obsidian-livesync` in `.obsidian/community-plugins.json`;
+   - write a `data.json` with the throwaway connection in plain fields (`couchDB_URI`
+     `http://127.0.0.1:15984`, `couchDB_USER`, `couchDB_PASSWORD`, `couchDB_DBNAME` `courses`,
+     `isConfigured: true`) — LiveSync turns them into a remote on first load — plus
+     `encrypt: true`, `E2EEAlgorithm: "v2"`, `usePathObfuscation: true`, an empty
+     `passphrase`, every automatic sync off, and the chunk settings of the milestone's
+     `tweak_values` (`customChunkSize` 60, `minimumChunkSize` 20, `hashAlg` `xxhash64`,
+     `chunkSplitterVersion` `v3-rabin-karp`).
+
+   **Never use the Setup URI in a test vault: it points at production.**
+5. In Obsidian: *Manage vaults → Open folder as vault*, trust the plugin, type the
+   passphrase, then run **Fetch everything from the remote**.
+6. Clean up: close the window and *Remove from list* in *Manage vaults*, then
+   `docker rm -f restore-test-couchdb`,
+   `docker volume rm restore-test-couchdb-data restore-test-couchdb-etc`, and delete the test
+   folder and the archive.
+
+**Result on 2026-09-14.** Snapshot `4bcb4081` (01:00, 1.3 MB archive). CouchDB 3.5.2.1
+recognised `courses` — 51 documents, the salt document present, every chunk still encrypted.
+Obsidian 1.13.7 with LiveSync 1.0.28 decrypted all **8 files** that existed at 01:00 (seven
+Markdown files and `Courses.base`). Compared with the live vault by `diff`: the four
+*Advanced Project* notes were identical except for a front-matter property renamed later that
+day (`to_review` → `processed`); the other four were their 01:00 versions, lacking only what
+was added or changed after. Notes created after 01:00 were absent, as expected (RPO ≤ 24 h).
+
+#### Losing the server
+
+Not tested. The devices hold the whole vault, so losing Astra does not lose the notes.
+Putting job 16's copy back into `/opt/k3s-data/couchdb/` (deployment scaled to 0 first, owner
+`5984:5984`) returns the server to its 01:00 state; check LiveSync's documentation of the day
+for how the devices then catch up.
+
+#### Why there is no readable copy
+
+Decided 2026-09-14. A Markdown export on Pulsar would need the passphrase on Astra, and would
+leave the notes in plain text on Pulsar and in Backblaze — exactly what the end-to-end
+encryption is there to prevent. The LiveSync CLI, the tool such an export would use, was
+also assessed: no published release, a daemon mode that deleted documents at startup (issue
+#1143, open), and a `sync` that writes checkpoints into the remote database (issue #846). A
+copy made from the laptop was offered and declined. The readable copies are the devices.
+
+---
+
 ## 10. Monitoring & Alerts
 
 | Component               | Monitoring Method                  | Alert Channel          |
@@ -1228,6 +1347,15 @@ hours, not by a mirror, so ZFS was ruled out.
       They now mount `OnePlus-10T/` only. Side effects: `Nexus Backup/` and `Snapchat/`, which
       the old mount hid in `/mnt/data/k3s-pvc/filebrowser/Backups/`, show again (kept there,
       decided 2026-09-14), and an empty `OnePlus-10T/` mount point was created there
+
+### Obsidian notes (CouchDB)
+
+- [x] **Check that job 16 carries the CouchDB files** (2026-09-14) — snapshot `4bcb4081`
+      (01:00) holds `couchdb/data/shards/*/courses.1789121873.couch`, 336 and 824 KiB
+- [x] **Put the LiveSync passphrase, the Setup URI and the CouchDB account in the official
+      Bitwarden cloud** (2026-09-14) — Vaultwarden alone would go down with Astra (§9.5)
+- [x] **Test a restore of the notes end to end** (2026-09-14) — Backblaze → throwaway
+      CouchDB on the workstation → test vault: 8 files of 8 decrypted, content as of 01:00 (§9.5)
 
 ### Phase 3 — Secrets sync
 
