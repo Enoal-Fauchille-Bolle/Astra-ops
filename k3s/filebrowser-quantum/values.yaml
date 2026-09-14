@@ -17,6 +17,7 @@ service:
 ingress:
   enabled: true
   hosts:
+    - drive.enoal.fr
     - filebrowser-quantum.lan
 
 volumes:
