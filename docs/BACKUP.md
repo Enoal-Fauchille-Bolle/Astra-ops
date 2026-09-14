@@ -3,8 +3,9 @@
 > **Status:** Layer 1 operational. Layer 2 in service for every Tier 2 path on `/mnt/data`,
 > every app directory, the Proxmox configuration and, since 2026-09-14, the database dumps
 > (restore not tested yet) — see §12.
-> **Last updated:** 2026-09-14 (nightly database dumps, Filebrowser mounts and the classic
-> Filebrowser's removal, restore test of the Obsidian notes — §6, §9.5, §12)
+> **Last updated:** 2026-09-14 (nightly database dumps, Filebrowser mounts, the classic
+> Filebrowser's removal and Quantum as non-root, restore test of the Obsidian notes — §6,
+> §9.5, §12)
 > **Language:** English (technical reference)
 
 ---
@@ -672,7 +673,7 @@ configuration copy (§4.2) could be browsed and downloaded, from the Internet th
 `drive.enoal.fr` for the classic one. Since commit `f6d4527` both mount
 `/mnt/data/backups/OnePlus-10T` only; checked after ArgoCD's sync, neither pod sees `dumps/`
 or `proxmox-configs/` any more. The classic app was removed the same day (`ca56a5a`) and
-`drive.enoal.fr` now reaches Quantum, which still runs as root. **Never mount
+`drive.enoal.fr` now reaches Quantum, which runs as uid 1000 since `c1b5a9e` (§12). **Never mount
 `/mnt/data/backups` whole into an app.**
 The script is installed by copy, not run from `/opt/ops`: that clone is updated by hand (last
 pull 2026-08-31) and owned by `enoal`, and root must not run a file a user account can edit.
@@ -1300,12 +1301,26 @@ hours, not by a mirror, so ZFS was ruled out.
       now gets NPM's default 404 page (proxy host 34 removed). Kuma: Enoal deleted monitor 13
       and pointed monitor 15 ("Filebrowser Quantum") at `https://drive.enoal.fr`; no monitor
       probes `filebrowser-quantum.lan` any more (checked 2026-09-14)
-- [ ] Run Filebrowser Quantum as non-root (it runs with `runAsUser: 0`) — needs new owners
-      on `/mnt/data/k3s-pvc/filebrowser`, which SFTPGo mounts too; kept apart from the switch
+- [x] **Run Filebrowser Quantum as non-root** (2026-09-14, `c1b5a9e`) — `runAsUser`/`runAsGroup`
+      1000, `runAsNonRoot`, no privilege escalation, every capability dropped. 1000 is the
+      image's own `filebrowser` user and already owned `/mnt/data/media` (`enoal` on Pulsar).
+      hostPath volumes ignore `fsGroup`, so Enoal chowned `/mnt/data/k3s-pvc/filebrowser`,
+      `/mnt/data/backups/OnePlus-10T` and `/opt/k3s-data/filebrowser-quantum` to `1000:1000`
+      by hand; SFTPGo, which mounts the same directories and still runs as root, got uid/gid
+      1000 on its `enoal` user so that it chowns every file it creates (checked with an
+      upload: `enoal:enoal 644`). Port 80 binds without root (`ip_unprivileged_port_start=0`
+      in the pod). Checked after ArgoCD's sync: `id` → `uid=1000(filebrowser)`, `CapEff` 0,
+      `NoNewPrivs` 1, no error in the logs, Kuma monitor 15 stayed `up`, no file outside
+      `1000:1000` in the four directories. Enoal created, edited and deleted a file in
+      `files` and browsed `Media` and `Backups`. **Undone by**: a file put there by root on
+      the host (`sudo cp`), or a restore from a snapshot older than the night of 2026-09-15 —
+      re-run the `chown -R 1000:1000`. A new account's sidebar lists one source only: add
+      the others with the pencil next to *Navigation*
 - [x] **Delete `/opt/k3s-data/filebrowser`** (64K, the removed app's database, 2026-09-14) —
       no pod, container or open file used it; job 16 had already copied it to Backblaze
 - [ ] Move `/mnt/data/media/photos` and `/mnt/data/k3s-pvc/filebrowser` under `/opt/k3s-data`
-      — unique data on the Netac, which PBS no longer backs up
+      — unique data on the Netac, which PBS no longer backs up. Keep the owner `1000:1000`
+      (`rsync -a` as root), or Quantum loses write access
 - [ ] Move the lab VMs to `vault`. Template 105 is undecided, and 106 is a linked clone of it
 - [ ] **Split the Netac with LVM** — a fixed LV for the PBS datastore, a thin pool for the
       rest. Today both share one ext4 filesystem, and the cold disk (500G declared) plus the
