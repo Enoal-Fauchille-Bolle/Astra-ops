@@ -1346,8 +1346,8 @@ For each tested restore:
       `shutdown=1` would make Crafty restart a sleeping server while the watcher holds its
       port (untested). Compression takes each archive from 2.8G to 1.7G, 3.3G saved on the
       Netac for the three kept. No Crafty archive has been test-restored yet
-- [ ] Rotate the passwords from the deleted Google export — it survives in PBS snapshots of
-      VM 100 for up to ~6 months
+- [x] Rotate the passwords from the deleted Google export — it survives in PBS snapshots of
+      VM 100 for up to ~6 months; passwords changed by Enoal (recorded 2026-09-15)
 - [ ] Decide the fate of LXC 102 (`wireguard`, stopped since 2026-05-04) in the vzdump job
 
 ### Disk layout — decided 2026-09-13
@@ -1372,7 +1372,10 @@ hours, not by a mirror, so ZFS was ruled out.
       per-app mounts from `docker-compose.yml` — **about 2026-12-13**, once jobs 16 and 17
       hold three months of history (§5.4)
 - [ ] Bring Termix (`/opt/ops/docker/termix/data`, 15M) and Dawarich's file volumes (26M)
-      under the app roots — both are outside them and have no off-site copy
+      under the app roots — both are outside them and have no off-site copy. Not urgent
+      (2026-09-15): Termix is a test, started by hand outside Portainer, no backup wanted yet;
+      Dawarich's app and worker have been stopped for three weeks (its database and Redis
+      still run, and the database is dumped nightly, §6)
 - [x] **Remove the classic Filebrowser and serve `drive.enoal.fr` from Filebrowser Quantum**
       (2026-09-14, `ca56a5a`) — the classic project was archived on 2026-09-01 and gets no
       security fixes. Both apps shared `/mnt/data/k3s-pvc/filebrowser`, so no file moved; the
