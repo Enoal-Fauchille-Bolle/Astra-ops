@@ -1387,9 +1387,20 @@ hours, not by a mirror, so ZFS was ruled out.
       the others with the pencil next to *Navigation*
 - [x] **Delete `/opt/k3s-data/filebrowser`** (64K, the removed app's database, 2026-09-14) —
       no pod, container or open file used it; job 16 had already copied it to Backblaze
-- [ ] Move `/mnt/data/media/photos` and `/mnt/data/k3s-pvc/filebrowser` under `/opt/k3s-data`
-      — unique data on the Netac, which PBS no longer backs up. Keep the owner `1000:1000`
-      (`rsync -a` as root), or Quantum loses write access
+- [ ] **Gather personal files into one `drive`** (decided 2026-09-15, after the first verify and
+      GC under PBS 4) — replaces "move `/mnt/data/media/photos` and `/mnt/data/k3s-pvc/filebrowser`
+      under `/opt/k3s-data`". Personal files are the only thing SFTPGo and Filebrowser Quantum
+      may mount; everything else on Pulsar is system. Decided:
+      - a dedicated virtual disk for Pulsar on the WD Blue (`local-lvm`, thin), not a folder of
+        the system disk: a full `drive` must not stop the apps and their databases. PBS backs
+        it up with VM 100, and it gets its own Backblaze job
+      - one account, a plain tree — `Documents/`, `Photos/`, `Téléphone/` (today
+        `backups/OnePlus-10T`), `Archives/` (`Nexus Backup`, `Snapchat`)
+      - films stay on the Netac (replaceable, 47G), shown read-only as a second folder in both
+        apps
+      Measured 2026-09-15: 5.7G to move without the films; `local-lvm` 657G free, Pulsar's
+      system disk 81G free. Keep the owner `1000:1000` (`rsync -a` as root), or both apps lose
+      write access
 - [ ] Move the lab VMs to `vault`. Template 105 is undecided, and 106 is a linked clone of it
 - [ ] **Split the Netac with LVM** — a fixed LV for the PBS datastore, a thin pool for the
       rest. Today both share one ext4 filesystem, and the cold disk (500G declared) plus the
