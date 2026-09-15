@@ -38,8 +38,19 @@ volumes:
     hostPath: /opt/k3s-data/sftpgo
     mountPath: /var/lib/sftpgo
 
+# 1000 is the image's own `sftpgo` user, and owns every user folder mounted above since
+# Filebrowser Quantum went non-root. hostPath volumes ignore fsGroup, so
+# /opt/k3s-data/sftpgo was chowned to 1000 by hand. As 1000 it can no longer open
+# /mnt/data/backups/dumps (root 700) or proxmox-configs (astra-configs 700), which the
+# `backups` mount above still shows
 securityContext:
-  runAsUser: 0
+  runAsUser: 1000
+  runAsGroup: 1000
+  runAsNonRoot: true
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
 
 env:
   - name: SFTPGO_SMTP__HOST
