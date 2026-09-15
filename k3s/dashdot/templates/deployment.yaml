@@ -73,6 +73,8 @@ spec:
           {{- if $vol.configMap }}
           configMap:
             name: {{ $vol.configMap }}
+          {{- else if $vol.emptyDir }}
+          emptyDir: {}
           {{- else }}
           hostPath:
             path: {{ $vol.hostPath }}

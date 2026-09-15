@@ -22,15 +22,51 @@ ingress:
   hosts:
     - dashdot.lan
 
+# Least privilege (2026-09-15): no privileged mode and no host root, only what dashdot reads.
+# Checked against the privileged pod: same CPU, RAM, network and data-disk figures. The system
+# disk reads ~3.6G higher: without device access lsblk cannot tell an LVM partition, so dashdot
+# counts the space outside the filesystems as used.
 securityContext:
-  privileged: true
+  runAsUser: 1000
+  runAsGroup: 1000
+  runAsNonRoot: true
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop: ["ALL"]
 
+env:
+  # Found with nsenter otherwise, which needs CAP_SYS_ADMIN
+  - name: DASHDOT_USE_NETWORK_INTERFACE
+    value: ens18
+
+# dashdot reads the host under /mnt/host. df gives the same figures for any directory of a
+# filesystem, so each disk only needs one harmless directory mounted.
 volumes:
+  # emptyDir lives in /var/lib/kubelet, on Pulsar's system disk
   host-root:
-    hostPath: /
+    emptyDir: true
     mountPath: /mnt/host
+  host-boot:
+    hostPath: /boot
+    mountPath: /mnt/host/boot
     readOnly: true
     hostPathType: Directory
+  host-data:
+    hostPath: /mnt/data/.dashdot
+    mountPath: /mnt/host/mnt/data
+    readOnly: true
+  # Traffic counters of the host's interface
+  host-net:
+    hostPath: /sys/class/net/ens18
+    mountPath: /mnt/host/sys/class/net/ens18
+    readOnly: true
+    hostPathType: Directory
+  # Over the image's own file: dashdot's refresh of it needs root and logs one warning at start
+  os-release:
+    hostPath: /usr/lib/os-release
+    mountPath: /usr/lib/os-release
+    readOnly: true
+    hostPathType: File
 
 resources:
   requests:
