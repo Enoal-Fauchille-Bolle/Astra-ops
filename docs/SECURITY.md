@@ -51,12 +51,22 @@ into control of Pulsar, with every app, database and backup on it.
         `server_proxy.conf` ([`docker/npm/README.md`](../docker/npm/README.md)). Checked after
         the reload: the 18 public sites answer the same codes as before, and the logs show no
         Cloudflare address any more (a test request shows the tester's public address)
-  - [ ] **Choose how to block traffic that comes through Cloudflare** — a firewall ban
-        matches the address the connection comes from, and for proxied sites that is
-        Cloudflare's. Once NPM logs visitors, a `DOCKER-USER` bouncer can no longer cut the
-        sites, but it only stops direct traffic: on 2026-09-15, 1 488 direct requests
-        (37 addresses, sites in DNS-only mode such as `immich.enoal.fr`) against 39 949
-        through Cloudflare. Blocking the rest needs a bouncer at Cloudflare or inside NPM
+  - [x] **Firewall bans reach the containers** (2026-09-15) — `DOCKER-USER` added under
+        `iptables_chains` in `/etc/crowdsec/bouncers/crowdsec-firewall-bouncer.yaml` on Pulsar
+        (host file, not in this repository; previous version kept as `.bak-2026-09-15`).
+        Before: the community list (24 430 IPv4, 455 IPv6) and the local bans contained no
+        Cloudflare or private address. After: the 18 public sites answer the same codes; a
+        throwaway container banned with `cscli decisions add --ip` got no answer from NPM
+        (`000`), then `200` once the ban was deleted. Bans added by hand land in
+        `crowdsec-blacklists-2`, not `-1`. README status fixed. Blocks direct traffic only:
+        on 2026-09-15, 1 488 direct requests (37 addresses, sites in DNS-only mode such as
+        `immich.enoal.fr`) against 39 949 through Cloudflare, whose connections come from
+        Cloudflare's addresses
+  - [ ] **Block traffic that comes through Cloudflare** — chosen: the Cloudflare Worker
+        Bouncer, which pushes bans to Cloudflare. Check first the daily request volume in
+        Cloudflare's dashboard against the free plan (100 000 worker requests and 1 000 KV
+        writes a day), and set the routes to fail open so a spent quota lets visitors through
+        instead of showing an error
 - [ ] **Crafty out of `network_mode: host` and root** — it binds its ports on the host directly
       (8443 among them) as uid 0. Touches the sleep watcher of Roots SMP, which holds the
       server's port while it sleeps
