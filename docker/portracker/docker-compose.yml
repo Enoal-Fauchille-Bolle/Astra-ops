@@ -16,12 +16,11 @@ services:
     image: mostafawahied/portracker:1.3.10
     container_name: portracker
     restart: unless-stopped
+    # Reads the host's listening ports from /proc/1/net. No SYS_PTRACE, SYS_ADMIN or
+    # apparmor:unconfined (2026-09-15): together with the host PID namespace they let the
+    # container take over any host process. Cost, measured: host ports (not Docker ones) show
+    # no program name — `sudo ss -tulpn` on Pulsar gives it
     pid: "host"
-    cap_add:
-      - SYS_PTRACE
-      - SYS_ADMIN
-    security_opt:
-      - apparmor:unconfined
     volumes:
       - /opt/docker-data/portracker:/data
     ports:
