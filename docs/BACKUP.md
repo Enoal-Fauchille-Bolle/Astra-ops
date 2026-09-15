@@ -280,7 +280,7 @@ Bulk data that is either reconstructible (Minecraft servers, Kiwix ZIM archives)
 | **Criteri-fresque** | `/opt/k3s-data/criteri-fresque/` | 41M | 2 | ✅ Backblaze B2, job 16 (Mega A job 6 disabled 2026-09-13) | — | 2026-09-13 |
 | **Personal backups** | `/mnt/data/backups/` | **102M** — `OnePlus-10T/` only | 2 | ✅ Backblaze B2 (since 2026-09-10) | — | 2026-09-11 |
 | **Photos** | `/mnt/data/media/photos/` | **946M** | 2 | ✅ Backblaze B2 (since 2026-09-10) | — | 2026-09-11 |
-| **DB dumps** | `/mnt/data/backups/dumps/` | **157M** (16 files) | 2 | ✅ Backblaze B2, job 13 — first upload 2026-09-15 at 02:00, restore tested the same day (§6) | — | 2026-09-15 |
+| **DB dumps** | `/mnt/data/backups/dumps/` | **154M** (17 files) | 2 | ✅ Backblaze B2, job 13 — first upload 2026-09-15 at 02:00, restore tested the same day (§6) | — | 2026-09-15 |
 | **Secrets** | `~/astra-secrets/` (workstation) | ~1M | 2 | ❌ not yet | — | May 2026 |
 | **Crafty backups** | `/mnt/data/docker-volumes/crafty/backups/` | **26G** | 2 | ✅ Backblaze B2 — all 3 servers (since 2026-09-11) | — | 2026-09-11 |
 | **Crafty config** | `/opt/docker-data/crafty/config/` | **186M** | 2 | ✅ Backblaze B2, job 17 (Mega A job 7 disabled 2026-09-13) | SQLite — `crafty.sqlite` dumped nightly (§6) | 2026-09-14 |
@@ -656,14 +656,16 @@ Live databases cannot be safely copied at the file level while running — doing
 > **In service since 2026-09-14.** First run by hand at 14:27 Paris: 16 dumps, 156 MB, 8 s,
 > Kuma push `up`. First nightly run on 2026-09-15: 01:00:00 → 01:00:08 Paris, 16/16, 157 MB,
 > push `up`; job 13 picked the 16 files up at 02:00 (81 files instead of 65, `success`), and
-> the restore was tested end to end the same day (see *Restoring* below).
+> the restore was tested end to end the same day (see *Restoring* below). Zerobyte's own
+> database joined on 2026-09-15 afternoon: run by hand, 17/17, push `up`; the copy holds the
+> same 13 schedules, 6 repositories and 12 volumes as the original.
 
 | Piece | Where | What it does |
 | --- | --- | --- |
 | Script | `infra/pulsar/dump-databases.sh` → `/usr/local/sbin/dump-databases` on Pulsar (root, `755`) | dumps each database on its own, checks the result, then replaces the previous dump |
 | Timer | `infra/pulsar/dump-databases.{service,timer}` | daily at **01:00 Europe/Paris**, `Persistent=true` (catches up at boot) |
 | Destination | `/mnt/data/backups/dumps/` | root, directory `700`, files `600`; one file per database, replaced every night |
-| Alerting | Uptime Kuma push monitor **Database Dumps** (id 38) | `up` when all 16 succeed, `down` naming the failed ones, alert on Discord if no push for 25 h (§10) |
+| Alerting | Uptime Kuma push monitor **Database Dumps** (id 38) | `up` when all 17 succeed, `down` naming the failed ones, alert on Discord if no push for 25 h (§10) |
 
 The push URL lives in `/etc/default/dump-databases` (root, `600`), outside this repository.
 
@@ -688,6 +690,7 @@ pull 2026-08-31) and owned by `enoal`, and root must not run a file a user accou
 | `dawarich.sql` | Docker container `dawarich_db` | PostgreSQL 17.11 + PostGIS 3.5.7 | same, through `docker exec` |
 | `uptimekuma.sql` | deployment `monitoring/uptimekuma`, socket `/app/data/run/mariadb.sock` | embedded MariaDB 10.11.14 | `mariadb-dump -u root --single-transaction --databases kuma` — its 28 tables are all InnoDB, so the dump is consistent without locking |
 | `<app>.sqlite` × 12 | Vaultwarden, n8n, SFTPGo, ntfy `user.db`, Jellyfin, NPM, Homarr, Wallos, Crafty `crafty.sqlite`, Beszel `data.db`, Speedtest Tracker, Loandash — paths in the script | SQLite | Python's online backup API (no `sqlite3` binary on Pulsar), run as the file's owner |
+| `zerobyte.sqlite` | `/var/lib/zerobyte/data/zerobyte.db` (since 2026-09-15) | SQLite | same. Its only off-site copy: `/var/lib/zerobyte` lies outside both app roots, so jobs 16 and 17 never see it. It keeps the 13 jobs, their exclusions and the repositories, which §9.3 otherwise rebuilds by hand |
 
 Not dumped, on purpose:
 
@@ -943,9 +946,16 @@ Zerobyte (§5.4) through its restore directory (§9.6).
    in the **official Bitwarden cloud** — not in the self-hosted Vaultwarden, which runs on
    Astra and would be lost with it.
 4. Create Pulsar VM (Ubuntu Server), install K3s and Docker.
-5. Install Zerobyte (Docker Compose in `docker/zerobyte/`).
+5. Install Zerobyte (Docker Compose in `docker/zerobyte/`). To get its 13 jobs back instead of
+   re-creating them, fetch `dumps/zerobyte.sqlite` from job 13's latest snapshot with the
+   `restic` command line (B2 key and restic password as above) and put it at
+   `/var/lib/zerobyte/data/zerobyte.db` before the first start. Zerobyte encrypts the secrets
+   it stores with `APP_SECRET`: the new stack needs the **same** value, or those secrets are
+   lost. It is set in Portainer's stack 11 environment, on Astra; no copy elsewhere is
+   recorded (2026-09-15).
 6. Configure rclone remotes (`mega-a`, `mega-c`, `mega-d`) on the new Pulsar, and re-create
-   the Backblaze S3 repository in Zerobyte with the B2 key.
+   the Backblaze S3 repository in Zerobyte with the B2 key (skip the latter with the
+   database of step 5).
 7. Restore Tier 2 data from Backblaze and MEGA via Zerobyte, through `/mnt/data/restore` (§9.6).
 8. Apply K3s secrets from the operator's computer:
 
@@ -1263,9 +1273,12 @@ For each tested restore:
       `700`) mounted at `/restore`; restore from Backblaze tested, identical to the original (§9.6)
 - [ ] Revisit `Mega D` about 2026-12-15 — kept as is for three months (decided 2026-09-15):
       job disabled, 7 dormant Nous Deux snapshots
-- [ ] `zerobyte.db` has no off-site copy — `/var/lib/zerobyte` (28M) lies outside every
-      Zerobyte volume, so only PBS holds it. §9.3 rebuilds Zerobyte by hand; a copy would keep
-      the 13 jobs and their exclusion patterns (found 2026-09-14)
+- [x] **Send `zerobyte.db` off-site** (2026-09-15) — `/var/lib/zerobyte` lies outside every
+      Zerobyte volume, so only PBS held it (found 2026-09-14). Added to the nightly dumps (§6),
+      which job 13 ships to Backblaze; first run by hand: 17/17, the copy matches the original
+      (13 schedules, 6 repositories, 12 volumes)
+- [ ] Keep Zerobyte's `APP_SECRET` off Astra — the database copy above is only usable with it
+      (§9.3, step 5); it is set in Portainer's stack 11 environment, no copy elsewhere recorded
 - [x] ~~Set up ntfy webhook in Zerobyte settings~~ — not wanted: Discord only (decided 2026-09-15)
 - [x] Create `/mnt/data/backups/dumps/` directory — created by the dump script on its first run
       (2026-09-14), root `700`

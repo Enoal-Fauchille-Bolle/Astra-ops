@@ -32,8 +32,10 @@ KUMA_DEPLOYMENT="monitoring/uptimekuma"
 KUMA_SOCKET="/app/data/run/mariadb.sock"
 KUMA_DATABASE="kuma"
 # SQLite databases worth a guaranteed copy. The others (caches, statistics, indexes) are only
-# copied raw by Zerobyte jobs 16 and 17, like these ones too.
+# copied raw by Zerobyte jobs 16 and 17, like these ones too — except Zerobyte's own, which
+# lies outside both app roots: this dump is its only off-site copy.
 SQLITE=(
+    "zerobyte=/var/lib/zerobyte/data/zerobyte.db"
     "vaultwarden=/opt/k3s-data/vaultwarden/db.sqlite3"
     "n8n=/opt/k3s-data/n8n/data/database.sqlite"
     "sftpgo=/opt/k3s-data/sftpgo/sftpgo.db"
