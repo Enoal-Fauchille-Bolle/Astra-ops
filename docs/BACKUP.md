@@ -2,10 +2,9 @@
 
 > **Status:** Layer 1 operational. Layer 2 in service for every Tier 2 path on `/mnt/data`,
 > every app directory, the Proxmox configuration and, since 2026-09-14, the database dumps
-> (restore not tested yet) — see §12.
-> **Last updated:** 2026-09-14 (nightly database dumps, Filebrowser mounts, the classic
-> Filebrowser's removal and Quantum as non-root, restore test of the Obsidian notes, Zerobyte's
-> restore directory — §6, §9.5, §9.6, §12)
+> (restore tested end to end on 2026-09-15) — see §12.
+> **Last updated:** 2026-09-15 (first nightly run of the database dumps and their end-to-end
+> restore test — §6, §9.6, §12)
 > **Language:** English (technical reference)
 
 ---
@@ -281,7 +280,7 @@ Bulk data that is either reconstructible (Minecraft servers, Kiwix ZIM archives)
 | **Criteri-fresque** | `/opt/k3s-data/criteri-fresque/` | 41M | 2 | ✅ Backblaze B2, job 16 (Mega A job 6 disabled 2026-09-13) | — | 2026-09-13 |
 | **Personal backups** | `/mnt/data/backups/` | **102M** — `OnePlus-10T/` only | 2 | ✅ Backblaze B2 (since 2026-09-10) | — | 2026-09-11 |
 | **Photos** | `/mnt/data/media/photos/` | **946M** | 2 | ✅ Backblaze B2 (since 2026-09-10) | — | 2026-09-11 |
-| **DB dumps** | `/mnt/data/backups/dumps/` | **156M** (16 files) | 2 | job 13 — first upload 2026-09-15 at 02:00 | — | 2026-09-14 |
+| **DB dumps** | `/mnt/data/backups/dumps/` | **157M** (16 files) | 2 | ✅ Backblaze B2, job 13 — first upload 2026-09-15 at 02:00, restore tested the same day (§6) | — | 2026-09-15 |
 | **Secrets** | `~/astra-secrets/` (workstation) | ~1M | 2 | ❌ not yet | — | May 2026 |
 | **Crafty backups** | `/mnt/data/docker-volumes/crafty/backups/` | **26G** | 2 | ✅ Backblaze B2 — all 3 servers (since 2026-09-11) | — | 2026-09-11 |
 | **Crafty config** | `/opt/docker-data/crafty/config/` | **186M** | 2 | ✅ Backblaze B2, job 17 (Mega A job 7 disabled 2026-09-13) | SQLite — `crafty.sqlite` dumped nightly (§6) | 2026-09-14 |
@@ -655,8 +654,9 @@ of their own:
 Live databases cannot be safely copied at the file level while running — doing so risks backing up a partially-written, corrupt state. Instead, a dump script runs **before** Zerobyte jobs and writes cold, consistent export files to `/mnt/data/backups/dumps/`. Zerobyte then backs up this directory as part of the existing **Backups** job (13, 02:00). A dump is a copy, so its place is the Netac (§12, disk layout).
 
 > **In service since 2026-09-14.** First run by hand at 14:27 Paris: 16 dumps, 156 MB, 8 s,
-> Kuma push `up`. The first nightly run and its upload by job 13 are on 2026-09-15, and the
-> restore has not been tested yet (§12, Phase 2).
+> Kuma push `up`. First nightly run on 2026-09-15: 01:00:00 → 01:00:08 Paris, 16/16, 157 MB,
+> push `up`; job 13 picked the 16 files up at 02:00 (81 files instead of 65, `success`), and
+> the restore was tested end to end the same day (see *Restoring* below).
 
 | Piece | Where | What it does |
 | --- | --- | --- |
@@ -732,11 +732,13 @@ A new app with a database needs a line in the script; jobs 16 and 17 already cop
 
 ### Restoring
 
-> Not tested yet — see the end-to-end item in §12, Phase 2.
-
 - **PostgreSQL:** `psql -U <user> -d <empty database> -f <app>.sql`, with **`psql` 16.10 / 17.6
   or newer**: the dumps open with `\restrict` and close with `\unrestrict`, which older clients
-  reject. Dawarich needs a PostGIS image (`postgis/postgis:17-3.5-alpine`).
+  reject. Dawarich needs a PostGIS image (`postgis/postgis:17-3.5-alpine`). Into a fresh server,
+  create the owner role first (`umami`, `infisical`): the dumps set every object's owner with
+  `OWNER TO <role>`. Restore into a new, empty database (`createdb -T template0`), not the
+  image's default one: PostGIS's image preinstalls its extensions in `postgres` and
+  `template_postgis`, and the Dawarich dump creates them itself.
 - **Uptime Kuma:** `mariadb -u root < uptimekuma.sql` into the same MariaDB; the dump creates
   database `kuma`. Its first line, `/*M!999999\- enable the sandbox mode */`, is only
   understood by recent MariaDB clients.
@@ -744,6 +746,22 @@ A new app with a database needs a line in the script; jobs 16 and 17 already cop
   delete any leftover `-wal` and `-shm`, start the app. Six copies keep their original's WAL
   flag (Beszel, Crafty, Jellyfin, Loandash, n8n, Vaultwarden) — harmless in place; to read one
   elsewhere, open it with `?immutable=1`.
+
+**Tested end to end on 2026-09-15.** Job 13's snapshot `fd07fcc1` (02:00), folder `dumps`,
+restored from Backblaze into `/restore/dumps-2026-09-15` (§9.6), then loaded into throwaway
+containers on Pulsar (`--network none`, `--rm`):
+
+| Check | Result |
+| --- | --- |
+| Restored files vs the originals | 16/16 identical in content (SHA-256), owner, mode and modification time |
+| 12 SQLite copies | `integrity_check` ok for all; e.g. Vaultwarden 2 users, 888 ciphers; NPM 75 proxy hosts |
+| Umami (`postgres:16`, psql 16.15) | imported with `ON_ERROR_STOP`, 0 errors; 25/25 tables, 128 rows, same as the dump's `COPY` blocks |
+| Infisical (`postgres:16`) | 0 errors, 9 s; 770 tables, 1 247 rows, all equal to the dump |
+| Dawarich (`postgis/postgis:17-3.5-alpine`) | 0 errors, 3 s; the dump's 39 tables of data equal, 136 064 points; the 4 other differences are rows PostGIS ships itself (`spatial_ref_sys`, `tiger.pagc_*`), which `pg_dump` leaves out |
+| Uptime Kuma (`mariadb:10.11`, 10.11.19) | 0 errors, 2 s; 28 tables, 187 898 rows, all equal to the dump |
+
+Counting a Kuma dump's rows: `mariadb-dump` 10.11 writes `INSERT INTO … VALUES` and then one
+row per line up to the `;`, not a whole statement on one line.
 
 ---
 
@@ -1127,8 +1145,10 @@ configuration, `/app` and the temporary directory.
 **Tested on 2026-09-14.** Job 13's snapshot `156b3871` (02:00), folder `proxmox-configs`,
 restored from Backblaze into `/restore` in 2.5 s: 53 files, 70 KB, identical to
 `/mnt/data/backups/proxmox-configs` in content (`diff -r`) and in owner, mode and
-modification time. The end-to-end test of the database dumps (import into a throwaway
-database) is still open (§12, Phase 2).
+modification time. Second test on 2026-09-15: the database dumps of snapshot `fd07fcc1`, into
+`/restore/dumps-2026-09-15`, then imported into throwaway databases (§6, *Restoring*). The
+subfolder Zerobyte creates is `755`; the files keep their `600`, and `/mnt/data/restore` itself
+stays `700`.
 
 ---
 
@@ -1394,11 +1414,15 @@ hours, not by a mirror, so ZFS was ruled out.
 - [x] Set up systemd timer on Pulsar to run dumps at 01:00 daily, with an Uptime Kuma push
       monitor on full success (2026-09-14) — 01:00 **Europe/Paris**, monitor 38; first run by
       hand: 16/16, push `up`
-- [ ] **Check the first nightly run** — dumps at 01:00 on 2026-09-15, then job 13 at 02:00 picks
-      up `dumps/` (16 new files expected)
+- [x] **Check the first nightly run** (2026-09-15) — dumps 01:00:00 → 01:00:08 Paris, 16/16,
+      Kuma monitor 38 `up` "OK, 16 dumps"; job 13 at 02:00 `success`, 16 new files (81
+      instead of 65), 104.8 MB added, 16.8 MB after compression
 - [x] ~~Add `tier2-db-dumps` job in Zerobyte~~ — not needed: `/mnt/data/backups/dumps/` is
       inside job 13 (decided 2026-09-13)
-- [ ] Validate end to end: dump → Zerobyte backup → restore dump → import to DB
+- [x] **Validate end to end** (2026-09-15): dump → Zerobyte backup → restore dump → import to
+      DB — snapshot `fd07fcc1` from Backblaze, 16/16 identical to the originals, the 4 SQL dumps
+      imported with 0 errors and the same row counts, the 12 SQLite copies pass
+      `integrity_check` (§6, *Restoring*)
 - [x] **Hide the dumps from Filebrowser** (2026-09-14, `f6d4527`) — both apps run as root and
       mounted `/mnt/data/backups` whole, dumps and Proxmox configuration copy included (§6).
       They now mount `OnePlus-10T/` only. Side effects: `Nexus Backup/` and `Snapchat/`, which
