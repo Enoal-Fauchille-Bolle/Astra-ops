@@ -47,6 +47,16 @@ into control of Pulsar, with every app, database and backup on it.
       addresses. Hooking the bouncer into `DOCKER-USER` first would ban Cloudflare and cut
       every public site. Configure `real_ip` in NPM, check the logs show visitors' addresses,
       then extend the bouncer. Fix the README line in the same change
+  - [x] **NPM logs visitors' addresses** (2026-09-15) — `real_ip_header CF-Connecting-IP` in
+        `server_proxy.conf` ([`docker/npm/README.md`](../docker/npm/README.md)). Checked after
+        the reload: the 18 public sites answer the same codes as before, and the logs show no
+        Cloudflare address any more (a test request shows the tester's public address)
+  - [ ] **Choose how to block traffic that comes through Cloudflare** — a firewall ban
+        matches the address the connection comes from, and for proxied sites that is
+        Cloudflare's. Once NPM logs visitors, a `DOCKER-USER` bouncer can no longer cut the
+        sites, but it only stops direct traffic: on 2026-09-15, 1 488 direct requests
+        (37 addresses, sites in DNS-only mode such as `immich.enoal.fr`) against 39 949
+        through Cloudflare. Blocking the rest needs a bouncer at Cloudflare or inside NPM
 - [ ] **Crafty out of `network_mode: host` and root** — it binds its ports on the host directly
       (8443 among them) as uid 0. Touches the sleep watcher of Roots SMP, which holds the
       server's port while it sleeps

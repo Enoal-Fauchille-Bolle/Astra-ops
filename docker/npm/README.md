@@ -1,4 +1,4 @@
-# Nginx Proxy Manager — 404 page
+# Nginx Proxy Manager — 404 page and visitor addresses
 
 `404.html` is the page a visitor sees when they reach an address NPM does not serve: any
 unknown subdomain of `enoal.fr`, or the server's IP on port 80. It follows the look of the
@@ -44,6 +44,31 @@ On port 80, a name that matches no host (the bare IP, for instance) reaches NPM'
 Site, which serves the same page with a **200** status: the template NPM generates for a
 custom page (`try_files $uri /index.html`) sets no error code. Subdomains of `enoal.fr`
 are not affected, host 47 catches them first.
+
+## Visitor addresses behind Cloudflare
+
+`server_proxy.conf` is a copy of `/opt/docker-data/npm/data/nginx/custom/server_proxy.conf`,
+which NPM includes in every proxy host. NPM already trusts Cloudflare's ranges
+(`ip_ranges.conf`), but reads the visitor's address from `X-Real-IP`, a header Cloudflare
+does not send: the logs showed Cloudflare's addresses, and CrowdSec analysed those. The file
+makes NPM read `CF-Connecting-IP` instead. The header is only believed when the connection
+comes from Cloudflare or a private network; a direct visitor keeps its own address.
+
+Put it in `server_proxy.conf`, not `http_top.conf`: NPM's `nginx.conf` already sets
+`real_ip_header` at `http` level, and a second one there makes nginx reject the whole
+configuration (`"real_ip_header" directive is duplicate`), which takes every site down.
+At `server` level it overrides the global value.
+
+To apply a change without risk, `nginx -t` first: if it fails, nginx keeps running on the
+old configuration.
+
+```sh
+docker exec nginx-proxy-manager sh -c 'nginx -t && nginx -s reload'
+```
+
+To check: `grep -h '\[Client ' /opt/docker-data/npm/data/logs/proxy-host-*_access.log | tail`
+must show visitors' addresses, not Cloudflare's (`104.16.0.0/13`, `172.64.0.0/13`,
+`141.101.64.0/18`…).
 
 ## Fonts
 
