@@ -514,7 +514,7 @@ Two providers, with a clear split:
 | **Backblaze** | S3 (B2) | **43.4 GiB** (~$0.28/month) | 7 | Immich, Crafty backups, personal backups, photos, and since 2026-09-13 every app directory (jobs 16, 17) |
 | **Mega A** | rclone `mega-a` | 113 MiB | 44 | Homer, Criteri'Fresque, Crafty config, Docker Registry — **jobs disabled 2026-09-13**, snapshots kept until about 2026-12-13 |
 | **Mega C** | rclone `mega-c` | 3.7 GiB | 11 | Filebrowser files |
-| **Mega D** | rclone `mega-d` | 874 MiB | 7 | old Nous Deux snapshots only — its job was disabled on 2026-09-11 |
+| **Mega D** | rclone `mega-d` | 874 MiB | 7 | old Nous Deux snapshots only — its job was disabled on 2026-09-11, snapshots kept until about 2026-12-15 |
 | Mega B | rclone `mega-b` | — | 10 | **retired** 2026-09-09: removed from Zerobyte, left intact on MEGA, readable with `restic --no-lock` |
 | `test-backblaze`, `test-local` | — | negligible | — | test repositories |
 
@@ -1208,7 +1208,7 @@ stays `700`.
 > **Accepted as is on 2026-09-12:** the title and the tail of the error still arrive, and the
 > full error stays readable in the Zerobyte UI.
 
-> **Recommended:** set a Zerobyte webhook to ntfy for all job completions and failures. This provides a push notification to mobile on every backup cycle.
+> **No ntfy webhook, by decision (2026-09-15):** Zerobyte notifies Discord only.
 
 ---
 
@@ -1261,11 +1261,12 @@ For each tested restore:
       6,000-character embed cap (§10). Accepted as is for now (2026-09-12)
 - [x] **Give Zerobyte a writable restore target** (2026-09-14) — `/mnt/data/restore` (root
       `700`) mounted at `/restore`; restore from Backblaze tested, identical to the original (§9.6)
-- [ ] Decide the fate of `Mega D` (job disabled, 7 dormant Nous Deux snapshots)
+- [ ] Revisit `Mega D` about 2026-12-15 — kept as is for three months (decided 2026-09-15):
+      job disabled, 7 dormant Nous Deux snapshots
 - [ ] `zerobyte.db` has no off-site copy — `/var/lib/zerobyte` (28M) lies outside every
       Zerobyte volume, so only PBS holds it. §9.3 rebuilds Zerobyte by hand; a copy would keep
       the 13 jobs and their exclusion patterns (found 2026-09-14)
-- [ ] Set up ntfy webhook in Zerobyte settings
+- [x] ~~Set up ntfy webhook in Zerobyte settings~~ — not wanted: Discord only (decided 2026-09-15)
 - [x] Create `/mnt/data/backups/dumps/` directory — created by the dump script on its first run
       (2026-09-14), root `700`
 - [x] **Back up the Proxmox configuration** (2026-09-11) — nightly copy of `/etc/pve`,
