@@ -74,4 +74,5 @@ resources:
     memory: 128Mi
   limits:
     cpu: 100m
-    memory: 192Mi
+    # 192Mi got it OOM-killed during each speed test (every 4 h); VPA target ~283Mi
+    memory: 320Mi
