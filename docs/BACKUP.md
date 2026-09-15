@@ -1415,9 +1415,28 @@ hours, not by a mirror, so ZFS was ruled out.
 - [ ] Move the lab VMs to `vault`. Template 105 is undecided, and 106 is a linked clone of it
 - [ ] **Split the Netac with LVM** — a fixed LV for the PBS datastore, a thin pool for the
       rest. Today both share one ext4 filesystem, and the cold disk (500G declared) plus the
-      datastore (482G) exceed the 938G drive. Measure first what the datastore weighs without
-      the `scsi1` history (backed up until 2026-09-11, kept by `keep-monthly 6` until about
-      2027-03): parking its content on the WD would fill that thin pool to about 92 %
+      datastore (~489G on 2026-09-15) exceed the 938G drive. **Plan approved by Enoal on
+      2026-09-15**, in this order:
+      1. after the first verify and GC under PBS 4 (2026-09-19 and 20);
+      2. **`drive` first** — this changes the 2026-09-13 order (LVM, then tidy up): once the
+         5.7G of personal files are on the WD, the Netac holds only copies and replaceable
+         data, so the worst accident during the split destroys nothing unique;
+      3. measure, read-only and after a GC, what the datastore weighs without the 13 `vm/100`
+         snapshots that still hold `drive-scsi1` (2026-05-31 to 2026-09-11 UTC; the dailies
+         expire by themselves, the monthlies last until about 2027-03). Rough guess, not a
+         measurement: 100 to 200G;
+      4. Enoal decides whether to delete those snapshots (the history of Pulsar's system disk
+         before 2026-09-12 goes with them; app data has Backblaze history since 2026-09-13,
+         dumps since 2026-09-14). Space only comes back after the next GC;
+      5. **method A** if the snapshots go and the datastore falls under ~250G: copy it to the
+         WD with a PBS sync job (the `local-lvm` thin pool stays under ~55 %), wipe the Netac,
+         build the LVM, sync back. **Otherwise method B**: move the cold disk `scsi1` and the
+         ISOs to the WD online (*Move disk*), shrink the datastore's ext4 and partition in
+         place with PBS stopped, build the thin pool in the freed space, move `scsi1` back.
+         Never park the whole 489G on the WD: a full thin pool freezes every guest, Pulsar
+         included.
+      Reserve an LV for the 64–128 GiB local cache a future S3 datastore needs (below), so the
+      disk is not split twice
 - [ ] Later: a PBS 4 datastore on Backblaze (S3 backend) to restore whole VMs after losing
       Astra. It needs a 64–128 GiB local cache; support status and B2 compatibility unchecked
 - Films (`/mnt/data/media/movies`, 47G) are replaceable: no backup, by decision
