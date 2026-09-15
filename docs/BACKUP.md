@@ -1385,6 +1385,17 @@ hours, not by a mirror, so ZFS was ruled out.
       the host (`sudo cp`), or a restore from a snapshot older than the night of 2026-09-15 —
       re-run the `chown -R 1000:1000`. A new account's sidebar lists one source only: add
       the others with the pencil next to *Navigation*
+- [x] **Run SFTPGo as non-root** (2026-09-15, `e87b3b6`) — same settings as Quantum: uid/gid
+      1000 (the image's own `sftpgo` user), `runAsNonRoot`, no privilege escalation, every
+      capability dropped. Found that morning: as root, SFTPGo mounted `/mnt/data/backups` whole
+      and its only account (`enoal`, home `/data`, every permission) could read, change and
+      delete the database dumps and the Proxmox configuration copy — the leak closed on
+      2026-09-14 for Filebrowser, LAN and VPN only here. Only `/opt/k3s-data/sftpgo` (its
+      database and host keys) was still root's; Enoal chowned it to `1000:1000`. Checked after
+      ArgoCD's sync: `id` → `uid=1000(sftpgo)`, `CapEff` 0, `NoNewPrivs` 1, `dumps/` and
+      `proxmox-configs/` → `Permission denied` from the pod, phone backups and media still
+      readable, both listeners up with no error, `sftpgo.lan` → `200`, Kuma monitor up; Enoal
+      uploaded and deleted a file. The mount itself goes away with `drive` (below)
 - [x] **Delete `/opt/k3s-data/filebrowser`** (64K, the removed app's database, 2026-09-14) —
       no pod, container or open file used it; job 16 had already copied it to Backblaze
 - [ ] **Gather personal files into one `drive`** (decided 2026-09-15, after the first verify and
