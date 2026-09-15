@@ -1325,8 +1325,14 @@ For each tested restore:
       PVE 9.2.11 → 9.2.18 on 2026-09-12. Pulsar, AdGuard and PBS came back on their own
       (`onboot: 1`), `systemctl --failed` empty on the host, `pvesm list pbs-local` lists the
       51 snapshots. The two NVMe drives swapped kernel names on this boot (§2.1)
-- [ ] Crafty backups use `compress=1` and `shutdown=0`; Crafty's documentation recommends
-      stopping the server during backups and warns compression can damage chunk data
+- [x] ~~Crafty backups use `compress=1` and `shutdown=0`~~ — kept as is (decided 2026-09-15).
+      Crafty's documentation recommends stopping the server during backups and warns
+      compression can damage chunk data. But the watcher already stops Roots SMP 10 minutes
+      after the last player leaves (on 2026-09-15 it had slept since 22:29), so the 04:00
+      archive, done in 45 s, copies a stopped server unless someone plays at that moment;
+      `shutdown=1` would make Crafty restart a sleeping server while the watcher holds its
+      port (untested). Compression takes each archive from 2.8G to 1.7G, 3.3G saved on the
+      Netac for the three kept. No Crafty archive has been test-restored yet
 - [ ] Rotate the passwords from the deleted Google export — it survives in PBS snapshots of
       VM 100 for up to ~6 months
 - [ ] Decide the fate of LXC 102 (`wireguard`, stopped since 2026-05-04) in the vzdump job
