@@ -54,4 +54,6 @@ resources:
     memory: 96Mi
   limits:
     cpu: 200m
-    memory: 512Mi
+    # 512Mi got it OOM-killed on 2026-09-15 while previewing ~30 PDFs at once (521Mi peak);
+    # numImageProcessors is lowered to 2 in the config.yaml on pulsar, outside this repo
+    memory: 768Mi
