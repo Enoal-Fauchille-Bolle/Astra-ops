@@ -25,24 +25,25 @@ ingress:
     - sftpgo.lan
 
 volumes:
-  media:
-    hostPath: /mnt/data/media
-    mountPath: /data/media
-  backups:
-    hostPath: /mnt/data/backups
-    mountPath: /data/backups
-  filebrowser:
-    hostPath: /mnt/data/k3s-pvc/filebrowser
-    mountPath: /data/filebrowser
+  # `drive` is Pulsar's dedicated personal disk (scsi2, 64G on the WD Blue, /mnt/drive).
+  # It replaces the media, backups and filebrowser mounts: /mnt/data/backups also held the
+  # database dumps and the Proxmox configuration copy, which this container must never serve
+  drive:
+    hostPath: /mnt/drive
+    mountPath: /data/drive
+  # Films stay on the Netac (replaceable, no backup) and are shown read-only
+  films:
+    hostPath: /mnt/data/media/movies
+    mountPath: /data/Films
+    readOnly: true
   data:
     hostPath: /opt/k3s-data/sftpgo
     mountPath: /var/lib/sftpgo
 
 # 1000 is the image's own `sftpgo` user, and owns every user folder mounted above since
 # Filebrowser Quantum went non-root. hostPath volumes ignore fsGroup, so
-# /opt/k3s-data/sftpgo was chowned to 1000 by hand. As 1000 it can no longer open
-# /mnt/data/backups/dumps (root 700) or proxmox-configs (astra-configs 700), which the
-# `backups` mount above still shows
+# /opt/k3s-data/sftpgo was chowned to 1000 by hand. Since `drive`, the database dumps and
+# the Proxmox configuration copy are no longer mounted at all
 securityContext:
   runAsUser: 1000
   runAsGroup: 1000
