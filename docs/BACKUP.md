@@ -1277,8 +1277,9 @@ For each tested restore:
       Zerobyte volume, so only PBS held it (found 2026-09-14). Added to the nightly dumps (§6),
       which job 13 ships to Backblaze; first run by hand: 17/17, the copy matches the original
       (13 schedules, 6 repositories, 12 volumes)
-- [ ] Keep Zerobyte's `APP_SECRET` off Astra — the database copy above is only usable with it
-      (§9.3, step 5); it is set in Portainer's stack 11 environment, no copy elsewhere recorded
+- [x] **Keep Zerobyte's `APP_SECRET` off Astra** (2026-09-20) — saved by Enoal outside Astra;
+      the database copy above is only usable with it (§9.3, step 5). It stays set in
+      Portainer's stack 11 environment
 - [x] ~~Set up ntfy webhook in Zerobyte settings~~ — not wanted: Discord only (decided 2026-09-15)
 - [x] Create `/mnt/data/backups/dumps/` directory — created by the dump script on its first run
       (2026-09-14), root `700`
