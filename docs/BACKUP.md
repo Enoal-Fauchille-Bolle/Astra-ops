@@ -1332,8 +1332,16 @@ For each tested restore:
       once the first night on PBS 4 is checked — deleted 2026-09-14. That night: vzdump 03:00
       `OK` (VM 100, CT 101, CT 102 in PBS), prune at **04:00** Paris, logrotate at 00:00,
       `systemctl --failed` empty
-- [ ] **First verify and GC under PBS 4**, in Paris time — Saturday 2026-09-19 and Sunday
-      2026-09-20 at 05:00. The last runs (12 and 13 September, 07:00) were still on PBS 3
+- [x] **First verify and GC under PBS 4** (2026-09-19 and 20) — both fired at 05:00 Paris as
+      scheduled, where the last runs (12 and 13 September) had drifted to 07:00 under PBS 3.
+      Verify: `TASK OK` in 10 min 55 s, 21 snapshots read with 0 errors; the 30 others were
+      skipped as `recently verified` (the job carries `ignore-verified` with a 30-day window,
+      so the snapshots last checked under PBS 3 come back one by one over the next month).
+      GC: `TASK OK` in 9 s, **36.797 GiB** and 33 617 chunks removed, 0 bad chunks, 0 chunks
+      left pending. Afterwards the datastore holds **476.314 GiB** for 7.297 TiB of original
+      data (deduplication 15.69, average chunk 1.982 MiB), and the Netac is at **62 %** —
+      571G used of 938G, 358G free. The week's nightly jobs were all `OK` as well (backups
+      03:00, prune 04:00), and `systemctl --failed` is empty in LXC 103
 - [x] **Reboot Astra onto kernel `7.0.14-16-pve`** (2026-09-13, 15:38) — installed with
       PVE 9.2.11 → 9.2.18 on 2026-09-12. Pulsar, AdGuard and PBS came back on their own
       (`onboot: 1`), `systemctl --failed` empty on the host, `pvesm list pbs-local` lists the
@@ -1431,9 +1439,9 @@ hours, not by a mirror, so ZFS was ruled out.
 - [ ] Move the lab VMs to `vault`. Template 105 is undecided, and 106 is a linked clone of it
 - [ ] **Split the Netac with LVM** — a fixed LV for the PBS datastore, a thin pool for the
       rest. Today both share one ext4 filesystem, and the cold disk (500G declared) plus the
-      datastore (~489G on 2026-09-15) exceed the 938G drive. **Plan approved by Enoal on
-      2026-09-15**, in this order:
-      1. after the first verify and GC under PBS 4 (2026-09-19 and 20);
+      datastore (476G after the GC of 2026-09-20) exceed the 938G drive. **Plan approved by
+      Enoal on 2026-09-15**, in this order:
+      1. ~~after the first verify and GC under PBS 4~~ — both `OK` on 2026-09-19 and 20;
       2. **`drive` first** — this changes the 2026-09-13 order (LVM, then tidy up): once the
          5.7G of personal files are on the WD, the Netac holds only copies and replaceable
          data, so the worst accident during the split destroys nothing unique;
