@@ -164,12 +164,13 @@ Netac (938G — "vault")
 
 ### 2.2 Pulsar — Main VM
 
-Pulsar (VM 100) sees two virtual disks:
+Pulsar (VM 100) sees three virtual disks:
 
 | Disk                                       | Proxmox | Device | Mount       | Size | Role                                   | In PBS |
 | ------------------------------------------ | ------- | ------ | ----------- | ---- | -------------------------------------- | ------ |
 | OS disk (`vm-100-disk-0` on `local-lvm`)   | `scsi0` | `sda`  | `/`         | 200G | OS, hot app data, K3s/Docker state     | ✅     |
 | Cold disk (`vm-100-disk-0.qcow2` on vault) | `scsi1` | `sdb`  | `/mnt/data` | 500G | Cold data: media, PVCs, Crafty volumes | ❌ `backup=0` since 2026-09-11, see §4.2 |
+| Personal disk (`vm-100-disk-1` on `local-lvm`) | `scsi2` | `sdc` | `/mnt/drive` | 64G | Personal files, served by Filebrowser Quantum and SFTPGo (§8.1) | ✅ since 2026-09-21 |
 
 ```txt
 sda (200G) → /
@@ -180,9 +181,15 @@ sda (200G) → /
 sdb (500G) → /mnt/data
 ├── /mnt/data/k3s-pvc/          Cold PVC data for K3s services
 ├── /mnt/data/docker-volumes/   Cold volume data for Docker services
-├── /mnt/data/backups/          Personal backups (manually uploaded via Filebrowser)
-└── /mnt/data/media/            Media library (movies, photos, documents)
+├── /mnt/data/backups/          Database dumps and the Proxmox configuration copy
+└── /mnt/data/media/            Movies (replaceable)
+
+sdc (64G) → /mnt/drive          Personal files (since 2026-09-20)
 ```
+
+`sdc` is mounted by UUID (`e6ec6a2d-878e-4843-a8de-f10c55e200e7`, label `drive`) in
+`/etc/fstab`: kernel names follow detection order and are not stable. It is thin: the 64G
+reserve nothing on the WD Blue, and `fstrim.timer` hands deleted blocks back to the pool.
 
 > **Disk usage (measured 2026-09-09):**
 > `sda`: **103G used / 195G (55 %)** — 85G free
@@ -193,6 +200,9 @@ sdb (500G) → /mnt/data
 > irreplaceable**.
 >
 > **Remeasured 2026-09-11:** `sda` **107G / 195G (57 %)** · `sdb` **79G / 492G (17 %)**.
+>
+> **Remeasured 2026-09-21**, after the personal files left `sdb`: `sda` **115G / 195G
+> (62 %)** · `sdb` **72G / 492G (16 %)** · `sdc` **5.7G / 63G (10 %)**.
 
 ### 2.3 Accepted Constraints
 
@@ -210,6 +220,10 @@ This is a known, accepted constraint given the single-server hardware budget. La
 > Backblaze. The Crafty backup job, found to cover only one of the three servers, now covers
 > all three (§5.4). Every Tier 2 path on the Netac therefore has an off-site copy, which is
 > what made it acceptable to exclude `sdb` from PBS (§4.2).
+>
+> **Since 2026-09-21 the Netac holds no personal file.** They moved to `drive`, on the WD Blue
+> (§8.1). What stays on the Netac is either a copy (Crafty archives, dumps, the Proxmox
+> configuration copy, the PBS datastore) or replaceable (movies, Crafty logs).
 >
 > **Also revised 2026-09-09:** hardware expansion is more constrained than assumed. Both M.2
 > slots are populated (`lspci` shows two NVMe controllers, both occupied); only **two unused
@@ -275,11 +289,9 @@ Bulk data that is either reconstructible (Minecraft servers, Kiwix ZIM archives)
 | `/etc/pve/` | Astra host | ~5M | 1 | ✅ Backblaze B2 — nightly copy to Pulsar, job 13 (since 2026-09-11, §4.2) | — | 2026-09-12 |
 | `/etc/proxmox-backup/` | LXC 103 | **60K** | 1 | ✅ Backblaze B2 — nightly copy to Pulsar, job 13 (since 2026-09-11, §4.2) | — | 2026-09-12 |
 | **Immich photos** | `/opt/k3s-data/immich/library/` | **31G** | 2 | ✅ Backblaze B2, job 8 — excluded from job 16 | — | 2026-09-13 |
-| **Filebrowser files** | `/mnt/data/k3s-pvc/filebrowser/` | **4.7G** | 2 | ✅ Mega C | — | 2026-09-11 |
+| **Personal files** | `/mnt/drive/` — `Documents/`, `Photos/`, `Téléphone/`, `Archives/` (216 files) | **5.7G** | 2 | ✅ PBS with VM 100 (`scsi2`) and Backblaze B2, job 18 — both since 2026-09-21 | — | 2026-09-21 |
 | **Homer config** | `/opt/k3s-data/homer/` | 5.3M | 2 | ✅ Backblaze B2, job 16 (Mega A job 4 disabled 2026-09-13) | — | 2026-09-13 |
 | **Criteri-fresque** | `/opt/k3s-data/criteri-fresque/` | 41M | 2 | ✅ Backblaze B2, job 16 (Mega A job 6 disabled 2026-09-13) | — | 2026-09-13 |
-| **Personal backups** | `/mnt/data/backups/` | **102M** — `OnePlus-10T/` only | 2 | ✅ Backblaze B2 (since 2026-09-10) | — | 2026-09-11 |
-| **Photos** | `/mnt/data/media/photos/` | **946M** | 2 | ✅ Backblaze B2 (since 2026-09-10) | — | 2026-09-11 |
 | **DB dumps** | `/mnt/data/backups/dumps/` | **154M** (17 files) | 2 | ✅ Backblaze B2, job 13 — first upload 2026-09-15 at 02:00, restore tested the same day (§6) | — | 2026-09-15 |
 | **Secrets** | `~/astra-secrets/` (workstation) | ~1M | 2 | ❌ not yet | — | May 2026 |
 | **Crafty backups** | `/mnt/data/docker-volumes/crafty/backups/` | **26G** | 2 | ✅ Backblaze B2 — all 3 servers (since 2026-09-11) | — | 2026-09-11 |
@@ -297,6 +309,11 @@ Bulk data that is either reconstructible (Minecraft servers, Kiwix ZIM archives)
 > change. The live PostgreSQL and MariaDB databases (Umami, Infisical, Uptime Kuma, Dawarich)
 > leave as nightly dumps since 2026-09-14 (§6). Still without an off-site copy: Termix and
 > Dawarich's files, which live outside the two roots.
+>
+> **2026-09-21 — personal files on their own disk.** The Filebrowser files, the photos and the
+> phone backup left the Netac for `/mnt/drive` (§8.1), a virtual disk on the WD Blue that PBS
+> backs up and job 18 sends to Backblaze. The originals were deleted on 2026-09-21 once both
+> copies were checked.
 >
 > **Resolved 2026-09-10 — the three "mounted, never declared" paths.** Portainer, personal
 > backups and photos were bind-mounted into Zerobyte but had no matching *volume*, so no job
@@ -343,7 +360,7 @@ so the safety net before maintenance is `vzdump 103 --mode stop --storage local`
 
 | Guest     | ID  | Type | Included                  |
 | --------- | --- | ---- | ------------------------- |
-| Pulsar    | 100 | VM   | ✅ OS disk `scsi0` only — cold disk `scsi1` set to `backup=0` (applied 2026-09-11 11:21) |
+| Pulsar    | 100 | VM   | ✅ OS disk `scsi0` and personal disk `scsi2` — cold disk `scsi1` set to `backup=0` (applied 2026-09-11 11:21) |
 | AdGuard   | 101 | LXC  | ✅                        |
 | Wireguard | 102 | LXC  | ✅                        |
 | PBS       | 103 | LXC  | ❌ Excluded by design     |
@@ -367,6 +384,17 @@ days). What loses its only backup: movies (47G, re-downloadable) and Crafty logs
   uncheck *Backup*). Verify with `qm config 100 | grep scsi1`, which must end in `backup=0`.
 - Confirmed on 2026-09-12: snapshot `vm/100/2026-09-12T01:00:01Z` (03:00) holds
   `drive-scsi0.img.fidx` only; the one of 2026-09-11 still held `drive-scsi1.img.fidx` too.
+
+**The personal disk `scsi2` is backed up (since 2026-09-21).** Created on 2026-09-20 on
+`local-lvm` (the WD Blue) without `backup=0`, so vzdump picks it up with no change to the job.
+Its PBS copy lands on the Netac, a different drive, which is exactly what `scsi1` lacked.
+
+- First run, 2026-09-21 03:00: the log reads `include disk 'scsi2' 'local-lvm:vm-100-disk-1'
+  64G`, then `scsi2: dirty-bitmap status: created new` (a new disk is read whole once, then
+  only its changes); `Finished Backup of VM 100 (00:01:29)`.
+- Snapshot `vm/100/2026-09-21T01:00:02Z` holds `drive-scsi0.img.fidx` **and**
+  `drive-scsi2.img.fidx`. The datastore's `.chunks` went from 476.3 GiB (after the GC of
+  2026-09-20) to **482G**: the ~5.7G of personal files.
 
 PBS (LXC 103) is intentionally excluded — but **not** for the reason previously given here.
 
@@ -511,7 +539,7 @@ Two providers, with a clear split:
 
 | Zerobyte repository | Backend | Used (Zerobyte stats, 2026-09-11) | Snapshots | Holds |
 | ------------------- | ------- | --------------------------------- | --------- | ----- |
-| **Backblaze** | S3 (B2) | **43.4 GiB** (~$0.28/month) | 7 | Immich, Crafty backups, personal backups, photos, and since 2026-09-13 every app directory (jobs 16, 17) |
+| **Backblaze** | S3 (B2) | **43.4 GiB** (~$0.28/month) | 7 | Immich, Crafty backups, dumps and Proxmox configuration (job 13), every app directory since 2026-09-13 (jobs 16, 17), personal files since 2026-09-21 (job 18) |
 | **Mega A** | rclone `mega-a` | 113 MiB | 44 | Homer, Criteri'Fresque, Crafty config, Docker Registry — **jobs disabled 2026-09-13**, snapshots kept until about 2026-12-13 |
 | **Mega C** | rclone `mega-c` | 3.7 GiB | 11 | Filebrowser files |
 | **Mega D** | rclone `mega-d` | 874 MiB | 7 | old Nous Deux snapshots only — its job was disabled on 2026-09-11, snapshots kept until about 2026-12-15 |
@@ -560,8 +588,9 @@ Jobs ("schedules") are defined in the Zerobyte web UI at `zerobyte.lan`. Each on
 **volume** (a directory bind-mounted into the container, see `docker-compose.yml`) to a
 **repository**. Declaring a volume alone backs up nothing.
 
-State read from `zerobyte.db` on 2026-09-13. Times are Europe/Paris (the container's `TZ`).
-Every job keeps **7 daily, 4 weekly, 3 monthly** snapshots and was in `success`.
+State read from `zerobyte.db` on 2026-09-13, rows 10, 14 and 18 on 2026-09-21. Times are
+Europe/Paris (the container's `TZ`). Every job keeps **7 daily, 4 weekly, 3 monthly**
+snapshots and was in `success`.
 
 | id | Schedule | Host path | Repository | Cron | State |
 | -- | -------- | --------- | ---------- | ---- | ----- |
@@ -573,9 +602,10 @@ Every job keeps **7 daily, 4 weekly, 3 monthly** snapshots and was in `success`.
 | 11 | Docker Registry | `/opt/k3s-data/docker-registry` | Mega A | `00 01 * * *` | **disabled** 2026-09-13 — covered by job 16 |
 | 12 | Portainer | `/opt/docker-data/portainer` | Backblaze | `00 01 * * *` | **disabled** 2026-09-13 — covered by job 17 |
 | 8  | Immich Library | `/opt/k3s-data/immich/library` | Backblaze | `00 02 * * *` | active |
-| 10 | Filebrowser Files | `/mnt/data/k3s-pvc/filebrowser` | Mega C | `00 02 * * *` | active |
+| 10 | Filebrowser Files | `/mnt/data/k3s-pvc/filebrowser` | Mega C | `00 02 * * *` | **disabled** 2026-09-20 — covered by job 18; the folder is empty since 2026-09-21 |
 | 13 | Backups | `/mnt/data/backups` | Backblaze | `00 02 * * *` | active — created 2026-09-10 |
-| 14 | Photos | `/mnt/data/media/photos` | Backblaze | `00 02 * * *` | active — created 2026-09-10 |
+| 14 | Photos | `/mnt/data/media/photos` | Backblaze | `00 02 * * *` | **disabled** 2026-09-20 — covered by job 18; the folder is empty since 2026-09-21 |
+| 18 | Drive | `/mnt/drive` (whole disk) | Backblaze | `00 02 * * *` | active — created 2026-09-20 |
 | 15 | Crafty Backups | `/mnt/data/docker-volumes/crafty/backups` (all servers) | Backblaze | `00 06 * * *` | active — created 2026-09-11 |
 | 9  | Crafty Backups (MEGA) | same volume, Nous Deux folder only | Mega D | `00 03 * * 0` | **disabled** 2026-09-11 |
 
@@ -602,6 +632,19 @@ Every job keeps **7 daily, 4 weekly, 3 monthly** snapshots and was in `success`.
   has built its own three months of history; then delete job 12 and its snapshots, remove
   `Mega A` from Zerobyte, and drop the per-app mounts from `docker-compose.yml` that no
   volume uses any more.
+- **Job 18 copies the personal disk whole** (created 2026-09-20, no exclusion, no include
+  filter), for the same reason as jobs 16 and 17: a folder added to `drive` is covered
+  without touching Zerobyte. Zerobyte sees the disk read-only at `/data/drive` (volume
+  `Drive`, commit `646c539`). First run, 2026-09-21 at 02:00: `success` in 2 min 03 s,
+  **216 files** read (6,074,504,976 bytes), all new, **4,077,623,950 bytes added** (4.02 GB
+  after compression). The ~2 GB not added were chunks already in the repository — the
+  photos and phone backup, sent by jobs 14 and 13, account for about 1 GB — or repeated
+  inside the new files; the split was not measured.
+- **Jobs 10 and 14 were disabled on 2026-09-20 at 23:32** (last runs that morning at 02:00,
+  `success`). Their snapshots stay frozen like those of the other disabled jobs, and hold
+  the off-site history of the personal files before 2026-09-21. Their mounts in
+  `docker-compose.yml` (`/data/filebrowser`, `/data/media/photos`) are kept so that the two
+  volumes stay `mounted`; the host folders exist but are empty.
 - **Do not keep more than two or three Zerobyte tabs open.** Each tab holds an `EventSource`
   stream; `zerobyte.lan` is plain HTTP/1.1, where Chrome allows 6 connections per host across
   all tabs. With five tabs open on 2026-09-13 the site looked dead while the container
@@ -676,7 +719,9 @@ configuration copy (§4.2) could be browsed and downloaded, from the Internet th
 `drive.enoal.fr` for the classic one. Since commit `f6d4527` both mount
 `/mnt/data/backups/OnePlus-10T` only; checked after ArgoCD's sync, neither pod sees `dumps/`
 or `proxmox-configs/` any more. The classic app was removed the same day (`ca56a5a`) and
-`drive.enoal.fr` now reaches Quantum, which runs as uid 1000 since `c1b5a9e` (§12). **Never mount
+`drive.enoal.fr` now reaches Quantum, which runs as uid 1000 since `c1b5a9e` (§12). Since
+`c9e98e1` (2026-09-20) neither app mounts anything under `/mnt/data/backups`: the phone backup
+moved to `/mnt/drive` (§8.1). **Never mount
 `/mnt/data/backups` whole into an app.**
 The script is installed by copy, not run from `/opt/ops`: that clone is updated by hand (last
 pull 2026-08-31) and owned by `enoal`, and root must not run a file a user account can edit.
@@ -836,23 +881,53 @@ Pulsar /opt/ (sda — hot)          103G used / 195G (55 %)   [2026-09-09]
   /var/lib/docker                     8.0G   (reconstructible)
   /swap.img 4.1G · /usr 3.6G · /var/log 2.7G
 
-Pulsar /mnt/data/ (sdb — cold)     79G used / 492G (17 %)   [2026-09-11]
+Pulsar /mnt/data/ (sdb — cold)     72G used / 492G (16 %)   [2026-09-21]
                                    not in PBS since backup=0, 2026-09-11 (§4.2)
 ├── media/
-│   ├── movies/            47G   (Tier 3 — 19 re-downloadable files, no backup)
-│   └── photos/           946M   (Tier 2) → Backblaze since 2026-09-10
+│   ├── movies/            47G   (Tier 3 — 19 re-downloadable files, no backup),
+│   │                            shown read-only in Filebrowser Quantum and SFTPGo
+│   └── photos/          empty   moved to /mnt/drive/Photos, emptied 2026-09-21
 ├── docker-volumes/crafty/
 │   ├── backups/           26G   (Tier 2) → Backblaze since 2026-09-11, all 3 servers
 │   └── logs/             432M   (Tier 3, no backup)
-├── backups/              102M   (Tier 2) → Backblaze since 2026-09-10
-│   ├── OnePlus-10T/      102M   phone backup (irreplaceable) — the 8.7G Minecraft
-│   │                            archive and a password export were deleted 2026-09-10
+├── backups/              156M   (Tier 2) → Backblaze, job 13
+│   ├── dumps/            154M   nightly database dumps (§6)
 │   └── proxmox-configs/   70K   Astra + PBS configuration, refreshed nightly (§4.2)
 └── k3s-pvc/
-    ├── filebrowser/      4.7G   (Tier 2) → Mega C
+    ├── filebrowser/     empty   moved to /mnt/drive, emptied 2026-09-21
     ├── crafty/            92K
     └── kiwix/            empty  (136G deleted 2026-09-09)
+
+Pulsar /mnt/drive/ (sdc — personal) 5.7G used / 63G (10 %)  [2026-09-21]
+                                   in PBS with VM 100 (§4.2) → Backblaze, job 18
+├── Archives/             4.7G   Nexus Backup/ 3.9G, Snapchat/ 750M
+├── Photos/               946M   AstralRedshift/ 807M, Timelaps/ 139M
+├── Téléphone/            102M   DataBackup/ — the OnePlus 10T backup
+└── Documents/             15M
 ```
+
+**How `drive` was filled (2026-09-20).** `rsync -a` as root, which keeps the owner
+`1000:1000` that both apps need to write (§12); then `rsync -anic` (compare every file's
+checksum, change nothing) returned no line on any pair, 216 files on each side. Not carried
+over on purpose: a 6-byte test file (`filebrowser/a/b`) and the empty mount points `Media/`
+and `Backups/OnePlus-10T/`. `lost+found` was removed from `/mnt/drive`: it showed among the
+personal folders and made Filebrowser Quantum log an error at start-up; `e2fsck` recreates
+it if a repair ever needs it.
+
+| Before (Netac) | After (`/mnt/drive`) |
+| --- | --- |
+| `/mnt/data/k3s-pvc/filebrowser/Documents` | `Documents/` |
+| `/mnt/data/media/photos` | `Photos/` |
+| `/mnt/data/backups/OnePlus-10T` | `Téléphone/` |
+| `/mnt/data/k3s-pvc/filebrowser/Backups/Nexus Backup` and `Snapchat` | `Archives/` |
+
+Both apps mount `/mnt/drive` read-write and `/mnt/data/media/movies` read-only (commit
+`c9e98e1`): Filebrowser Quantum at `/srv/drive` and `/srv/Films`, SFTPGo at `/data/drive` and
+`/data/Films`. The read-only flag is set on the Kubernetes mount, so no setting inside either
+app can make the movies writable. Neither app mounts anything under `/mnt/data/backups` any
+more. Quantum's list of sources lives outside this repository, in
+`/opt/k3s-data/filebrowser-quantum/config.yaml`, and is read only at start-up: change it
+**before** removing a mount, never after, or the app starts in error.
 
 ---
 
@@ -916,8 +991,9 @@ Zerobyte (§5.4) through its restore directory (§9.6).
 6. Restore Tier 2 data via Zerobyte:
    - Recreate the restore directory first: `sudo install -d -m 700 -o root -g root /mnt/data/restore`
    - Access Zerobyte UI at `zerobyte.lan`
-   - Pick the repository that holds the path (§5.4): **Backblaze** for `backups/`,
-     `media/photos/` and Crafty backups, **Mega C** for Filebrowser
+   - Pick the repository that holds the path (§5.4): **Backblaze** for `backups/` and Crafty
+     backups. Personal files are not on the Netac since 2026-09-21: `/mnt/drive` is on the WD
+     Blue and survives this scenario
    - Restore each path into its own subfolder of `/restore`, then move it into `/mnt/data/` (§9.6)
    - Movies and Crafty logs are not backed up anywhere: re-download or accept the loss
 7. Restore directory structure (`k3s-pvc/`, `backups/`, `media/`, etc.).
@@ -1380,6 +1456,10 @@ hours, not by a mirror, so ZFS was ruled out.
 - [ ] Delete job 12 and its snapshots, remove `Mega A` from Zerobyte and drop the unused
       per-app mounts from `docker-compose.yml` — **about 2026-12-13**, once jobs 16 and 17
       hold three months of history (§5.4)
+- [ ] Once jobs 10 and 14 are no longer wanted: delete them and their snapshots, then drop
+      the `/data/filebrowser` and `/data/media/photos` mounts from `docker-compose.yml` and the
+      two empty host folders. Their snapshots hold the off-site history of the personal files
+      before 2026-09-21
 - [ ] Bring Termix (`/opt/ops/docker/termix/data`, 15M) and Dawarich's file volumes (26M)
       under the app roots — both are outside them and have no off-site copy. Not urgent
       (2026-09-15): Termix is a test, started by hand outside Portainer, no backup wanted yet;
@@ -1423,7 +1503,7 @@ hours, not by a mirror, so ZFS was ruled out.
       uploaded and deleted a file. The mount itself goes away with `drive` (below)
 - [x] **Delete `/opt/k3s-data/filebrowser`** (64K, the removed app's database, 2026-09-14) —
       no pod, container or open file used it; job 16 had already copied it to Backblaze
-- [ ] **Gather personal files into one `drive`** (decided 2026-09-15, after the first verify and
+- [x] **Gather personal files into one `drive`** (decided 2026-09-15, after the first verify and
       GC under PBS 4) — replaces "move `/mnt/data/media/photos` and `/mnt/data/k3s-pvc/filebrowser`
       under `/opt/k3s-data`". Personal files are the only thing SFTPGo and Filebrowser Quantum
       may mount; everything else on Pulsar is system. Decided:
@@ -1437,15 +1517,28 @@ hours, not by a mirror, so ZFS was ruled out.
       Measured 2026-09-15: 5.7G to move without the films; `local-lvm` 657G free, Pulsar's
       system disk 81G free. Keep the owner `1000:1000` (`rsync -a` as root), or both apps lose
       write access
+
+      **Done 2026-09-20 and 21** (§2.2, §8.1):
+      - 2026-09-20: `scsi2`, 64G on `local-lvm`, created by Enoal in the UI and hot-plugged
+        (`sdc`); ext4 labelled `drive`, `-m 1`, mounted by UUID at `/mnt/drive`. 5.7G copied,
+        216 files, checksums identical, no file outside `1000:1000`. Both apps switched to
+        `/mnt/drive` + read-only movies (`c9e98e1`), Zerobyte given `/data/drive` read-only
+        (`646c539`); Enoal created volume and job 18 **Drive** (Backblaze, 02:00, 7/4/3) and
+        disabled jobs 10 and 14 (§5.4)
+      - 2026-09-21: job 18 `success`, 216 files; PBS snapshot of VM 100 holds
+        `drive-scsi2.img.fidx` (§4.2). The checksums were compared once more (0 difference,
+        45 + 128 + 12 + 30 + 1 = 216 files), then the originals on the Netac were deleted:
+        `/mnt/data` 78G → 72G. `k3s-pvc/filebrowser/` and `media/photos/` were emptied but
+        kept, as Zerobyte still mounts them for the frozen jobs 10 and 14
 - [ ] Move the lab VMs to `vault`. Template 105 is undecided, and 106 is a linked clone of it
 - [ ] **Split the Netac with LVM** — a fixed LV for the PBS datastore, a thin pool for the
       rest. Today both share one ext4 filesystem, and the cold disk (500G declared) plus the
       datastore (476G after the GC of 2026-09-20) exceed the 938G drive. **Plan approved by
       Enoal on 2026-09-15**, in this order:
       1. ~~after the first verify and GC under PBS 4~~ — both `OK` on 2026-09-19 and 20;
-      2. **`drive` first** — this changes the 2026-09-13 order (LVM, then tidy up): once the
-         5.7G of personal files are on the WD, the Netac holds only copies and replaceable
-         data, so the worst accident during the split destroys nothing unique;
+      2. ~~**`drive` first**~~ — done 2026-09-21 (above). This changed the 2026-09-13 order
+         (LVM, then tidy up): the Netac now holds only copies and replaceable data, so the
+         worst accident during the split destroys nothing unique;
       3. measure, read-only and after a GC, what the datastore weighs without the 13 `vm/100`
          snapshots that still hold `drive-scsi1` (2026-05-31 to 2026-09-11 UTC; the dailies
          expire by themselves, the monthlies last until about 2027-03). Rough guess, not a
@@ -1541,7 +1634,8 @@ hours, not by a mirror, so ZFS was ruled out.
       (2026-09-11). Bucket `astra-pulsar-backup`, 43.4 GiB, lifecycle
       `daysFromHidingToDeleting: 1`
 - [ ] Decide whether to migrate the remaining MEGA jobs to B2 — Mega A's four jobs moved to
-      jobs 16 and 17 on 2026-09-13; Mega C (Filebrowser) follows once its files move under
-      `/opt/k3s-data`
+      jobs 16 and 17 on 2026-09-13; Mega C's job 10 (Filebrowser) was replaced by job 18 to
+      Backblaze on 2026-09-20 and is disabled, its snapshots frozen. What to do with Mega A
+      and Mega C themselves is still open
 - [ ] `Mega B` is **retired**: removed from Zerobyte on 2026-09-09, its 10 snapshots left
       intact on MEGA, neither copied nor purged. Still readable with `restic --no-lock`.
