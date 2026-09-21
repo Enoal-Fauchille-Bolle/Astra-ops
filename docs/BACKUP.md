@@ -377,7 +377,9 @@ days). What loses its only backup: movies (47G, re-downloadable) and Crafty logs
   A dedicated third virtual disk for Crafty archives was considered and rejected as too
   much work for what it would keep.
 - Existing snapshots that include `scsi1` are **not** removed immediately; they age out
-  through the retention policy (§4.3), up to ~6 months for the monthly ones.
+  through the retention policy (§4.3), up to ~6 months for the monthly ones. **Superseded
+  2026-09-21:** the seven left (2026-05-31 to 2026-09-06 UTC) were deleted by hand to make
+  room for the Netac split (§12); the oldest VM 100 snapshot is now 2026-09-12.
 - **Restore caution:** the documentation does not say what happens to an excluded disk when a
   VM is restored over itself. Restore Pulsar to a **new VMID**, never over VM 100.
 - Applied in the UI on 2026-09-11 at 11:21 (VM 100 → Hardware → `scsi1` → Edit → Advanced →
@@ -1267,8 +1269,8 @@ stays `700`.
 > **Beszel keeps one disk alert per machine, and it fires on the fullest disk.** The agent on
 > Astra only reports `/` until told otherwise; the drop-in
 > [`infra/astra/beszel-agent.service.d/extra-filesystems.conf`](../infra/astra/beszel-agent.service.d/extra-filesystems.conf)
-> adds `/mnt/pve/vault`. With `/` at 14 % and `vault` at 62 %, the 75 % rule is in practice a
-> `vault` rule. The alert message names the machine, not the disk.
+> adds `/mnt/pve/vault`. With `/` at 14 % and `vault` at 22 % (2026-09-21), the 75 % rule is
+> in practice a `vault` rule. The alert message names the machine, not the disk.
 
 > **`local-lvm` has no alert, on purpose.** A thin pool has no file system, so Beszel cannot
 > see it, and its `Data%` counts every block ever written, not what the guests use. Measured
@@ -1533,19 +1535,31 @@ hours, not by a mirror, so ZFS was ruled out.
 - [ ] Move the lab VMs to `vault`. Template 105 is undecided, and 106 is a linked clone of it
 - [ ] **Split the Netac with LVM** — a fixed LV for the PBS datastore, a thin pool for the
       rest. Today both share one ext4 filesystem, and the cold disk (500G declared) plus the
-      datastore (476G after the GC of 2026-09-20) exceed the 938G drive. **Plan approved by
+      datastore (476G after the GC of 2026-09-20, 113G since 2026-09-21) could exceed the 938G
+      drive. **Plan approved by
       Enoal on 2026-09-15**, in this order:
       1. ~~after the first verify and GC under PBS 4~~ — both `OK` on 2026-09-19 and 20;
       2. ~~**`drive` first**~~ — done 2026-09-21 (above). This changed the 2026-09-13 order
          (LVM, then tidy up): the Netac now holds only copies and replaceable data, so the
          worst accident during the split destroys nothing unique;
-      3. measure, read-only and after a GC, what the datastore weighs without the 13 `vm/100`
-         snapshots that still hold `drive-scsi1` (2026-05-31 to 2026-09-11 UTC; the dailies
-         expire by themselves, the monthlies last until about 2027-03). Rough guess, not a
-         measurement: 100 to 200G;
-      4. Enoal decides whether to delete those snapshots (the history of Pulsar's system disk
-         before 2026-09-12 goes with them; app data has Backblaze history since 2026-09-13,
-         dumps since 2026-09-14). Space only comes back after the next GC;
+      3. ~~measure what the datastore weighs without the `vm/100` snapshots that still hold
+         `drive-scsi1`~~ — measured 2026-09-21, read-only. Only **7** were left, not 13: the
+         dailies had expired (3 monthlies 2026-05-31, 06-28, 07-26; 4 weeklies 08-16, 08-23,
+         08-30, 09-06, UTC). A script read every index of the datastore and summed the chunks
+         that no other snapshot references: **349.20 GiB** for the seven, but only 72.41 GiB
+         for the monthlies alone and 84.21 GiB for the weeklies alone — they share the cold
+         disk's chunks, so it is all or nothing. The other 44 snapshots reference
+         **113.40 GiB**;
+      4. ~~Enoal decides whether to delete those snapshots~~ — **deleted 2026-09-21** by Enoal
+         in the PBS web UI (the history of Pulsar's system disk before 2026-09-12 went with
+         them; app data has Backblaze history since 2026-09-13, dumps since 2026-09-14, the
+         Crafty archives since 2026-09-11). Proxmox's `pvesm free` could not do it:
+         `backup_user@pbs` only holds `DatastoreBackup` on the datastore, which cannot delete —
+         kept that way on purpose, so a compromised Astra cannot erase its backups. A manual GC
+         right after: `TASK OK`, **367.491 GiB** and 174 402 chunks removed (the 349 GiB plus
+         chunks already orphaned by the nightly prunes); the datastore holds **113.238 GiB**
+         (76 290 chunks, deduplication 18.87), and the Netac went from 62 % to **22 %** — 199G
+         used of 938G, 730G free;
       5. **method A** if the snapshots go and the datastore falls under ~250G: copy it to the
          WD with a PBS sync job (the `local-lvm` thin pool stays under ~55 %), wipe the Netac,
          build the LVM, sync back. **Otherwise method B**: move the cold disk `scsi1` and the
