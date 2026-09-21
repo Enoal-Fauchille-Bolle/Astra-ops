@@ -23,10 +23,6 @@ K3S_POSTGRES=(
     "umami=analytics/umami-postgres"
     "infisical=infisical/infisical-postgres"
 )
-# PostgreSQL in Docker, as "<dump name>=<container>"
-DOCKER_POSTGRES=(
-    "dawarich=dawarich_db"
-)
 # Uptime Kuma 2 runs an embedded MariaDB; root reaches it over the socket without a password
 KUMA_DEPLOYMENT="monitoring/uptimekuma"
 KUMA_SOCKET="/app/data/run/mariadb.sock"
@@ -160,9 +156,6 @@ for entry in "${K3S_POSTGRES[@]}"; do
     target=${entry#*=}
     run "${entry%%=*}" dump_postgres "${entry%%=*}" \
         k3s kubectl -n "${target%%/*}" exec "deploy/${target#*/}" --
-done
-for entry in "${DOCKER_POSTGRES[@]}"; do
-    run "${entry%%=*}" dump_postgres "${entry%%=*}" docker exec "${entry#*=}"
 done
 run uptimekuma dump_kuma
 for entry in "${SQLITE[@]}"; do

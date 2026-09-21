@@ -270,8 +270,6 @@ Bulk data that is either reconstructible (Minecraft servers, Kiwix ZIM archives)
 | **Immich DB** | `/opt/k3s-data/immich/postgres/` | **295M** | 1 | covered — Immich dumps itself into `library/backups/`; raw directory excluded from job 16 | PostgreSQL 14 + vectorchord | 2026-09-13 |
 | **Umami DB** | `/opt/k3s-data/umami/postgres/` | 48M (whole `umami/`) | 1 | its dump, job 13 (first upload 2026-09-15) — raw directory excluded from job 16 | PostgreSQL 16.14 — dumped nightly (§6) | 2026-09-14 |
 | **Infisical DB** | `/opt/k3s-data/infisical/postgres/` + `redis/` | 157M (whole `infisical/`) | 1 | its dump, job 13 (first upload 2026-09-15) — both directories excluded from job 16 | PostgreSQL 16.14 — dumped nightly (§6) | 2026-09-14 |
-| **Dawarich DB** | Docker volume `dawarich_dawarich_db_data` | **586M** | 1 | its dump, job 13 (first upload 2026-09-15) — the volume is outside the app roots; app containers stopped since late August, database still running | PostGIS 17.11 — dumped nightly (§6) | 2026-09-14 |
-| **Dawarich files** | Docker volumes `dawarich_dawarich_{public,storage,shared,watched}` | 26M | 2 | ❌ none — outside the app roots | — | 2026-09-13 |
 | **n8n** | `/opt/k3s-data/n8n/` | 42M | 1 | ✅ Backblaze B2, job 16 (raw SQLite) | SQLite — dumped nightly (§6) | 2026-09-14 |
 | **Scanopy** | `/opt/k3s-data/scanopy/` | 68M | 1 | ✅ Backblaze B2, job 16 — not running on 2026-09-13, so the raw PostgreSQL copy is consistent | PostgreSQL | 2026-09-13 |
 | **AppFlowy** | `/opt/k3s-data/appflowy/` | 52M | 1 | ✅ Backblaze B2, job 16 — not running on 2026-09-13, raw copy consistent | PostgreSQL | 2026-09-13 |
@@ -314,6 +312,12 @@ Bulk data that is either reconstructible (Minecraft servers, Kiwix ZIM archives)
 > phone backup left the Netac for `/mnt/drive` (§8.1), a virtual disk on the WD Blue that PBS
 > backs up and job 18 sends to Backblaze. The originals were deleted on 2026-09-21 once both
 > copies were checked.
+>
+> **2026-09-21 — Dawarich removed.** The trial instance (app and worker stopped since
+> 2026-08-20) is gone: its four containers and five Docker volumes were deleted, and it left
+> the nightly dumps. Its last dump, `dawarich.sql` of 2026-09-20 (73 MB, 136 064 points),
+> stays in `/mnt/data/backups/dumps/` and keeps going to Backblaze with job 13, but nothing
+> refreshes it any more. The 26M of files (imports, storage) had no off-site copy and are lost.
 >
 > **Resolved 2026-09-10 — the three "mounted, never declared" paths.** Portainer, personal
 > backups and photos were bind-mounted into Zerobyte but had no matching *volume*, so no job
@@ -734,7 +738,6 @@ pull 2026-08-31) and owned by `enoal`, and root must not run a file a user accou
 | --- | --- | --- | --- |
 | `umami.sql` | deployment `analytics/umami-postgres` | PostgreSQL 16.14 | `pg_dump` inside the pod, as `$POSTGRES_USER` on `$POSTGRES_DB` |
 | `infisical.sql` | deployment `infisical/infisical-postgres` | PostgreSQL 16.14 | same |
-| `dawarich.sql` | Docker container `dawarich_db` | PostgreSQL 17.11 + PostGIS 3.5.7 | same, through `docker exec` |
 | `uptimekuma.sql` | deployment `monitoring/uptimekuma`, socket `/app/data/run/mariadb.sock` | embedded MariaDB 10.11.14 | `mariadb-dump -u root --single-transaction --databases kuma` — its 28 tables are all InnoDB, so the dump is consistent without locking |
 | `<app>.sqlite` × 12 | Vaultwarden, n8n, SFTPGo, ntfy `user.db`, Jellyfin, NPM, Homarr, Wallos, Crafty `crafty.sqlite`, Beszel `data.db`, Speedtest Tracker, Loandash — paths in the script | SQLite | Python's online backup API (no `sqlite3` binary on Pulsar), run as the file's owner |
 | `zerobyte.sqlite` | `/var/lib/zerobyte/data/zerobyte.db` (since 2026-09-15) | SQLite | same. Its only off-site copy: `/var/lib/zerobyte` lies outside both app roots, so jobs 16 and 17 never see it. It keeps the 13 jobs, their exclusions and the repositories, which §9.3 otherwise rebuilds by hand |
@@ -751,7 +754,7 @@ Not dumped, on purpose:
 - **Filebrowser Quantum** — no SQLite: its `database.db` is a BoltDB file, copied raw by
   job 16. The removed classic app's `filebrowser/filebrowser.db` (BoltDB, 64K) was deleted on
   2026-09-14; job 16's snapshots still hold it.
-- **Redis** (Infisical, Homarr, Dawarich) — caches and queues.
+- **Redis** (Infisical, Homarr) — caches and queues.
 - **CouchDB** (Obsidian notes, §9.5) — decided 2026-09-14. The CouchDB documentation
   (*Maintenance → Backing up CouchDB*) states that copying `.couch` files while the server runs
   is safe, the format being append-only, so job 16's raw copy is consistent. The order it
@@ -1462,11 +1465,10 @@ hours, not by a mirror, so ZFS was ruled out.
       the `/data/filebrowser` and `/data/media/photos` mounts from `docker-compose.yml` and the
       two empty host folders. Their snapshots hold the off-site history of the personal files
       before 2026-09-21
-- [ ] Bring Termix (`/opt/ops/docker/termix/data`, 15M) and Dawarich's file volumes (26M)
-      under the app roots — both are outside them and have no off-site copy. Not urgent
-      (2026-09-15): Termix is a test, started by hand outside Portainer, no backup wanted yet;
-      Dawarich's app and worker have been stopped for three weeks (its database and Redis
-      still run, and the database is dumped nightly, §6)
+- [ ] Bring Termix (`/opt/ops/docker/termix/data`, 15M) under the app roots — it is outside
+      them and has no off-site copy. Not urgent (2026-09-15): Termix is a test, started by
+      hand outside Portainer, no backup wanted yet. Dawarich's file volumes were on the same
+      list until Dawarich was removed on 2026-09-21
 - [x] **Remove the classic Filebrowser and serve `drive.enoal.fr` from Filebrowser Quantum**
       (2026-09-14, `ca56a5a`) — the classic project was archived on 2026-09-01 and gets no
       security fixes. Both apps shared `/mnt/data/k3s-pvc/filebrowser`, so no file moved; the
