@@ -13,7 +13,7 @@
 #
 # When a tool is missing its check warns and steps aside instead of failing: a hook
 # that fails on a missing tool blocks a correct commit for a reason that is not the
-# code. Installing the tools, and handling false positives, is explained in README.md.
+# code. Installing the tools, and handling false positives, is explained in CONTRIBUTING.md.
 
 # Set up colors
 RED_BOLD="\033[1;31m"
@@ -29,11 +29,11 @@ printf "${BLUE_BOLD}Running pre-commit checks...${RESET}\n"
 printf "${WHITE_BOLD}[1/4] Scanning for secrets...${RESET}\n"
 if command -v betterleaks >/dev/null 2>&1; then
     if ! betterleaks git . --pre-commit --staged --no-banner --redact --verbose --log-level warn; then
-        printf "${RED_BOLD}Secret detected. Remove it from the staged changes (see README.md for false positives).${RESET}\n"
+        printf "${RED_BOLD}Secret detected. Remove it from the staged changes (see CONTRIBUTING.md for false positives).${RESET}\n"
         exit 1
     fi
 else
-    printf "${GOLD_BOLD}betterleaks not installed, skipping the secret scan (see README.md).${RESET}\n"
+    printf "${GOLD_BOLD}betterleaks not installed, skipping the secret scan (see CONTRIBUTING.md).${RESET}\n"
 fi
 
 # Files the commit adds or modifies, and every path it touches, deletions and both
@@ -67,7 +67,7 @@ if [ -n "$compose_files" ]; then
     failed=0
     for file in $compose_files; do
         if grep -n '^[[:space:]]*build:' "$staged_tree/$file"; then
-            printf "${RED_BOLD}%s uses 'build:'. Publish the image and reference its tag instead (see README.md).${RESET}\n" "$file"
+            printf "${RED_BOLD}%s uses 'build:'. Publish the image and reference its tag instead (see CONTRIBUTING.md).${RESET}\n" "$file"
             failed=1
         fi
     done
@@ -79,7 +79,7 @@ if [ -n "$compose_files" ]; then
             fi
         done
     else
-        printf "${GOLD_BOLD}docker compose not installed, skipping the Compose validation (see README.md).${RESET}\n"
+        printf "${GOLD_BOLD}docker compose not installed, skipping the Compose validation (see CONTRIBUTING.md).${RESET}\n"
     fi
     if [ "$failed" -ne 0 ]; then
         exit 1
@@ -102,7 +102,7 @@ if [ -n "$charts" ]; then
             exit 1
         fi
     else
-        printf "${GOLD_BOLD}helm not installed, skipping the chart checks (see README.md).${RESET}\n"
+        printf "${GOLD_BOLD}helm not installed, skipping the chart checks (see CONTRIBUTING.md).${RESET}\n"
     fi
 fi
 

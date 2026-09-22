@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 # Git commit-msg hook
 #
-# Validates the Gitmoji convention described in README.md:
+# Validates the Gitmoji convention described in CONTRIBUTING.md:
 #   <gitmoji> [<scope>] <Subject>
 # One line, imperative, capitalised, no trailing period. A subject over 72
 # characters only draws a warning. A body is allowed when separated from the
