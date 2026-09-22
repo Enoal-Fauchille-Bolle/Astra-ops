@@ -19,14 +19,7 @@ orchestrated with K3s and Docker Compose, and continuously deployed via ArgoCD.
 - [Tech stack](#tech-stack)
 - [Repository structure](#repository-structure)
 - [Services catalog](#services-catalog)
-- [Network and DNS](docs/infrastructure.md#network-and-dns)
-- [Email infrastructure](docs/email.md)
-- [Storage strategy](docs/infrastructure.md#storage-strategy)
-- [Secrets management](docs/secrets.md)
-- [GitOps workflow](docs/deployment.md#gitops-workflow)
-- [Prerequisites](docs/deployment.md#prerequisites)
-- [Getting started](docs/deployment.md#getting-started)
-- [Remote access](docs/deployment.md#remote-access)
+- [Documentation](#documentation)
 - [License](#license)
 
 ---
@@ -233,6 +226,27 @@ astra-ops/
 | [wallos](docker/wallos)                        | Personal subscription tracker                     | 🛠️ Utilities      | —                | Docker Compose  | `wallos.lan`                                               | 🔒 LAN only | ✅ Active   |
 | [webcheck](k3s/webcheck)                       | Website analysis and OSINT tool                   | 🛠️ Utilities      | `utilities`      | Helm            | `webcheck.lan`                                             | 🔒 LAN only | ✅ Active   |
 | [zerobyte](docker/zerobyte)                    | Backup tool with Restic + Rclone integration      | 💾 Backups        | —                | Docker Compose  | `zerobyte.lan`                                             | 🔒 LAN only | ✅ Active   |
+
+---
+
+## Documentation
+
+| Document | What it covers |
+| --- | --- |
+| [Infrastructure](docs/infrastructure.md) | Domains, DNS, ports, disks and path conventions |
+| [Deployment](docs/deployment.md) | ArgoCD, Renovate, Helm, VPA, prerequisites, bootstrap from scratch, remote access |
+| [Secrets](docs/secrets.md) | External Secrets Operator + Infisical, registry credentials, gitignore patterns |
+| [Email](docs/email.md) | Aliases, Cloudflare Email Routing, Resend, SMTP for homelab services |
+| [Monitoring](docs/monitoring.md) | What watches what, and where the alerts go |
+| [Backups](docs/backup/README.md) | Backup strategy, data inventory, PBS and Zerobyte layers |
+| [Database dumps](docs/backup/database-dumps.md) | Nightly consistent dumps of every database |
+| [Proxmox config copy](docs/backup/proxmox-config-copy.md) | Nightly copy of the Proxmox and PBS configuration, and how to restore it |
+| [Restore runbooks](docs/backup/restore.md) | Restore scenarios and restore testing |
+| [Security](docs/SECURITY.md) | Hardening tasks |
+| [Contributing](CONTRIBUTING.md) | Git hooks and commit convention |
+
+Some apps keep their own notes next to their files: [NPM](docker/npm/README.md),
+[Crafty watcher](docker/crafty/watcher/README.md), [CouchDB](k3s/couchdb/README.md).
 
 ---
 
