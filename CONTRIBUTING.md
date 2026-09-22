@@ -35,8 +35,11 @@ checks the staged version of what the commit touches:
 - **Helm charts** in `k3s/` must pass `helm lint` and render with `helm template`.
 - **ArgoCD Applications** in `apps/` must point to a path that exists in the commit,
   which catches a chart renamed or removed while its Application still points to it.
+- **Markdown files** must already be formatted the way `npx prettier --write` would
+  leave them, tables in particular.
 
-The Compose validation needs `docker compose`, the chart checks need `helm`; without
+The Compose validation needs `docker compose`, the chart checks need `helm`, the
+Markdown check needs the `prettier` pinned in `package.json` (`pnpm install`); without
 them, the hook prints a warning and lets the commit through. The `build:` rule needs
 neither.
 

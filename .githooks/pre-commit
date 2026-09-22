@@ -11,6 +11,10 @@
 # exported to a temporary directory, so that an unstaged fix in the working tree
 # cannot hide a broken commit.
 #
+# Last, it checks that every staged Markdown file is formatted the way
+# 'npx prettier --write' would leave it, so a misaligned table does not need a second
+# commit to fix.
+#
 # When a tool is missing its check warns and steps aside instead of failing: a hook
 # that fails on a missing tool blocks a correct commit for a reason that is not the
 # code. Installing the tools, and handling false positives, is explained in CONTRIBUTING.md.
@@ -26,7 +30,7 @@ RESET="\033[0m"
 printf "${BLUE_BOLD}Running pre-commit checks...${RESET}\n"
 
 # Scan the staged changes for secrets
-printf "${WHITE_BOLD}[1/4] Scanning for secrets...${RESET}\n"
+printf "${WHITE_BOLD}[1/5] Scanning for secrets...${RESET}\n"
 if command -v betterleaks >/dev/null 2>&1; then
     if ! betterleaks git . --pre-commit --staged --no-banner --redact --verbose --log-level warn; then
         printf "${RED_BOLD}Secret detected. Remove it from the staged changes (see CONTRIBUTING.md for false positives).${RESET}\n"
@@ -50,9 +54,10 @@ for dir in $(printf '%s\n' "$changed" | sed -n 's|^\(k3s/[^/]*\)/.*|\1|p' | sort
         charts="$charts $dir"
     fi
 done
+md_files="$(printf '%s\n' "$changed" | grep -E '\.md$')"
 
-# Export the index once for the Compose and Helm checks
-if [ -n "$compose_files" ] || [ -n "$charts" ]; then
+# Export the index once for the Compose, Helm and Markdown checks
+if [ -n "$compose_files" ] || [ -n "$charts" ] || [ -n "$md_files" ]; then
     staged_tree="$(mktemp -d)"
     trap 'rm -rf "$staged_tree"' EXIT
     git checkout-index --all --prefix="$staged_tree/"
@@ -62,7 +67,7 @@ fi
 # every five minutes, and a built service is recreated each time, losing its state.
 # The file is then validated without interpolation, so that the result does not
 # depend on the .env files, which never reach the repository.
-printf "${WHITE_BOLD}[2/4] Checking Docker Compose files...${RESET}\n"
+printf "${WHITE_BOLD}[2/5] Checking Docker Compose files...${RESET}\n"
 if [ -n "$compose_files" ]; then
     failed=0
     for file in $compose_files; do
@@ -88,7 +93,7 @@ fi
 
 # Helm charts. 'helm lint' checks the chart itself, 'helm template' renders it the
 # way ArgoCD will, which is where a broken template shows up.
-printf "${WHITE_BOLD}[3/4] Checking Helm charts...${RESET}\n"
+printf "${WHITE_BOLD}[3/5] Checking Helm charts...${RESET}\n"
 if [ -n "$charts" ]; then
     if command -v helm >/dev/null 2>&1; then
         failed=0
@@ -110,7 +115,7 @@ fi
 # disk: ArgoCD reads GitHub, and a directory that was never added would pass a
 # check on the working tree. Paths starting with '/' are ingress paths in inline
 # Helm values, not sources.
-printf "${WHITE_BOLD}[4/4] Checking ArgoCD application paths...${RESET}\n"
+printf "${WHITE_BOLD}[4/5] Checking ArgoCD application paths...${RESET}\n"
 if printf '%s\n' "$touched" | grep -Eq '^(apps|k3s|infra)/'; then
     failed=0
     for app in $(git ls-files apps | grep -E '^apps/[^/]+\.ya?ml$'); do
@@ -126,6 +131,26 @@ if printf '%s\n' "$touched" | grep -Eq '^(apps|k3s|infra)/'; then
     done
     if [ "$failed" -ne 0 ]; then
         exit 1
+    fi
+fi
+
+# Markdown formatting. Only the version pinned in package.json is used, never one npx
+# would fetch over the network for a clone with no local install.
+printf "${WHITE_BOLD}[5/5] Checking Markdown formatting...${RESET}\n"
+if [ -n "$md_files" ]; then
+    if [ -x "node_modules/.bin/prettier" ]; then
+        failed=0
+        for file in $md_files; do
+            if ! node_modules/.bin/prettier --check "$staged_tree/$file"; then
+                failed=1
+            fi
+        done
+        if [ "$failed" -ne 0 ]; then
+            printf "${RED_BOLD}Run 'npx prettier --write' on the files above (see CONTRIBUTING.md).${RESET}\n"
+            exit 1
+        fi
+    else
+        printf "${GOLD_BOLD}prettier not installed (run 'pnpm install'), skipping the Markdown check (see CONTRIBUTING.md).${RESET}\n"
     fi
 fi
 
