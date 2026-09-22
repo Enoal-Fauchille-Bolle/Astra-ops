@@ -78,7 +78,7 @@ Zerobyte (§5.4) through its restore directory (§9.6).
 
 - Layer 2 cloud backups (Backblaze B2, MEGA) — all Tier 2 data
 - The `astra-ops` GitOps repository (GitHub) — all manifests, Helm charts, configurations
-- K3s secrets on the operator's computer
+- The secrets kept off Astra ([secrets.md](../secrets.md))
 
 **Recovery steps:**
 
@@ -102,11 +102,8 @@ Zerobyte (§5.4) through its restore directory (§9.6).
    the Backblaze S3 repository in Zerobyte with the B2 key (skip the latter with the
    database of step 6).
 8. Restore Tier 2 data from Backblaze and MEGA via Zerobyte, through `/mnt/data/restore` (§9.6).
-9. Apply K3s secrets from the operator's computer:
-
-   ```bash
-   kubectl apply -f ~/astra-secrets/<service>/secrets.yaml
-   ```
+9. Apply the K3s secrets: the two Infisical bootstrap files, the hand-applied `secrets.yaml`
+   and the registry credentials ([secrets.md](../secrets.md)).
 
 10. Bootstrap ArgoCD and the App-of-Apps:
 

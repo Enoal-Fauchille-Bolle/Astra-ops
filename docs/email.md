@@ -102,11 +102,12 @@ one-time verification email (delivered via Cloudflare Email Routing).
 
 ### Homelab services — SMTP secret
 
-Services that send email (Vaultwarden, n8n, Immich, Uptime Kuma, SFTPGo) consume
-Kubernetes Secrets injected as environment variables. SMTP credentials (`SMTP_HOST`,
-`SMTP_PASSWORD`, etc.) are stored in Infisical and synced automatically into the cluster
-by ESO. Each service has a committed `external-secret.yaml` that maps the Infisical keys
-to the expected Secret — no manual `kubectl apply` required after the initial bootstrap.
+Vaultwarden and SFTPGo read their SMTP credentials (`SMTP_HOST`, `SMTP_PASSWORD`, etc.)
+from Kubernetes Secrets injected as environment variables. The values are stored in
+Infisical and synced into the cluster by ESO, through the `ExternalSecret` of each chart —
+no manual `kubectl apply` required after the initial bootstrap ([secrets.md](secrets.md)).
+The other services that send email (n8n, Immich, Uptime Kuma) have no SMTP setting in this
+repository.
 
 Reference in deployments is unchanged:
 
@@ -123,9 +124,6 @@ env:
         name: vaultwarden-secrets
         key: SMTP_PASSWORD
 ```
-
-For **Docker Compose stacks** (Layer A), secrets are injected via Portainer's
-**Environment variables** UI — no `.env` file on disk, no repository changes required.
 
 ### Services using SMTP
 

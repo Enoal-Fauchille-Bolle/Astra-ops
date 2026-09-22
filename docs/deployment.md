@@ -140,26 +140,9 @@ kubectl apply -f infra/argocd/root-app.yaml
 
 ### 5. Bootstrap secrets
 
-Application secrets are managed by ESO + Infisical. Two files must be applied manually
-(copy from the `.example` templates in `infra/eso/`, fill in values, then apply):
-
-```bash
-# Infisical bootstrap (ENCRYPTION_KEY, AUTH_SECRET, DB credentials)
-kubectl apply -f infra/eso/infisical-bootstrap.yaml
-
-# Infisical service token (generated in the Infisical UI after first login)
-kubectl apply -f infra/eso/infisical-token.yaml
-```
-
-All other application secrets are created automatically by ESO once the cluster is synced.
-
-For services using GHCR private images, apply the registry credentials:
-
-```bash
-cd k3s/<service>
-./generate-regcred.sh   # prompts for GitHub username + PAT
-kubectl apply -f regcred.yaml
-```
+Apply the two Infisical bootstrap files, then the hand-applied secrets and the registry
+credentials, as described in [secrets.md](secrets.md): *Bootstrap after a K3s reinstall*,
+*Hand-applied secrets* and *Registry credentials*.
 
 ### 6. Configure Nginx Proxy Manager
 

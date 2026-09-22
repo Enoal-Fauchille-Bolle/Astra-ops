@@ -291,7 +291,7 @@ Bulk data that is either reconstructible (Minecraft servers, Kiwix ZIM archives)
 | **Homer config** | `/opt/k3s-data/homer/` | 5.3M | 2 | ✅ Backblaze B2, job 16 (Mega A job 4 disabled 2026-09-13) | — | 2026-09-13 |
 | **Criteri-fresque** | `/opt/k3s-data/criteri-fresque/` | 41M | 2 | ✅ Backblaze B2, job 16 (Mega A job 6 disabled 2026-09-13) | — | 2026-09-13 |
 | **DB dumps** | `/mnt/data/backups/dumps/` | **154M** (17 files) | 2 | ✅ Backblaze B2, job 13 — first upload 2026-09-15 at 02:00, restore tested the same day (§6) | — | 2026-09-15 |
-| **Secrets** | `~/astra-secrets/` (workstation) | ~1M | 2 | ❌ not yet | — | May 2026 |
+| **Secrets** | hand-applied `secrets.yaml` and Infisical bootstrap files ([secrets.md](../secrets.md)) | ~1M | 2 | ❌ not yet | — | May 2026 |
 | **Crafty backups** | `/mnt/data/docker-volumes/crafty/backups/` | **26G** | 2 | ✅ Backblaze B2 — all 3 servers (since 2026-09-11) | — | 2026-09-11 |
 | **Crafty config** | `/opt/docker-data/crafty/config/` | **186M** | 2 | ✅ Backblaze B2, job 17 (Mega A job 7 disabled 2026-09-13) | SQLite — `crafty.sqlite` dumped nightly (§6) | 2026-09-14 |
 | **Crafty servers** | `/opt/docker-data/crafty/servers/` | **17G** | ❌ 3 | — excluded from job 17; the worlds leave through Crafty's archives (job 15) | — | 2026-09-13 |
@@ -662,35 +662,7 @@ Moved to [database-dumps.md](database-dumps.md).
 
 ## 7. Secrets Management
 
-K3s application secrets (`secrets.yaml`, `.env` files) are **never committed to the astra-ops Git repository** (enforced by `.gitignore`). They are maintained locally on the operator's workstation.
-
-### Current Setup
-
-Secrets are stored in `~/astra-secrets/` on the operator's computer and applied manually to the K3s cluster:
-
-```bash
-kubectl apply -f ~/astra-secrets/<service>/secrets.yaml
-```
-
-### Planned — rclone Sync to MEGA
-
-To protect secrets against workstation loss, they will be encrypted and synced to MEGA using `rclone crypt`:
-
-```bash
-# Configure encrypted remote on top of existing mega-a
-rclone config
-# → New remote → name: mega-a-crypt → type: crypt
-# → Remote: mega-a:astra-secrets-encrypted
-# → Filename encryption: standard
-# → Set password
-
-# Sync encrypted secrets
-rclone sync ~/astra-secrets mega-a-crypt: \
-  --backup-dir mega-a:astra-secrets-old \
-  --suffix "-$(date +%Y%m%d)"
-```
-
-This sync will be automated via a **systemd timer on my workstation** (daily or on significant changes). Versioned old copies are kept for 30 days in the `astra-secrets-old` prefix.
+Moved to [`docs/secrets.md`](../secrets.md).
 
 ---
 
