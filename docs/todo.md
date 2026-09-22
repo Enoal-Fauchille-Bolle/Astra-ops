@@ -89,7 +89,7 @@ into control of Pulsar, with every app, database and backup on it.
       (package, config, LAPI key, and everything it created at Cloudflare, checked through
       the API). Volume fits the free plan (831 730 requests over 30 days, worst day ~42 000,
       against 100 000). What stopped it: the deploy fails with `You need to enable Analytics
-  Engine (10089)` although a dataset was created; the account had never deployed a
+Engine (10089)` although a dataset was created; the account had never deployed a
       Worker, which reportedly must happen first (untested). Also found in the v0.0.18
       source: every start and stop deletes and recreates the worker route, so a "Fail open"
       set by hand in the dashboard would be lost at each restart. Only the bouncer's local

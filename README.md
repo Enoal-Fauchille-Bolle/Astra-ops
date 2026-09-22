@@ -168,75 +168,75 @@ astra-ops/
 > [!NOTE]
 > **Status** — ✅ Active: running · ⏸️ Disabled: in repo but not deployed · 🔜 Planned: not yet in repo
 >
-> **Type** — Helm and Raw apps are deployed by ArgoCD from `apps/`, except *Raw (by hand)*:
+> **Type** — Helm and Raw apps are deployed by ArgoCD from `apps/`, except _Raw (by hand)_:
 > applied with `kubectl apply`. Docker Compose stacks are deployed by Portainer from Git.
 >
 > **Access** — 🌍 Public: internet-accessible · 🔒 LAN only: LAN-restricted
 
-| Service                                        | Description                                       | Category          | Namespace        | Type            | Exposure                                                   | Access      | Status      |
-| ---------------------------------------------- | ------------------------------------------------- | ----------------- | ---------------- | --------------- | ---------------------------------------------------------- | ----------- | ----------- |
-| ArgoCD                                         | GitOps continuous deployment                      | 🗄️ DevOps         | `argocd`         | Helm (official) | `argocd.lan`                                               | 🔒 LAN only | ✅ Active   |
+| Service                                        | Description                                       | Category          | Namespace          | Type            | Exposure                                                   | Access      | Status      |
+| ---------------------------------------------- | ------------------------------------------------- | ----------------- | ------------------ | --------------- | ---------------------------------------------------------- | ----------- | ----------- |
+| ArgoCD                                         | GitOps continuous deployment                      | 🗄️ DevOps         | `argocd`           | Helm (official) | `argocd.lan`                                               | 🔒 LAN only | ✅ Active   |
 | External Secrets Operator                      | Syncs Infisical secrets into Kubernetes           | 🔐 Security       | `external-secrets` | Helm (official) | —                                                          | —           | ✅ Active   |
-| [azerbot](k3s/azerbot)                         | Custom Discord bot                                | 🤖 Bots           | `bots`           | Helm            | `azerbot.lan`                                              | 🔒 LAN only | ✅ Active   |
-| [azerdev-discord](k3s/azerdev-discord)         | URL redirect to Azerdev Discord                   | 🔀 Redirects      | `redirects`      | Helm            | `azerdev-discord.lan`                                      | 🔒 LAN only | ⏸️ Disabled |
-| [azerdev-status](k3s/azerdev-status)           | URL redirect to Azerdev status                    | 🔀 Redirects      | `redirects`      | Helm            | `azerdev-status.lan`                                       | 🔒 LAN only | ⏸️ Disabled |
-| [beszel](docker/beszel)                        | Server monitoring with docker stats               | 📊 Monitoring     | —                | Docker Compose  | `beszel.lan`                                               | 🔒 LAN only | ✅ Active   |
-| [botenoal](k3s/botenoal)                       | Custom Discord bot                                | 🤖 Bots           | `bots`           | Helm            | `botenoal.lan`                                             | 🔒 LAN only | ✅ Active   |
-| [convertx](k3s/convertx)                       | Universal file converter                          | 🛠️ Utilities      | `utilities`      | Helm            | `convertx.lan`                                             | 🔒 LAN only | ⏸️ Disabled |
-| [couchdb](k3s/couchdb)                         | Sync server for Obsidian Self-hosted LiveSync     | 📝 Productivity   | `productivity`   | Helm            | `couchdb.enoal.fr`                                         | 🌍 Public   | ✅ Active   |
-| [crafty](docker/crafty)                        | Minecraft server manager + watcher proxy          | 🎮 Gaming         | —                | Docker Compose  | `crafty.enoal.fr`                                          | 🌍 Public   | ✅ Active   |
-| [criterifresque](k3s/criteri-fresque)          | Criteri'Fresque website                           | 🌐 Web            | `web`            | Helm            | `beta.criterifresque.lesfresques.info`                     | 🌍 Public   | ✅ Active   |
-| [crowdsec](docker/crowdsec)                    | Intrusion detection for Nginx Proxy Manager       | 🐳 Infrastructure | —                | Docker Compose  | —                                                          | —           | ✅ Active   |
-| [cv](k3s/cv)                                   | Personal CV/resume website (HPA enabled)          | 🌐 Web            | `web`            | Helm            | `cv.enoal.fr`                                              | 🌍 Public   | ✅ Active   |
-| [dashdot](k3s/dashdot)                         | Server hardware monitoring dashboard              | 📊 Monitoring     | `monitoring`     | Helm            | `dashdot.lan`                                              | 🔒 LAN only | ✅ Active   |
-| [docker-registry](k3s/docker-registry)         | Private Docker image registry (htpasswd)          | 🗄️ DevOps         | `devops`         | Helm            | `registry.enoal.fr`                                        | 🌍 Public   | ✅ Active   |
-| [docker-registry-ui](k3s/docker-registry-ui)   | Web UI for private Docker registry                | 🗄️ DevOps         | `devops`         | Helm            | `registry-ui.enoal.fr`                                     | 🌍 Public   | ✅ Active   |
-| [dozzle](docker/dozzle)                        | Real-time Docker log viewer                       | 🐳 Infrastructure | —                | Docker Compose  | `dozzle.lan`                                               | 🔒 LAN only | ✅ Active   |
-| [filebrowser-quantum](k3s/filebrowser-quantum) | Web file manager (Quantum edition)                | 🎬 Media          | `media`          | Helm            | `filebrowser-quantum.lan`, `drive.enoal.fr`                | 🌍 Public   | ✅ Active   |
-| [github-runners](apps/arc-controller.yaml)     | GitHub Actions self-hosted runners (ARC)          | 🗄️ DevOps         | `github-runners` | Helm (ARC)      | —                                                          | —           | ✅ Active   |
-| [homarr](docker/homarr)                        | Application dashboard / start page                | 📋 Dashboard      | —                | Docker Compose  | `homarr.lan`                                               | 🔒 LAN only | ✅ Active   |
-| [homer](k3s/homer)                             | Application dashboard / start page                | 📋 Dashboard      | `dashboard`      | Helm            | `home.lan`, `homer.lan`, `home.enoal.fr`, `homer.enoal.fr` | 🌍 Public   | ✅ Active   |
-| [immich](k3s/immich)                           | Photo management (Server + ML + Postgres + Redis) | 🎬 Media          | `media`          | Raw (by hand)   | `immich.lan`, `immich.enoal.fr`, `photos.enoal.fr`         | 🌍 Public   | ✅ Active   |
-| [infisical](k3s/infisical)                     | Secrets backend for ESO                           | 🔐 Security       | `security`       | Helm            | `infisical.lan`                                            | 🔒 LAN only | ✅ Active   |
-| [isponsorblocktv](docker/isponsorblocktv)      | SponsorBlock TV — YouTube ad skipping             | 🎬 Media          | —                | Docker Compose  | —                                                          | —           | ✅ Active   |
-| [kiwix](k3s/kiwix)                             | Offline content server (Wikipedia, etc.)          | 🎬 Media          | `media`          | Helm            | `kiwix.lan`                                                | 🔒 LAN only | ⏸️ Disabled |
-| [loandash](docker/loandash)                    | Personal finances management tool                 | 🛠️ Utilities      | —                | Docker Compose  | `loandash.lan`                                             | 🔒 LAN only | ✅ Active   |
-| [n8n](k3s/n8n)                                 | Workflow automation platform                      | 🗄️ DevOps         | `devops`         | Raw (by hand)   | `n8n.enoal.fr` (NPM: LAN clients only)                     | 🔒 LAN only | ✅ Active   |
-| [npm](docker/npm)                              | Nginx Proxy Manager — reverse proxy + SSL         | 🐳 Infrastructure | —                | Docker Compose  | `npm.lan`, 80/443/81                                       | 🔒 LAN only | ✅ Active   |
-| [ntfy](k3s/ntfy)                               | Self-hosted push notification server              | 🔔 Notifications  | `notifications`  | Helm            | `ntfy.enoal.fr`                                            | 🌍 Public   | ⏸️ Disabled |
-| [portainer](docker/portainer)                  | Container management + Docker stack deployment    | 🐳 Infrastructure | —                | Docker Compose  | `portainer.lan`                                            | 🔒 LAN only | ✅ Active   |
-| [portfolio](k3s/portfolio)                     | Personal portfolio website                        | 🌐 Web            | `web`            | Helm            | `enoal.fr`, `portfolio.lan`                                | 🌍 Public   | ✅ Active   |
-| [portracker](docker/portracker)                | Port tracking dashboard                           | 🐳 Infrastructure | —                | Docker Compose  | `portracker.lan`                                           | 🔒 LAN only | ✅ Active   |
-| [roots-smp-web](k3s/roots-smp-web)             | Roots SMP Minecraft server website                | 🌐 Web            | `web`            | Helm            | `rootssmp.enoal.fr`                                        | 🌍 Public   | ✅ Active   |
-| [scanopy](k3s/scanopy)                         | Network diagram tool (Server + Daemon + Postgres) | 🐳 Infrastructure | `utilities`      | Raw (by hand)   | `scanopy.lan`                                              | 🔒 LAN only | ⏸️ Disabled |
-| [sftpgo](k3s/sftpgo)                           | SFTP server for remote file access                | 🎬 Media          | `media`          | Helm            | `sftpgo.lan` (web), NodePort 30022 (SFTP)                  | 🔒 LAN only | ✅ Active   |
-| [speedtest-tracker](docker/speedtest-tracker)  | Speedtest results tracking                        | 📊 Monitoring     | —                | Docker Compose  | `speedtest-tracker.lan`                                    | 🔒 LAN only | ✅ Active   |
-| [umami](k3s/umami)                             | Privacy-focused web analytics (App + Postgres)    | 📈 Analytics      | `analytics`      | Helm            | `analytics.lan` + tracker on `enoal.fr/s.js`               | 🔒 LAN only | ✅ Active   |
-| [uptimekuma](k3s/uptimekuma)                   | Uptime monitoring and status page                 | 📊 Monitoring     | `monitoring`     | Helm            | `uptime.enoal.fr`                                          | 🌍 Public   | ✅ Active   |
-| [VPA](infra/vpa)                               | Vertical Pod Autoscaler (recommendations only)    | 📊 Monitoring     | `kube-system`    | Helm (official) | —                                                          | —           | ✅ Active   |
-| [vaultwarden](k3s/vaultwarden)                 | Bitwarden-compatible password manager             | 🔐 Security       | `security`       | Helm            | `vault.enoal.fr`                                           | 🌍 Public   | ✅ Active   |
-| [wallos](docker/wallos)                        | Personal subscription tracker                     | 🛠️ Utilities      | —                | Docker Compose  | `wallos.lan`                                               | 🔒 LAN only | ✅ Active   |
-| [webcheck](k3s/webcheck)                       | Website analysis and OSINT tool                   | 🛠️ Utilities      | `utilities`      | Helm            | `webcheck.lan`                                             | 🔒 LAN only | ✅ Active   |
-| [zerobyte](docker/zerobyte)                    | Backup tool with Restic + Rclone integration      | 💾 Backups        | —                | Docker Compose  | `zerobyte.lan`                                             | 🔒 LAN only | ✅ Active   |
+| [azerbot](k3s/azerbot)                         | Custom Discord bot                                | 🤖 Bots           | `bots`             | Helm            | `azerbot.lan`                                              | 🔒 LAN only | ✅ Active   |
+| [azerdev-discord](k3s/azerdev-discord)         | URL redirect to Azerdev Discord                   | 🔀 Redirects      | `redirects`        | Helm            | `azerdev-discord.lan`                                      | 🔒 LAN only | ⏸️ Disabled |
+| [azerdev-status](k3s/azerdev-status)           | URL redirect to Azerdev status                    | 🔀 Redirects      | `redirects`        | Helm            | `azerdev-status.lan`                                       | 🔒 LAN only | ⏸️ Disabled |
+| [beszel](docker/beszel)                        | Server monitoring with docker stats               | 📊 Monitoring     | —                  | Docker Compose  | `beszel.lan`                                               | 🔒 LAN only | ✅ Active   |
+| [botenoal](k3s/botenoal)                       | Custom Discord bot                                | 🤖 Bots           | `bots`             | Helm            | `botenoal.lan`                                             | 🔒 LAN only | ✅ Active   |
+| [convertx](k3s/convertx)                       | Universal file converter                          | 🛠️ Utilities      | `utilities`        | Helm            | `convertx.lan`                                             | 🔒 LAN only | ⏸️ Disabled |
+| [couchdb](k3s/couchdb)                         | Sync server for Obsidian Self-hosted LiveSync     | 📝 Productivity   | `productivity`     | Helm            | `couchdb.enoal.fr`                                         | 🌍 Public   | ✅ Active   |
+| [crafty](docker/crafty)                        | Minecraft server manager + watcher proxy          | 🎮 Gaming         | —                  | Docker Compose  | `crafty.enoal.fr`                                          | 🌍 Public   | ✅ Active   |
+| [criterifresque](k3s/criteri-fresque)          | Criteri'Fresque website                           | 🌐 Web            | `web`              | Helm            | `beta.criterifresque.lesfresques.info`                     | 🌍 Public   | ✅ Active   |
+| [crowdsec](docker/crowdsec)                    | Intrusion detection for Nginx Proxy Manager       | 🐳 Infrastructure | —                  | Docker Compose  | —                                                          | —           | ✅ Active   |
+| [cv](k3s/cv)                                   | Personal CV/resume website (HPA enabled)          | 🌐 Web            | `web`              | Helm            | `cv.enoal.fr`                                              | 🌍 Public   | ✅ Active   |
+| [dashdot](k3s/dashdot)                         | Server hardware monitoring dashboard              | 📊 Monitoring     | `monitoring`       | Helm            | `dashdot.lan`                                              | 🔒 LAN only | ✅ Active   |
+| [docker-registry](k3s/docker-registry)         | Private Docker image registry (htpasswd)          | 🗄️ DevOps         | `devops`           | Helm            | `registry.enoal.fr`                                        | 🌍 Public   | ✅ Active   |
+| [docker-registry-ui](k3s/docker-registry-ui)   | Web UI for private Docker registry                | 🗄️ DevOps         | `devops`           | Helm            | `registry-ui.enoal.fr`                                     | 🌍 Public   | ✅ Active   |
+| [dozzle](docker/dozzle)                        | Real-time Docker log viewer                       | 🐳 Infrastructure | —                  | Docker Compose  | `dozzle.lan`                                               | 🔒 LAN only | ✅ Active   |
+| [filebrowser-quantum](k3s/filebrowser-quantum) | Web file manager (Quantum edition)                | 🎬 Media          | `media`            | Helm            | `filebrowser-quantum.lan`, `drive.enoal.fr`                | 🌍 Public   | ✅ Active   |
+| [github-runners](apps/arc-controller.yaml)     | GitHub Actions self-hosted runners (ARC)          | 🗄️ DevOps         | `github-runners`   | Helm (ARC)      | —                                                          | —           | ✅ Active   |
+| [homarr](docker/homarr)                        | Application dashboard / start page                | 📋 Dashboard      | —                  | Docker Compose  | `homarr.lan`                                               | 🔒 LAN only | ✅ Active   |
+| [homer](k3s/homer)                             | Application dashboard / start page                | 📋 Dashboard      | `dashboard`        | Helm            | `home.lan`, `homer.lan`, `home.enoal.fr`, `homer.enoal.fr` | 🌍 Public   | ✅ Active   |
+| [immich](k3s/immich)                           | Photo management (Server + ML + Postgres + Redis) | 🎬 Media          | `media`            | Raw (by hand)   | `immich.lan`, `immich.enoal.fr`, `photos.enoal.fr`         | 🌍 Public   | ✅ Active   |
+| [infisical](k3s/infisical)                     | Secrets backend for ESO                           | 🔐 Security       | `security`         | Helm            | `infisical.lan`                                            | 🔒 LAN only | ✅ Active   |
+| [isponsorblocktv](docker/isponsorblocktv)      | SponsorBlock TV — YouTube ad skipping             | 🎬 Media          | —                  | Docker Compose  | —                                                          | —           | ✅ Active   |
+| [kiwix](k3s/kiwix)                             | Offline content server (Wikipedia, etc.)          | 🎬 Media          | `media`            | Helm            | `kiwix.lan`                                                | 🔒 LAN only | ⏸️ Disabled |
+| [loandash](docker/loandash)                    | Personal finances management tool                 | 🛠️ Utilities      | —                  | Docker Compose  | `loandash.lan`                                             | 🔒 LAN only | ✅ Active   |
+| [n8n](k3s/n8n)                                 | Workflow automation platform                      | 🗄️ DevOps         | `devops`           | Raw (by hand)   | `n8n.enoal.fr` (NPM: LAN clients only)                     | 🔒 LAN only | ✅ Active   |
+| [npm](docker/npm)                              | Nginx Proxy Manager — reverse proxy + SSL         | 🐳 Infrastructure | —                  | Docker Compose  | `npm.lan`, 80/443/81                                       | 🔒 LAN only | ✅ Active   |
+| [ntfy](k3s/ntfy)                               | Self-hosted push notification server              | 🔔 Notifications  | `notifications`    | Helm            | `ntfy.enoal.fr`                                            | 🌍 Public   | ⏸️ Disabled |
+| [portainer](docker/portainer)                  | Container management + Docker stack deployment    | 🐳 Infrastructure | —                  | Docker Compose  | `portainer.lan`                                            | 🔒 LAN only | ✅ Active   |
+| [portfolio](k3s/portfolio)                     | Personal portfolio website                        | 🌐 Web            | `web`              | Helm            | `enoal.fr`, `portfolio.lan`                                | 🌍 Public   | ✅ Active   |
+| [portracker](docker/portracker)                | Port tracking dashboard                           | 🐳 Infrastructure | —                  | Docker Compose  | `portracker.lan`                                           | 🔒 LAN only | ✅ Active   |
+| [roots-smp-web](k3s/roots-smp-web)             | Roots SMP Minecraft server website                | 🌐 Web            | `web`              | Helm            | `rootssmp.enoal.fr`                                        | 🌍 Public   | ✅ Active   |
+| [scanopy](k3s/scanopy)                         | Network diagram tool (Server + Daemon + Postgres) | 🐳 Infrastructure | `utilities`        | Raw (by hand)   | `scanopy.lan`                                              | 🔒 LAN only | ⏸️ Disabled |
+| [sftpgo](k3s/sftpgo)                           | SFTP server for remote file access                | 🎬 Media          | `media`            | Helm            | `sftpgo.lan` (web), NodePort 30022 (SFTP)                  | 🔒 LAN only | ✅ Active   |
+| [speedtest-tracker](docker/speedtest-tracker)  | Speedtest results tracking                        | 📊 Monitoring     | —                  | Docker Compose  | `speedtest-tracker.lan`                                    | 🔒 LAN only | ✅ Active   |
+| [umami](k3s/umami)                             | Privacy-focused web analytics (App + Postgres)    | 📈 Analytics      | `analytics`        | Helm            | `analytics.lan` + tracker on `enoal.fr/s.js`               | 🔒 LAN only | ✅ Active   |
+| [uptimekuma](k3s/uptimekuma)                   | Uptime monitoring and status page                 | 📊 Monitoring     | `monitoring`       | Helm            | `uptime.enoal.fr`                                          | 🌍 Public   | ✅ Active   |
+| [VPA](infra/vpa)                               | Vertical Pod Autoscaler (recommendations only)    | 📊 Monitoring     | `kube-system`      | Helm (official) | —                                                          | —           | ✅ Active   |
+| [vaultwarden](k3s/vaultwarden)                 | Bitwarden-compatible password manager             | 🔐 Security       | `security`         | Helm            | `vault.enoal.fr`                                           | 🌍 Public   | ✅ Active   |
+| [wallos](docker/wallos)                        | Personal subscription tracker                     | 🛠️ Utilities      | —                  | Docker Compose  | `wallos.lan`                                               | 🔒 LAN only | ✅ Active   |
+| [webcheck](k3s/webcheck)                       | Website analysis and OSINT tool                   | 🛠️ Utilities      | `utilities`        | Helm            | `webcheck.lan`                                             | 🔒 LAN only | ✅ Active   |
+| [zerobyte](docker/zerobyte)                    | Backup tool with Restic + Rclone integration      | 💾 Backups        | —                  | Docker Compose  | `zerobyte.lan`                                             | 🔒 LAN only | ✅ Active   |
 
 ---
 
 ## Documentation
 
-| Document | What it covers |
-| --- | --- |
-| [Infrastructure](docs/infrastructure.md) | Domains, DNS, ports, disks and path conventions |
-| [Deployment](docs/deployment.md) | ArgoCD, Renovate, Helm, VPA, prerequisites, bootstrap from scratch, remote access |
-| [Secrets](docs/secrets.md) | External Secrets Operator + Infisical, registry credentials, gitignore patterns |
-| [Email](docs/email.md) | Aliases, Cloudflare Email Routing, Resend, SMTP for homelab services |
-| [Monitoring](docs/monitoring.md) | What watches what, and where the alerts go |
-| [Backups](docs/backup/README.md) | Backup strategy, data inventory, PBS and Zerobyte layers |
-| [Database dumps](docs/backup/database-dumps.md) | Nightly consistent dumps of every database |
-| [Proxmox config copy](docs/backup/proxmox-config-copy.md) | Nightly copy of the Proxmox and PBS configuration, and how to restore it |
-| [Restore runbooks](docs/backup/restore.md) | Restore scenarios and restore testing |
-| [To do](docs/todo.md) | Open work: backups, storage, security hardening |
-| [Decisions](docs/decisions.md) | Finished work and the reasons behind it |
-| [Contributing](CONTRIBUTING.md) | Git hooks and commit convention |
+| Document                                                  | What it covers                                                                    |
+| --------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| [Infrastructure](docs/infrastructure.md)                  | Domains, DNS, ports, disks and path conventions                                   |
+| [Deployment](docs/deployment.md)                          | ArgoCD, Renovate, Helm, VPA, prerequisites, bootstrap from scratch, remote access |
+| [Secrets](docs/secrets.md)                                | External Secrets Operator + Infisical, registry credentials, gitignore patterns   |
+| [Email](docs/email.md)                                    | Aliases, Cloudflare Email Routing, Resend, SMTP for homelab services              |
+| [Monitoring](docs/monitoring.md)                          | What watches what, and where the alerts go                                        |
+| [Backups](docs/backup/README.md)                          | Backup strategy, data inventory, PBS and Zerobyte layers                          |
+| [Database dumps](docs/backup/database-dumps.md)           | Nightly consistent dumps of every database                                        |
+| [Proxmox config copy](docs/backup/proxmox-config-copy.md) | Nightly copy of the Proxmox and PBS configuration, and how to restore it          |
+| [Restore runbooks](docs/backup/restore.md)                | Restore scenarios and restore testing                                             |
+| [To do](docs/todo.md)                                     | Open work: backups, storage, security hardening                                   |
+| [Decisions](docs/decisions.md)                            | Finished work and the reasons behind it                                           |
+| [Contributing](CONTRIBUTING.md)                           | Git hooks and commit convention                                                   |
 
 Some apps keep their own notes next to their files: [Crafty](docker/crafty/README.md)
 and its [watcher](docker/crafty/watcher/README.md), [CrowdSec](docker/crowdsec/README.md),
