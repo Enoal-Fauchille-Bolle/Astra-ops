@@ -1,6 +1,6 @@
 # Decisions and completed work
 
-Finished work and the decisions behind it, kept for the *why*. One short entry each; the
+Finished work and the decisions behind it, kept for the _why_. One short entry each; the
 full measurements and checks are in the git history of this file and of
 `docs/backup/README.md`. Open work lives in [todo.md](todo.md).
 
@@ -87,7 +87,7 @@ full measurements and checks are in the git history of this file and of
 ## PBS (LXC 103)
 
 - **2026-09-12 — PBS upgraded to 3.4.9, then to 4 on 2026-09-13.** `proxmox-backup-manager
-  versions` prints the APT *candidate*, not the installed version: check with `dpkg`. The
+versions` prints the APT _candidate_, not the installed version: check with `dpkg`. The
   root disk was grown from 8G to 16G first, as the upgrade guide asks for 10G free.
 - **2026-09-12 — `nesting=1` on LXC 103.** Without it, every unit that asks systemd for
   sandboxing died with `226/NAMESPACE` — `logrotate` had never run since install.

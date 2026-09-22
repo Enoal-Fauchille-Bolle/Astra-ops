@@ -37,36 +37,31 @@ Open work only. Finished items move to [decisions.md](decisions.md).
       rest. Today both share one ext4 filesystem, and the cold disk (500G declared) plus the
       datastore (476G after the GC of 2026-09-20, 113G since 2026-09-21) could exceed the 938G
       drive. **Plan approved by
-      Enoal on 2026-09-15**, in this order:
-      1. ~~after the first verify and GC under PBS 4~~ — both `OK` on 2026-09-19 and 20;
-      2. ~~**`drive` first**~~ — done 2026-09-21 (above). This changed the 2026-09-13 order
-         (LVM, then tidy up): the Netac now holds only copies and replaceable data, so the
-         worst accident during the split destroys nothing unique;
-      3. ~~measure what the datastore weighs without the `vm/100` snapshots that still hold
-         `drive-scsi1`~~ — measured 2026-09-21, read-only. Only **7** were left, not 13: the
-         dailies had expired (3 monthlies 2026-05-31, 06-28, 07-26; 4 weeklies 08-16, 08-23,
-         08-30, 09-06, UTC). A script read every index of the datastore and summed the chunks
-         that no other snapshot references: **349.20 GiB** for the seven, but only 72.41 GiB
-         for the monthlies alone and 84.21 GiB for the weeklies alone — they share the cold
-         disk's chunks, so it is all or nothing. The other 44 snapshots reference
-         **113.40 GiB**;
-      4. ~~Enoal decides whether to delete those snapshots~~ — **deleted 2026-09-21** by Enoal
-         in the PBS web UI (the history of Pulsar's system disk before 2026-09-12 went with
-         them; app data has Backblaze history since 2026-09-13, dumps since 2026-09-14, the
-         Crafty archives since 2026-09-11). Proxmox's `pvesm free` could not do it:
-         `backup_user@pbs` only holds `DatastoreBackup` on the datastore, which cannot delete —
-         kept that way on purpose, so a compromised Astra cannot erase its backups. A manual GC
-         right after: `TASK OK`, **367.491 GiB** and 174 402 chunks removed (the 349 GiB plus
-         chunks already orphaned by the nightly prunes); the datastore holds **113.238 GiB**
-         (76 290 chunks, deduplication 18.87), and the Netac went from 62 % to **22 %** — 199G
-         used of 938G, 730G free;
-      5. **method A** if the snapshots go and the datastore falls under ~250G: copy it to the
-         WD with a PBS sync job (the `local-lvm` thin pool stays under ~55 %), wipe the Netac,
-         build the LVM, sync back. **Otherwise method B**: move the cold disk `scsi1` and the
-         ISOs to the WD online (*Move disk*), shrink the datastore's ext4 and partition in
-         place with PBS stopped, build the thin pool in the freed space, move `scsi1` back.
-         Never park the whole 489G on the WD: a full thin pool freezes every guest, Pulsar
-         included.
+      Enoal on 2026-09-15**, in this order: 1. ~~after the first verify and GC under PBS 4~~ — both `OK` on 2026-09-19 and 20; 2. ~~**`drive` first**~~ — done 2026-09-21 (above). This changed the 2026-09-13 order
+      (LVM, then tidy up): the Netac now holds only copies and replaceable data, so the
+      worst accident during the split destroys nothing unique; 3. ~~measure what the datastore weighs without the `vm/100` snapshots that still hold
+      `drive-scsi1`~~ — measured 2026-09-21, read-only. Only **7** were left, not 13: the
+      dailies had expired (3 monthlies 2026-05-31, 06-28, 07-26; 4 weeklies 08-16, 08-23,
+      08-30, 09-06, UTC). A script read every index of the datastore and summed the chunks
+      that no other snapshot references: **349.20 GiB** for the seven, but only 72.41 GiB
+      for the monthlies alone and 84.21 GiB for the weeklies alone — they share the cold
+      disk's chunks, so it is all or nothing. The other 44 snapshots reference
+      **113.40 GiB**; 4. ~~Enoal decides whether to delete those snapshots~~ — **deleted 2026-09-21** by Enoal
+      in the PBS web UI (the history of Pulsar's system disk before 2026-09-12 went with
+      them; app data has Backblaze history since 2026-09-13, dumps since 2026-09-14, the
+      Crafty archives since 2026-09-11). Proxmox's `pvesm free` could not do it:
+      `backup_user@pbs` only holds `DatastoreBackup` on the datastore, which cannot delete —
+      kept that way on purpose, so a compromised Astra cannot erase its backups. A manual GC
+      right after: `TASK OK`, **367.491 GiB** and 174 402 chunks removed (the 349 GiB plus
+      chunks already orphaned by the nightly prunes); the datastore holds **113.238 GiB**
+      (76 290 chunks, deduplication 18.87), and the Netac went from 62 % to **22 %** — 199G
+      used of 938G, 730G free; 5. **method A** if the snapshots go and the datastore falls under ~250G: copy it to the
+      WD with a PBS sync job (the `local-lvm` thin pool stays under ~55 %), wipe the Netac,
+      build the LVM, sync back. **Otherwise method B**: move the cold disk `scsi1` and the
+      ISOs to the WD online (_Move disk_), shrink the datastore's ext4 and partition in
+      place with PBS stopped, build the thin pool in the freed space, move `scsi1` back.
+      Never park the whole 489G on the WD: a full thin pool freezes every guest, Pulsar
+      included.
       Reserve an LV for the 64–128 GiB local cache a future S3 datastore needs (below), so the
       disk is not split twice
 - [ ] Later: a PBS 4 datastore on Backblaze (S3 backend) to restore whole VMs after losing
@@ -112,7 +107,7 @@ into control of Pulsar, with every app, database and backup on it.
       (package, config, LAPI key, and everything it created at Cloudflare, checked through
       the API). Volume fits the free plan (831 730 requests over 30 days, worst day ~42 000,
       against 100 000). What stopped it: the deploy fails with `You need to enable Analytics
-      Engine (10089)` although a dataset was created; the account had never deployed a
+    Engine (10089)` although a dataset was created; the account had never deployed a
       Worker, which reportedly must happen first (untested). Also found in the v0.0.18
       source: every start and stop deletes and recreates the worker route, so a "Fail open"
       set by hand in the dashboard would be lost at each restart. Only the bouncer's local

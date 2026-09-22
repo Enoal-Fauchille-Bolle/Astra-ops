@@ -8,22 +8,22 @@ A nightly job on Astra copies both configurations to Pulsar, where Zerobyte job 
 First unattended night, 2026-09-12: copy sent at 01:30:05, Kuma push `up`, and job 13 went
 from 12 to 62 files (50 new) in `succeeded`.
 
-| Piece | Where | What it does |
-| --- | --- | --- |
-| Script | `infra/astra/proxmox-config-backup.sh` → `/usr/local/sbin/proxmox-config-backup` on Astra | stages the copy in `/run` (tmpfs), then rsyncs it to Pulsar with `--delete` |
-| Timer | `infra/astra/proxmox-config-backup.{service,timer}` | daily at **01:30**, `Persistent=true` (catches up at boot) |
-| Destination | `/mnt/data/backups/proxmox-configs/` on Pulsar | owned by `astra-configs`, directories `700`, files `600` |
-| Alerting | Uptime Kuma push monitor **Proxmox Config Backup** | `up` on success, `down` on any failure, alert on Discord if no push for 25 h (§10) |
+| Piece       | Where                                                                                     | What it does                                                                       |
+| ----------- | ----------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| Script      | `infra/astra/proxmox-config-backup.sh` → `/usr/local/sbin/proxmox-config-backup` on Astra | stages the copy in `/run` (tmpfs), then rsyncs it to Pulsar with `--delete`        |
+| Timer       | `infra/astra/proxmox-config-backup.{service,timer}`                                       | daily at **01:30**, `Persistent=true` (catches up at boot)                         |
+| Destination | `/mnt/data/backups/proxmox-configs/` on Pulsar                                            | owned by `astra-configs`, directories `700`, files `600`                           |
+| Alerting    | Uptime Kuma push monitor **Proxmox Config Backup**                                        | `up` on success, `down` on any failure, alert on Discord if no push for 25 h (§10) |
 
 What the copy holds (~70 KB):
 
-| Folder | Content | Used for |
-| --- | --- | --- |
-| `pve/` | `/etc/pve` as readable files (runtime dotfiles and `priv/lock/` skipped) | reading or re-creating a single setting |
-| `pmxcfs/config.db` | the pmxcfs database, copied with `sqlite3 .backup` and integrity-checked | the official full recovery (§9.4) |
-| `pbs/proxmox-backup/` | `/etc/proxmox-backup` from LXC 103 (lock files skipped) | rebuilding PBS (§9.4) |
-| `host/` | `/etc/hostname`, `/etc/hosts`, `/etc/network/interfaces`, `/etc/fstab`, `mnt-pve-vault.mount` | identity, network and `vault` mount of Astra |
-| `MANIFEST.txt` | date, `pveversion -v`, `proxmox-backup-manager versions` | reinstalling the same versions first |
+| Folder                | Content                                                                                       | Used for                                     |
+| --------------------- | --------------------------------------------------------------------------------------------- | -------------------------------------------- |
+| `pve/`                | `/etc/pve` as readable files (runtime dotfiles and `priv/lock/` skipped)                      | reading or re-creating a single setting      |
+| `pmxcfs/config.db`    | the pmxcfs database, copied with `sqlite3 .backup` and integrity-checked                      | the official full recovery (§9.4)            |
+| `pbs/proxmox-backup/` | `/etc/proxmox-backup` from LXC 103 (lock files skipped)                                       | rebuilding PBS (§9.4)                        |
+| `host/`               | `/etc/hostname`, `/etc/hosts`, `/etc/network/interfaces`, `/etc/fstab`, `mnt-pve-vault.mount` | identity, network and `vault` mount of Astra |
+| `MANIFEST.txt`        | date, `pveversion -v`, `proxmox-backup-manager versions`                                      | reinstalling the same versions first         |
 
 **Transport.** Astra pushes; Pulsar never gets any access to Astra. Root on Astra uses a
 dedicated key (`/root/.ssh/proxmox-config-backup_ed25519`) and a pinned host key
@@ -43,7 +43,7 @@ confines a script mistake or a leaked key to one directory.
 the Resend API key. They are protected by file permissions on Pulsar and by restic encryption
 off-site — no second encryption layer, since Zerobyte on Pulsar already holds the keys to
 every repository. File permissions do not stop a container running as root: both Filebrowser
-apps could browse this copy until 2026-09-14 (§6, *Who else can read the dumps*). The push URL lives in `/etc/default/proxmox-config-backup` (root, `600`),
+apps could browse this copy until 2026-09-14 (§6, _Who else can read the dumps_). The push URL lives in `/etc/default/proxmox-config-backup` (root, `600`),
 outside this repository.
 
 **Failure behaviour.** Every step runs under `set -e` and the transfer comes last: if one step
@@ -90,7 +90,7 @@ sudo ssh-keyscan -t ed25519 192.168.1.201 | sudo tee /root/.ssh/proxmox-config-b
 **3. Authorize that key on Pulsar.** Append one line to
 `/var/lib/astra-configs/.ssh/authorized_keys` (still root-owned — edit it as root, not as
 `astra-configs`), pasting the public key just generated after `command="..."`. The full line,
-with its `restrict` and `rrsync -wo` restriction, is shown above under *Transport*.
+with its `restrict` and `rrsync -wo` restriction, is shown above under _Transport_.
 
 **4. On Astra — install the script and the timer**, from a clone of this repository:
 
@@ -127,7 +127,7 @@ A successful run leaves the four folders (`pve/`, `pmxcfs/`, `pbs/`, `host/`) an
 Zerobyte job 13 (**Backups**, repository **Backblaze**) — pick a snapshot from before the
 incident, since the nightly copy mirrors the current state with `--delete`.
 
-**Proxmox VE — full recovery** (`pmxcfs` documentation, section *Recovery*), on a fresh
+**Proxmox VE — full recovery** (`pmxcfs` documentation, section _Recovery_), on a fresh
 install with nothing running:
 
 1. Install the Proxmox VE version listed in `MANIFEST.txt`.
@@ -144,10 +144,10 @@ For a single setting, read the matching file under `pve/` instead.
 `/etc/proxmox-backup/`, and restore the original ownership, which the copy does not keep
 (every file arrives as `600`):
 
-| Files | Owner | Mode |
-| --- | --- | --- |
-| `authkey.key`, `notifications-priv.cfg`, `shadow.json` | `root:root` | `600` |
-| every other file (`*.cfg`, `authkey.pub`, `csrf.key`, `proxy.key`, `proxy.pem`) | `root:backup` | `640` |
-| the directory `/etc/proxmox-backup` | `backup:backup` | `700` |
+| Files                                                                           | Owner           | Mode  |
+| ------------------------------------------------------------------------------- | --------------- | ----- |
+| `authkey.key`, `notifications-priv.cfg`, `shadow.json`                          | `root:root`     | `600` |
+| every other file (`*.cfg`, `authkey.pub`, `csrf.key`, `proxy.key`, `proxy.pem`) | `root:backup`   | `640` |
+| the directory `/etc/proxmox-backup`                                             | `backup:backup` | `700` |
 
 Then start both services again. The datastore itself is self-describing (§4.2).

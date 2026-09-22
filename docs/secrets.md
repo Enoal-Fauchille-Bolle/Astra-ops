@@ -2,11 +2,11 @@
 
 Secrets are **never** committed to this repository. Three mechanisms coexist today:
 
-| Mechanism | Used by |
-| --- | --- |
+| Mechanism                                                                                                                    | Used by                                                                                 |
+| ---------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
 | [External Secrets Operator](https://external-secrets.io) (ESO) pulling from a self-hosted [Infisical](https://infisical.com) | azerbot, botenoal, couchdb, docker-registry, github-runners, sftpgo, umami, vaultwarden |
-| A `secrets.yaml` filled by hand from a committed `.example` template, applied with `kubectl apply` | criteri-fresque, immich, and the disabled ntfy and scanopy |
-| Portainer's **Environment variables** for each stack | every Docker Compose stack (Layer A) |
+| A `secrets.yaml` filled by hand from a committed `.example` template, applied with `kubectl apply`                           | criteri-fresque, immich, and the disabled ntfy and scanopy                              |
+| Portainer's **Environment variables** for each stack                                                                         | every Docker Compose stack (Layer A)                                                    |
 
 GHCR images also need a registry pull secret, created by hand (below).
 
@@ -25,16 +25,16 @@ the `Secret` — no manual intervention required.
 
 ### What lives in git
 
-| File                                    | Status        | Description                          |
-| --------------------------------------- | ------------- | ------------------------------------ |
-| `k3s/<service>/templates/external-secret.yaml` | ✅ Committed | Maps Infisical keys → K8s Secret |
-| `k3s/<service>/secrets.example.yaml`    | ✅ Committed  | Template for a hand-applied secret   |
-| `k3s/<service>/secrets.yaml`            | 🔒 Gitignored | Filled copy of the template          |
-| `infra/eso/cluster-secret-store.yaml`   | ✅ Committed  | ESO connection config to Infisical   |
-| `infra/eso/infisical-bootstrap.example` | ✅ Committed  | Template for the bootstrap secret    |
-| `infra/eso/infisical-token.example`     | ✅ Committed  | Template for the service token       |
-| `infra/eso/infisical-bootstrap.yaml`    | 🔒 Gitignored | Real bootstrap secret (fill locally) |
-| `infra/eso/infisical-token.yaml`        | 🔒 Gitignored | Real service token (fill locally)    |
+| File                                           | Status        | Description                          |
+| ---------------------------------------------- | ------------- | ------------------------------------ |
+| `k3s/<service>/templates/external-secret.yaml` | ✅ Committed  | Maps Infisical keys → K8s Secret     |
+| `k3s/<service>/secrets.example.yaml`           | ✅ Committed  | Template for a hand-applied secret   |
+| `k3s/<service>/secrets.yaml`                   | 🔒 Gitignored | Filled copy of the template          |
+| `infra/eso/cluster-secret-store.yaml`          | ✅ Committed  | ESO connection config to Infisical   |
+| `infra/eso/infisical-bootstrap.example`        | ✅ Committed  | Template for the bootstrap secret    |
+| `infra/eso/infisical-token.example`            | ✅ Committed  | Template for the service token       |
+| `infra/eso/infisical-bootstrap.yaml`           | 🔒 Gitignored | Real bootstrap secret (fill locally) |
+| `infra/eso/infisical-token.yaml`               | 🔒 Gitignored | Real service token (fill locally)    |
 
 ### Adding a secret to a service
 
@@ -67,7 +67,7 @@ kubectl apply -f k3s/<service>/secrets.yaml
 ```
 
 The filled files are gitignored. Where they are kept off Astra is not consolidated yet — see
-the *Secrets* section of [todo.md](todo.md).
+the _Secrets_ section of [todo.md](todo.md).
 
 ## Registry credentials
 

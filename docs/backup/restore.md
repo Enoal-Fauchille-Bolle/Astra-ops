@@ -92,8 +92,8 @@ Zerobyte (§5.4) through its restore directory (§9.6).
    in the **official Bitwarden cloud** — not in the self-hosted Vaultwarden, which runs on
    Astra and would be lost with it.
 4. Create Pulsar VM (Ubuntu Server), install K3s and Docker.
-5. Reinstall the Proxmox config backup mechanism (§4.2, *Reinstalling this mechanism from
-   scratch*) so nightly copies of the new Proxmox configuration resume.
+5. Reinstall the Proxmox config backup mechanism (§4.2, _Reinstalling this mechanism from
+   scratch_) so nightly copies of the new Proxmox configuration resume.
 6. Install Zerobyte (Docker Compose in `docker/zerobyte/`). To get its 13 jobs back instead of
    re-creating them, fetch `dumps/zerobyte.sqlite` from job 13's latest snapshot with the
    `restic` command line (B2 key and restic password as above) and put it at
@@ -126,7 +126,6 @@ Zerobyte (§5.4) through its restore directory (§9.6).
 
 Moved to [proxmox-config-copy.md](proxmox-config-copy.md#94-restoring-the-proxmox-configuration).
 
-
 ---
 
 ## 9.5 Restoring the Obsidian notes (CouchDB)
@@ -136,16 +135,16 @@ Moved to [`k3s/couchdb/README.md`](../../k3s/couchdb/README.md).
 ## 9.6 Restoring files with Zerobyte
 
 Every data mount of the Zerobyte container is read-only, so a backup can never damage its
-source — and Zerobyte cannot restore to the *original location* either. Since 2026-09-14 it
+source — and Zerobyte cannot restore to the _original location_ either. Since 2026-09-14 it
 has one writable directory for that: `/mnt/data/restore` on Pulsar (root, `700`), mounted at
 **`/restore`** in the container. Restore there, check, then copy into place by hand.
 
 1. Open `http://zerobyte.lan/backups/<job short id>/<snapshot short id>/restore` (page
-   *Restore Snapshot*). A job's short id is in `zerobyte.db` (`backup_schedules_table.short_id`,
-   `2JsgS07p` for job 13 *Backups*); a snapshot's is the first 8 hex characters of its id.
-2. Under *Select Files to Restore*, tick the folders wanted.
-3. Under *Restore Location*, choose **Custom location** and give a **subfolder per restore**,
-   e.g. `/restore/crafty`. Zerobyte writes the *contents* of the ticked folder straight into
+   _Restore Snapshot_). A job's short id is in `zerobyte.db` (`backup_schedules_table.short_id`,
+   `2JsgS07p` for job 13 _Backups_); a snapshot's is the first 8 hex characters of its id.
+2. Under _Select Files to Restore_, tick the folders wanted.
+3. Under _Restore Location_, choose **Custom location** and give a **subfolder per restore**,
+   e.g. `/restore/crafty`. Zerobyte writes the _contents_ of the ticked folder straight into
    the target, without the `/data/...` path above it, so two restores into `/restore` itself
    end up mixed together.
 4. Wait for **Restore completed**, then from Pulsar compare and move the files into place,
@@ -171,7 +170,7 @@ configuration, `/app` and the temporary directory.
 restored from Backblaze into `/restore` in 2.5 s: 53 files, 70 KB, identical to
 `/mnt/data/backups/proxmox-configs` in content (`diff -r`) and in owner, mode and
 modification time. Second test on 2026-09-15: the database dumps of snapshot `fd07fcc1`, into
-`/restore/dumps-2026-09-15`, then imported into throwaway databases (§6, *Restoring*). The
+`/restore/dumps-2026-09-15`, then imported into throwaway databases (§6, _Restoring_). The
 subfolder Zerobyte creates is `755`; the files keep their `600`, and `/mnt/data/restore` itself
 stays `700`.
 

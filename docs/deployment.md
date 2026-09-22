@@ -139,8 +139,8 @@ kubectl apply -f infra/argocd/root-app.yaml
 ### 5. Bootstrap secrets
 
 Apply the two Infisical bootstrap files, then the hand-applied secrets and the registry
-credentials, as described in [secrets.md](secrets.md): *Bootstrap after a K3s reinstall*,
-*Hand-applied secrets* and *Registry credentials*.
+credentials, as described in [secrets.md](secrets.md): _Bootstrap after a K3s reinstall_,
+_Hand-applied secrets_ and _Registry credentials_.
 
 ### 6. Configure Nginx Proxy Manager
 
@@ -166,7 +166,7 @@ ssh astra "sudo install -o root -g root -m 755 /tmp/disable-subscription-nag.sh 
 > [!NOTE]
 > `proxmox-config-backup.{sh,service,timer}` (same directory) needs both Astra **and** Pulsar
 > set up — a receiving account, a dedicated SSH key pair, the script and its systemd timer.
-> See `docs/backup/proxmox-config-copy.md`, *Reinstalling this mechanism from scratch*.
+> See `docs/backup/proxmox-config-copy.md`, _Reinstalling this mechanism from scratch_.
 
 ## Remote access
 

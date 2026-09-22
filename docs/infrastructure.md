@@ -112,7 +112,7 @@ Netac (938G — "vault")     199G used (22 %), 730G free
 └── pbs-datastore/       113G  → PBS backup chunks
 ```
 
-The `.qcow2` is *sparse*: space freed inside Pulsar returns to `vault` only once
+The `.qcow2` is _sparse_: space freed inside Pulsar returns to `vault` only once
 `fstrim` runs in the guest and QEMU punches the holes.
 
 Both M.2 slots are populated; only **two unused SATA ports** remain, and the case has no
@@ -122,11 +122,11 @@ room for a SATA drive.
 
 Pulsar (VM 100) sees three virtual disks:
 
-| Disk                                       | Proxmox | Device | Mount       | Size | Role                                   | In PBS |
-| ------------------------------------------ | ------- | ------ | ----------- | ---- | -------------------------------------- | ------ |
-| OS disk (`vm-100-disk-0` on `local-lvm`)   | `scsi0` | `sda`  | `/`         | 200G | OS, hot app data, K3s/Docker state     | ✅     |
-| Cold disk (`vm-100-disk-0.qcow2` on vault) | `scsi1` | `sdb`  | `/mnt/data` | 500G | Cold data: media, PVCs, Crafty volumes | ❌ `backup=0` since 2026-09-11, see [backup/README.md §4.2](backup/README.md#42-scope) |
-| Personal disk (`vm-100-disk-1` on `local-lvm`) | `scsi2` | `sdc` | `/mnt/drive` | 64G | Personal files, served by Filebrowser Quantum and SFTPGo (below) | ✅ since 2026-09-21 |
+| Disk                                           | Proxmox | Device | Mount        | Size | Role                                                             | In PBS                                                                                 |
+| ---------------------------------------------- | ------- | ------ | ------------ | ---- | ---------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| OS disk (`vm-100-disk-0` on `local-lvm`)       | `scsi0` | `sda`  | `/`          | 200G | OS, hot app data, K3s/Docker state                               | ✅                                                                                     |
+| Cold disk (`vm-100-disk-0.qcow2` on vault)     | `scsi1` | `sdb`  | `/mnt/data`  | 500G | Cold data: media, PVCs, Crafty volumes                           | ❌ `backup=0` since 2026-09-11, see [backup/README.md §4.2](backup/README.md#42-scope) |
+| Personal disk (`vm-100-disk-1` on `local-lvm`) | `scsi2` | `sdc`  | `/mnt/drive` | 64G  | Personal files, served by Filebrowser Quantum and SFTPGo (below) | ✅ since 2026-09-21                                                                    |
 
 ```txt
 sda (200G) → /

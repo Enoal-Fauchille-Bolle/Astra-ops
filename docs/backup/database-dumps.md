@@ -8,16 +8,16 @@ Live databases cannot be safely copied at the file level while running — doing
 > **In service since 2026-09-14.** First run by hand at 14:27 Paris: 16 dumps, 156 MB, 8 s,
 > Kuma push `up`. First nightly run on 2026-09-15: 01:00:00 → 01:00:08 Paris, 16/16, 157 MB,
 > push `up`; job 13 picked the 16 files up at 02:00 (81 files instead of 65, `success`), and
-> the restore was tested end to end the same day (see *Restoring* below). Zerobyte's own
+> the restore was tested end to end the same day (see _Restoring_ below). Zerobyte's own
 > database joined on 2026-09-15 afternoon: run by hand, 17/17, push `up`; the copy holds the
 > same 13 schedules, 6 repositories and 12 volumes as the original.
 
-| Piece | Where | What it does |
-| --- | --- | --- |
-| Script | `infra/pulsar/dump-databases.sh` → `/usr/local/sbin/dump-databases` on Pulsar (root, `755`) | dumps each database on its own, checks the result, then replaces the previous dump |
-| Timer | `infra/pulsar/dump-databases.{service,timer}` | daily at **01:00 Europe/Paris**, `Persistent=true` (catches up at boot) |
-| Destination | `/mnt/data/backups/dumps/` | root, directory `700`, files `600`; one file per database, replaced every night |
-| Alerting | Uptime Kuma push monitor **Database Dumps** (id 38) | `up` when all 17 succeed, `down` naming the failed ones, alert on Discord if no push for 25 h (§10) |
+| Piece       | Where                                                                                       | What it does                                                                                        |
+| ----------- | ------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| Script      | `infra/pulsar/dump-databases.sh` → `/usr/local/sbin/dump-databases` on Pulsar (root, `755`) | dumps each database on its own, checks the result, then replaces the previous dump                  |
+| Timer       | `infra/pulsar/dump-databases.{service,timer}`                                               | daily at **01:00 Europe/Paris**, `Persistent=true` (catches up at boot)                             |
+| Destination | `/mnt/data/backups/dumps/`                                                                  | root, directory `700`, files `600`; one file per database, replaced every night                     |
+| Alerting    | Uptime Kuma push monitor **Database Dumps** (id 38)                                         | `up` when all 17 succeed, `down` naming the failed ones, alert on Discord if no push for 25 h (§10) |
 
 The push URL lives in `/etc/default/dump-databases` (root, `600`), outside this repository.
 
@@ -37,13 +37,13 @@ pull 2026-08-31) and owned by `enoal`, and root must not run a file a user accou
 
 ## What is dumped
 
-| Dump | Source | Engine | How |
-| --- | --- | --- | --- |
-| `umami.sql` | deployment `analytics/umami-postgres` | PostgreSQL 16.14 | `pg_dump` inside the pod, as `$POSTGRES_USER` on `$POSTGRES_DB` |
-| `infisical.sql` | deployment `infisical/infisical-postgres` | PostgreSQL 16.14 | same |
-| `uptimekuma.sql` | deployment `monitoring/uptimekuma`, socket `/app/data/run/mariadb.sock` | embedded MariaDB 10.11.14 | `mariadb-dump -u root --single-transaction --databases kuma` — its 28 tables are all InnoDB, so the dump is consistent without locking |
-| `<app>.sqlite` × 12 | Vaultwarden, n8n, SFTPGo, ntfy `user.db`, Jellyfin, NPM, Homarr, Wallos, Crafty `crafty.sqlite`, Beszel `data.db`, Speedtest Tracker, Loandash — paths in the script | SQLite | Python's online backup API (no `sqlite3` binary on Pulsar), run as the file's owner |
-| `zerobyte.sqlite` | `/var/lib/zerobyte/data/zerobyte.db` (since 2026-09-15) | SQLite | same. Its only off-site copy: `/var/lib/zerobyte` lies outside both app roots, so jobs 16 and 17 never see it. It keeps the 13 jobs, their exclusions and the repositories, which §9.3 otherwise rebuilds by hand |
+| Dump                | Source                                                                                                                                                               | Engine                    | How                                                                                                                                                                                                               |
+| ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `umami.sql`         | deployment `analytics/umami-postgres`                                                                                                                                | PostgreSQL 16.14          | `pg_dump` inside the pod, as `$POSTGRES_USER` on `$POSTGRES_DB`                                                                                                                                                   |
+| `infisical.sql`     | deployment `infisical/infisical-postgres`                                                                                                                            | PostgreSQL 16.14          | same                                                                                                                                                                                                              |
+| `uptimekuma.sql`    | deployment `monitoring/uptimekuma`, socket `/app/data/run/mariadb.sock`                                                                                              | embedded MariaDB 10.11.14 | `mariadb-dump -u root --single-transaction --databases kuma` — its 28 tables are all InnoDB, so the dump is consistent without locking                                                                            |
+| `<app>.sqlite` × 12 | Vaultwarden, n8n, SFTPGo, ntfy `user.db`, Jellyfin, NPM, Homarr, Wallos, Crafty `crafty.sqlite`, Beszel `data.db`, Speedtest Tracker, Loandash — paths in the script | SQLite                    | Python's online backup API (no `sqlite3` binary on Pulsar), run as the file's owner                                                                                                                               |
+| `zerobyte.sqlite`   | `/var/lib/zerobyte/data/zerobyte.db` (since 2026-09-15)                                                                                                              | SQLite                    | same. Its only off-site copy: `/var/lib/zerobyte` lies outside both app roots, so jobs 16 and 17 never see it. It keeps the 13 jobs, their exclusions and the repositories, which §9.3 otherwise rebuilds by hand |
 
 Not dumped, on purpose:
 
@@ -59,7 +59,7 @@ Not dumped, on purpose:
   2026-09-14; job 16's snapshots still hold it.
 - **Redis** (Infisical, Homarr) — caches and queues.
 - **CouchDB** (Obsidian notes, §9.5) — decided 2026-09-14. The CouchDB documentation
-  (*Maintenance → Backing up CouchDB*) states that copying `.couch` files while the server runs
+  (_Maintenance → Backing up CouchDB_) states that copying `.couch` files while the server runs
   is safe, the format being append-only, so job 16's raw copy is consistent. The order it
   recommends, secondary indexes before databases, does not apply: `courses` has no design
   document, hence no `data/.shards`. A replication to a backup database was rejected:
@@ -107,14 +107,14 @@ A new app with a database needs a line in the script; jobs 16 and 17 already cop
 restored from Backblaze into `/restore/dumps-2026-09-15` (§9.6), then loaded into throwaway
 containers on Pulsar (`--network none`, `--rm`):
 
-| Check | Result |
-| --- | --- |
-| Restored files vs the originals | 16/16 identical in content (SHA-256), owner, mode and modification time |
-| 12 SQLite copies | `integrity_check` ok for all; e.g. Vaultwarden 2 users, 888 ciphers; NPM 75 proxy hosts |
-| Umami (`postgres:16`, psql 16.15) | imported with `ON_ERROR_STOP`, 0 errors; 25/25 tables, 128 rows, same as the dump's `COPY` blocks |
-| Infisical (`postgres:16`) | 0 errors, 9 s; 770 tables, 1 247 rows, all equal to the dump |
+| Check                                      | Result                                                                                                                                                                                   |
+| ------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Restored files vs the originals            | 16/16 identical in content (SHA-256), owner, mode and modification time                                                                                                                  |
+| 12 SQLite copies                           | `integrity_check` ok for all; e.g. Vaultwarden 2 users, 888 ciphers; NPM 75 proxy hosts                                                                                                  |
+| Umami (`postgres:16`, psql 16.15)          | imported with `ON_ERROR_STOP`, 0 errors; 25/25 tables, 128 rows, same as the dump's `COPY` blocks                                                                                        |
+| Infisical (`postgres:16`)                  | 0 errors, 9 s; 770 tables, 1 247 rows, all equal to the dump                                                                                                                             |
 | Dawarich (`postgis/postgis:17-3.5-alpine`) | 0 errors, 3 s; the dump's 39 tables of data equal, 136 064 points; the 4 other differences are rows PostGIS ships itself (`spatial_ref_sys`, `tiger.pagc_*`), which `pg_dump` leaves out |
-| Uptime Kuma (`mariadb:10.11`, 10.11.19) | 0 errors, 2 s; 28 tables, 187 898 rows, all equal to the dump |
+| Uptime Kuma (`mariadb:10.11`, 10.11.19)    | 0 errors, 2 s; 28 tables, 187 898 rows, all equal to the dump                                                                                                                            |
 
 Counting a Kuma dump's rows: `mariadb-dump` 10.11 writes `INSERT INTO … VALUES` and then one
 row per line up to the `;`, not a whole statement on one line.
