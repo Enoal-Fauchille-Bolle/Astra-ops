@@ -9,7 +9,8 @@
 # alone does not survive an `apt upgrade`. 89no-subscription-nag (installed as
 # /etc/apt/apt.conf.d/89no-subscription-nag) re-runs this script after every dpkg operation.
 #
-# Installed as /usr/local/sbin/disable-subscription-nag on Astra.
+# Installed as /usr/local/sbin/disable-subscription-nag both on Astra and inside LXC 103
+# (PBS) — both share the same proxmox-widget-toolkit package and the same proxmoxlib.js.
 
 set -e
 

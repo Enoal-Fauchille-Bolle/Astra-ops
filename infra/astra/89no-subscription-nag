@@ -1,5 +1,6 @@
 // Re-applies infra/astra/disable-subscription-nag.sh (installed as
 // /usr/local/sbin/disable-subscription-nag) after every dpkg operation, so a
 // proxmox-widget-toolkit update never brings the subscription popup back.
-// Installed as /etc/apt/apt.conf.d/89no-subscription-nag on Astra.
+// Installed as /etc/apt/apt.conf.d/89no-subscription-nag both on Astra and inside LXC 103
+// (PBS) — apt runs independently in each, so the hook needs a copy in both places.
 DPkg::Post-Invoke { "[ -x /usr/local/sbin/disable-subscription-nag ] && /usr/local/sbin/disable-subscription-nag || true"; };

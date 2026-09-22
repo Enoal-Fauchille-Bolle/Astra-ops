@@ -163,6 +163,18 @@ ssh astra "sudo install -o root -g root -m 755 /tmp/disable-subscription-nag.sh 
   sudo /usr/local/sbin/disable-subscription-nag"
 ```
 
+PBS (LXC 103) needs the same two files, but has no SSH of its own — land them on Astra first,
+then use `pct push`/`pct exec` to reach inside the container:
+
+```bash
+scp infra/astra/disable-subscription-nag.sh astra:/tmp/
+scp infra/astra/89no-subscription-nag astra:/tmp/
+ssh astra "sudo pct push 103 /tmp/disable-subscription-nag.sh /usr/local/sbin/disable-subscription-nag --user root --group root --perms 755 && \
+  sudo pct push 103 /tmp/89no-subscription-nag /etc/apt/apt.conf.d/89no-subscription-nag --user root --group root --perms 644 && \
+  rm /tmp/disable-subscription-nag.sh /tmp/89no-subscription-nag && \
+  sudo pct exec 103 -- /usr/local/sbin/disable-subscription-nag"
+```
+
 > [!NOTE]
 > `proxmox-config-backup.{sh,service,timer}` (same directory) needs both Astra **and** Pulsar
 > set up — a receiving account, a dedicated SSH key pair, the script and its systemd timer.

@@ -92,7 +92,8 @@ Zerobyte (§5.4) through its restore directory (§9.6).
    in the **official Bitwarden cloud** — not in the self-hosted Vaultwarden, which runs on
    Astra and would be lost with it.
 4. Create Pulsar VM (Ubuntu Server), install K3s and Docker.
-5. Reinstall the Proxmox config backup mechanism (§4.2, _Reinstalling this mechanism from
+5. Reinstall the Proxmox config backup mechanism
+   ([proxmox-config-copy.md](proxmox-config-copy.md), _Reinstalling this mechanism from
    scratch_) so nightly copies of the new Proxmox configuration resume.
 6. Install Zerobyte (Docker Compose in `docker/zerobyte/`). To get its 13 jobs back instead of
    re-creating them, fetch `dumps/zerobyte.sqlite` from job 13's latest snapshot with the

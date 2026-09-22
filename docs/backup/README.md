@@ -252,6 +252,12 @@ over. Disabled again in the PBS UI (Administration → Repositories → Disable)
 so the safety net before maintenance is `vzdump 103 --mode stop --storage local` — 846 MB and
 19 seconds of downtime on 2026-09-12.
 
+> **"No valid subscription" popup silenced since 2026-09-22.** PBS shares the exact same
+> `proxmox-widget-toolkit` package (and the same `proxmoxlib.js`) as Astra's own PVE web UI,
+> so the same fix applies unchanged: `infra/astra/disable-subscription-nag.sh` and
+> `infra/astra/89no-subscription-nag`, pushed into the container with `pct push`/`pct exec`
+> (`docs/deployment.md` §7) instead of `scp`/`ssh`, since LXC 103 has no SSH of its own.
+
 > **`pam_systemd` removed on 2026-05-02.** `/etc/pam.d/common-session` lacks the
 > `session optional pam_systemd.so` line — the usual workaround for logins that hang while
 > `systemd-logind` is dead, which it was until `nesting=1`. A PAM upgrade asks whether to
