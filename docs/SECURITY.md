@@ -16,7 +16,7 @@ into control of Pulsar, with every app, database and backup on it.
 - [x] **Remove the classic Filebrowser, hide the backups from Quantum** (2026-09-14, `f6d4527`,
       `ca56a5a`) — both apps ran as root and mounted `/mnt/data/backups` whole, dumps and
       Proxmox configuration copy included, reachable from the Internet through `drive.enoal.fr`
-      ([`backup/README.md` §6](backup/README.md#6-database-dump-strategy))
+      ([`backup/database-dumps.md`](backup/database-dumps.md))
 - [x] **Run Filebrowser Quantum as non-root** (2026-09-14, `c1b5a9e`) — uid 1000
 - [x] **Run SFTPGo as non-root** (2026-09-15, `e87b3b6`) — uid 1000; as root, its account could
       read and delete the dumps
