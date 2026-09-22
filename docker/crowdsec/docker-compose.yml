@@ -6,6 +6,7 @@ services:
     environment:
       GID: "1000"
       COLLECTIONS: "crowdsecurity/nginx-proxy-manager"
+      USE_WAL: "true"
     volumes:
       # Crowdsec persistence
       - /opt/docker-data/crowdsec/config:/etc/crowdsec
