@@ -519,13 +519,8 @@ snapshots and was in `success`.
   the repository in 14 s. The other archives are deduplicated.
 - **Why job 9 was replaced:** it was restricted by `include_paths` to Nous Deux
   (`9ca997b5-…`), so **Survie Gay and Roots SMP had no off-site copy until 2026-09-11**. Crafty
-  names archive folders by server UUID, not by name:
-
-| UUID | Crafty server | Crafty archive schedule (2026-09-11) |
-| ---- | ------------- | ------------------------------------ |
-| `9ca997b5-937f-4fbd-bf5c-95f5eb06cfb2` | Nous Deux | paused (world unchanged since 2026-08-15), keeps 2 |
-| `69dc796b-62cf-450b-a846-48893db1a6cd` | Survie Gay | paused (world unchanged since 2026-09-07), keeps 2 |
-| `c5da3465-e127-4ad2-9d36-bd313bf3eebe` | Roots SMP (SMP 26.2) | daily 04:00, keeps 3 |
+  names archive folders by server UUID, not by name — see the table in
+  [`docker/crafty/README.md`](../../docker/crafty/README.md#servers).
 
 #### No job planned
 

@@ -238,8 +238,10 @@ astra-ops/
 | [Decisions](docs/decisions.md) | Finished work and the reasons behind it |
 | [Contributing](CONTRIBUTING.md) | Git hooks and commit convention |
 
-Some apps keep their own notes next to their files: [NPM](docker/npm/README.md),
-[Crafty watcher](docker/crafty/watcher/README.md), [CouchDB](k3s/couchdb/README.md).
+Some apps keep their own notes next to their files: [Crafty](docker/crafty/README.md)
+and its [watcher](docker/crafty/watcher/README.md), [CrowdSec](docker/crowdsec/README.md),
+[NPM](docker/npm/README.md), [CouchDB](k3s/couchdb/README.md),
+[Filebrowser Quantum](k3s/filebrowser-quantum/README.md).
 
 ---
 

@@ -213,8 +213,5 @@ Both apps mount `/mnt/drive` read-write and `/mnt/data/media/movies` read-only (
 `c9e98e1`): Filebrowser Quantum at `/srv/drive` and `/srv/Films`, SFTPGo at `/data/drive` and
 `/data/Films`. The read-only flag is set on the Kubernetes mount, so no setting inside either
 app can make the movies writable. Neither app mounts anything under `/mnt/data/backups` any
-more. Quantum's list of sources lives outside this repository, in
-`/opt/k3s-data/filebrowser-quantum/config.yaml`, and is read only at start-up: change it
-**before** removing a mount, never after, or the app starts in error.
-
----
+more. Quantum's own sources are configured outside this repository: see
+[`k3s/filebrowser-quantum/README.md`](../k3s/filebrowser-quantum/README.md).
