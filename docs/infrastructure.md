@@ -84,9 +84,9 @@ Figures measured 2026-09-21 unless stated otherwise.
 
 ### Astra — Proxmox host
 
-| Disk              | Model in `lsblk`    | Mount                    | Role                                           |
-| ----------------- | ------------------- | ------------------------ | ---------------------------------------------- |
-| WD Blue SN580 1To | `WD Blue SN580 1TB` | `pve-root` + `local-lvm` | Proxmox OS + VM/LXC virtual disks (production) |
+| Disk              | Model in `lsblk`    | Mount                     | Role                                           |
+| ----------------- | ------------------- | ------------------------- | ---------------------------------------------- |
+| WD Blue SN580 1To | `WD Blue SN580 1TB` | `pve-root` + `local-lvm`  | Proxmox OS + VM/LXC virtual disks (production) |
 | Netac 1To         | `G932E1Q 1T`        | VG `netac` (3 LVs, below) | Pulsar cold disk + PBS datastore + ISOs        |
 
 > **Kernel names are not stable — found 2026-09-13.** Linux names NVMe drives in the order
@@ -131,7 +131,7 @@ Pulsar (VM 100) sees three virtual disks:
 | Disk                                           | Proxmox | Device | Mount        | Size | Role                                                             | In PBS                                                                                 |
 | ---------------------------------------------- | ------- | ------ | ------------ | ---- | ---------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
 | OS disk (`vm-100-disk-0` on `local-lvm`)       | `scsi0` | `sda`  | `/`          | 200G | OS, hot app data, K3s/Docker state                               | ✅                                                                                     |
-| Cold disk (`vm-100-disk-0` on `vault-thin`)     | `scsi1` | `sdb`  | `/mnt/data`  | 500G | Cold data: media, PVCs, Crafty volumes                           | ❌ `backup=0` since 2026-09-11, see [backup/README.md §4.2](backup/README.md#42-scope) |
+| Cold disk (`vm-100-disk-0` on `vault-thin`)    | `scsi1` | `sdb`  | `/mnt/data`  | 500G | Cold data: media, PVCs, Crafty volumes                           | ❌ `backup=0` since 2026-09-11, see [backup/README.md §4.2](backup/README.md#42-scope) |
 | Personal disk (`vm-100-disk-1` on `local-lvm`) | `scsi2` | `sdc`  | `/mnt/drive` | 64G  | Personal files, served by Filebrowser Quantum and SFTPGo (below) | ✅ since 2026-09-21                                                                    |
 
 ```txt

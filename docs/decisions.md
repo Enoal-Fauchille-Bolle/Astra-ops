@@ -105,7 +105,7 @@ full measurements and checks are in the git history of this file and of
   would probably be needed to force a full re-trim, which was not attempted same-day since it
   would require briefly stopping Crafty, Zerobyte, Filebrowser Quantum and SFTPGo. Mitigated
   by growing `thin` from 520G to 620G using nearly all of the ~100G reserve (`lvextend -L
-  +100G netac/thin`), bringing real usage down to ~80.65%. The ~400G of wasted space and the
++100G netac/thin`), bringing real usage down to ~80.65%. The ~400G of wasted space and the
   now-exhausted reserve remain open — see [monitoring.md](monitoring.md) for why Beszel could
   not have caught this on its own (thin pools have no file system to watch).
 
