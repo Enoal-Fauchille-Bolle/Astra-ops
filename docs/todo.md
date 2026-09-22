@@ -106,41 +106,20 @@ Open work only. Finished items move to [decisions.md](decisions.md).
 The common risk: a container that holds host-level privileges turns a flaw in one small app
 into control of Pulsar, with every app, database and backup on it.
 
-- [ ] **CrowdSec: make the bans reach web traffic** — it runs (the README says `⏸️ Disabled`,
-      wrong since at least 2026-09-08), reads NPM's logs and bans real attackers, but the
-      firewall bouncer hooks `INPUT` only, and Docker-published ports go through `FORWARD`:
-      its `DROP` rules had matched 0 packets. Order matters: NPM does not restore the
-      visitor's address behind Cloudflare (no `real_ip`), so CrowdSec sees Cloudflare's
-      addresses. Hooking the bouncer into `DOCKER-USER` first would ban Cloudflare and cut
-      every public site. Configure `real_ip` in NPM, check the logs show visitors' addresses,
-      then extend the bouncer. Fix the README line in the same change
-  - [x] **NPM logs visitors' addresses** (2026-09-15) — `real_ip_header CF-Connecting-IP` in
-        `server_proxy.conf` ([`docker/npm/README.md`](../docker/npm/README.md)). Checked after
-        the reload: the 18 public sites answer the same codes as before, and the logs show no
-        Cloudflare address any more (a test request shows the tester's public address)
-  - [x] **Firewall bans reach the containers** (2026-09-15) — `DOCKER-USER` added under
-        `iptables_chains` in `/etc/crowdsec/bouncers/crowdsec-firewall-bouncer.yaml` on Pulsar
-        (host file, not in this repository; previous version kept as `.bak-2026-09-15`).
-        Before: the community list (24 430 IPv4, 455 IPv6) and the local bans contained no
-        Cloudflare or private address. After: the 18 public sites answer the same codes; a
-        throwaway container banned with `cscli decisions add --ip` got no answer from NPM
-        (`000`), then `200` once the ban was deleted. Bans added by hand land in
-        `crowdsec-blacklists-2`, not `-1`. README status fixed. Blocks direct traffic only:
-        on 2026-09-15, 1 488 direct requests (37 addresses, sites in DNS-only mode such as
-        `immich.enoal.fr`) against 39 949 through Cloudflare, whose connections come from
-        Cloudflare's addresses
-  - [ ] **Block traffic that comes through Cloudflare** — Cloudflare Worker Bouncer tried on
-        2026-09-15, then abandoned and fully removed (package, config, LAPI key, and everything
-        it created at Cloudflare, checked through the API). Volume fits the free plan (831 730
-        requests over 30 days, worst day ~42 000, against 100 000). What stopped it: the deploy
-        fails with `You need to enable Analytics Engine (10089)` although a dataset was created;
-        the account had never deployed a Worker, which reportedly must happen first (untested).
-        Also found in the v0.0.18 source: every start and stop deletes and recreates the worker
-        route, so a "Fail open" set by hand in the dashboard would be lost at each restart. Only
-        the bouncer's local bans would fit anyway: 1 000 KV writes a day against 24 885 entries
-        in the community list. Other paths: an IP list plus a WAF custom rule (1 list, 10 000
-        items on Free; the official `cs-cloudflare-bouncer` doing this was archived on
-        2026-09-02), or a bouncer inside NPM
+- [ ] **CrowdSec: block traffic that comes through Cloudflare** — bans only stop direct
+      traffic today ([`docker/crowdsec/README.md`](../docker/crowdsec/README.md)).
+      Cloudflare Worker Bouncer tried on 2026-09-15, then abandoned and fully removed
+      (package, config, LAPI key, and everything it created at Cloudflare, checked through
+      the API). Volume fits the free plan (831 730 requests over 30 days, worst day ~42 000,
+      against 100 000). What stopped it: the deploy fails with `You need to enable Analytics
+      Engine (10089)` although a dataset was created; the account had never deployed a
+      Worker, which reportedly must happen first (untested). Also found in the v0.0.18
+      source: every start and stop deletes and recreates the worker route, so a "Fail open"
+      set by hand in the dashboard would be lost at each restart. Only the bouncer's local
+      bans would fit anyway: 1 000 KV writes a day against 24 885 entries in the community
+      list. Other paths: an IP list plus a WAF custom rule (1 list, 10 000 items on Free;
+      the official `cs-cloudflare-bouncer` doing this was archived on 2026-09-02), or a
+      bouncer inside NPM
 - [ ] **Crafty out of `network_mode: host` and root** — it binds its ports on the host directly
       (8443 among them) as uid 0. Touches the sleep watcher of Roots SMP, which holds the
       server's port while it sleeps
