@@ -1,5 +1,8 @@
 # Proxmox configuration copy
 
+> Section numbers (§) refer to the [backup overview](README.md); each numbered section there
+> is either in place or points to where it moved.
+
 A nightly job on Astra copies both configurations to Pulsar, where Zerobyte job 13
 (**Backups**) ships them to Backblaze at 02:00 — no new Zerobyte volume was needed.
 First unattended night, 2026-09-12: copy sent at 01:30:05, Kuma push `up`, and job 13 went

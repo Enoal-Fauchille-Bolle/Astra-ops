@@ -1,5 +1,8 @@
 # Monitoring & Alerts
 
+> Section numbers (§) refer to the [backup overview](backup/README.md); each numbered section there
+> is either in place or points to where it moved.
+
 | Component               | Monitoring Method                  | Alert Channel          |
 | ----------------------- | ---------------------------------- | ---------------------- |
 | Zerobyte job failures   | Zerobyte built-in notifications    | Discord webhook — ⚠️ **broken for long messages** (below) |

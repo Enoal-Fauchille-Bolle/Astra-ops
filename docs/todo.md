@@ -1,5 +1,8 @@
 # To do
 
+> Section numbers (§) refer to the [backup overview](backup/README.md); each numbered section there
+> is either in place or points to where it moved.
+
 Open work only. Finished items move to [decisions.md](decisions.md).
 
 ## Backups and storage

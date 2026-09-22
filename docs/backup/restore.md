@@ -1,5 +1,8 @@
 # Restoration Runbooks
 
+> Section numbers (§) refer to the [backup overview](README.md); each numbered section there
+> is either in place or points to where it moved.
+
 ## 9.1 Scenario A — Logical Corruption (service-level)
 
 **Trigger:** A service is broken, a database is corrupted, or files were accidentally deleted. The Astra host and Netac NVMe are healthy.
@@ -20,11 +23,11 @@ proxmox-backup-client mount \
   <snapshot-id> /mnt/restore-point
 
 # Extract specific directory
-cp -r /mnt/restore-point/mnt/data/k3s-pvc/immich/ /mnt/data/k3s-pvc/immich-restored/
+cp -r /mnt/restore-point/opt/k3s-data/immich/ /opt/k3s-data/immich-restored/
 ```
 
-1. Restart the affected service.
-2. Validate service health.
+5. Restart the affected service.
+6. Validate service health.
 
 **Files under `/mnt/data`** are no longer in PBS since `backup=0` (2026-09-11): restore them from
 Zerobyte (§5.4) through its restore directory (§9.6).
@@ -96,8 +99,8 @@ Zerobyte (§5.4) through its restore directory (§9.6).
    `restic` command line (B2 key and restic password as above) and put it at
    `/var/lib/zerobyte/data/zerobyte.db` before the first start. Zerobyte encrypts the secrets
    it stores with `APP_SECRET`: the new stack needs the **same** value, or those secrets are
-   lost. It is set in Portainer's stack 11 environment, on Astra; no copy elsewhere is
-   recorded (2026-09-15).
+   lost. It is set in Portainer's stack 11 environment, on Astra, and a copy is kept off
+   Astra since 2026-09-20.
 7. Configure rclone remotes (`mega-a`, `mega-c`, `mega-d`) on the new Pulsar, and re-create
    the Backblaze S3 repository in Zerobyte with the B2 key (skip the latter with the
    database of step 6).

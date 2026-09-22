@@ -1,5 +1,8 @@
 # Decisions and completed work
 
+> Section numbers (§) refer to the [backup overview](backup/README.md); each numbered section there
+> is either in place or points to where it moved.
+
 Finished work and the decisions behind it, kept for the *why*. Open work lives in
 [todo.md](todo.md).
 
@@ -28,7 +31,7 @@ Finished work and the decisions behind it, kept for the *why*. Open work lives i
       which job 13 ships to Backblaze; first run by hand: 17/17, the copy matches the original
       (13 schedules, 6 repositories, 12 volumes)
 - [x] **Keep Zerobyte's `APP_SECRET` off Astra** (2026-09-20) — saved by Enoal outside Astra;
-      the database copy above is only usable with it (§9.3, step 5). It stays set in
+      the database copy above is only usable with it ([restore.md](backup/restore.md#93-scenario-c--total-loss-of-astra), step 6). It stays set in
       Portainer's stack 11 environment
 - [x] ~~Set up ntfy webhook in Zerobyte settings~~ — not wanted: Discord only (decided 2026-09-15)
 - [x] Create `/mnt/data/backups/dumps/` directory — created by the dump script on its first run
@@ -39,7 +42,7 @@ Finished work and the decisions behind it, kept for the *why*. Open work lives i
       2026-09-09 did not reproduce: the files are `root:www-data 640`, so any read without
       `sudo` fails — most likely the second half of a `sudo a; b` command.
 - [x] **Put the B2 key and Zerobyte's restic password somewhere off Astra** — both kept in
-      the official Bitwarden cloud, not the self-hosted Vaultwarden (§9.3); recorded 2026-09-12
+      the official Bitwarden cloud, not the self-hosted Vaultwarden ([restore.md](backup/restore.md#93-scenario-c--total-loss-of-astra)); recorded 2026-09-12
 
 ### Storage — reclaimed 2026-09-09
 

@@ -1,5 +1,8 @@
 # Database Dump Strategy
 
+> Section numbers (§) refer to the [backup overview](README.md); each numbered section there
+> is either in place or points to where it moved.
+
 Live databases cannot be safely copied at the file level while running — doing so risks backing up a partially-written, corrupt state. Instead, a dump script runs **before** Zerobyte jobs and writes cold, consistent export files to `/mnt/data/backups/dumps/`. Zerobyte then backs up this directory as part of the existing **Backups** job (13, 02:00). A dump is a copy, so its place is the Netac (§12, disk layout).
 
 > **In service since 2026-09-14.** First run by hand at 14:27 Paris: 16 dumps, 156 MB, 8 s,

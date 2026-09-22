@@ -1,5 +1,8 @@
 # Restoring the Obsidian notes (CouchDB)
 
+> Section numbers (§) refer to the [backup overview](../../docs/backup/README.md); each numbered section there
+> is either in place or points to where it moved.
+
 The course notes (Obsidian vault `~/Documents/Courses` on the laptop, also on the phone) sync
 through Self-hosted LiveSync and the CouchDB of `k3s/couchdb` (namespace `productivity`,
 `couchdb.enoal.fr`), in a single database, `courses`. Job 16 copies `/opt/k3s-data/couchdb/`

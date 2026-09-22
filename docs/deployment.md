@@ -24,8 +24,7 @@ This repository uses the **App-of-Apps** pattern: a single root application defi
 
 ### Helm migration
 
-Services remaining to migrate from raw manifests to Helm: `immich`, `n8n`, `scanopy`,
-`zerobyte`. Migrated services use this structure:
+Services remaining to migrate from raw manifests to Helm: `immich`, `n8n`, `scanopy`. Migrated services use this structure:
 
 ```text
 k3s/<service>/
@@ -109,8 +108,7 @@ from its web UI at `http://<server-ip>:9444`:
 
 ```bash
 cd docker/portainer && docker compose up -d
-# Then deploy via Portainer: npm, crowdsec, dozzle
-# (crafty is deployed manually for now)
+# Then add each docker/<stack> in Portainer as a Git stack (npm, crowdsec, crafty, …)
 ```
 
 Or deploy manually:
