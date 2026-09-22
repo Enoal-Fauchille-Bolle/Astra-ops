@@ -1345,7 +1345,7 @@ stays `700`.
 
 > **Beszel keeps one disk alert per machine, and it fires on the fullest disk.** The agent on
 > Astra only reports `/` until told otherwise; the drop-in
-> [`infra/astra/beszel-agent.service.d/extra-filesystems.conf`](../infra/astra/beszel-agent.service.d/extra-filesystems.conf)
+> [`infra/astra/beszel-agent.service.d/extra-filesystems.conf`](../../infra/astra/beszel-agent.service.d/extra-filesystems.conf)
 > adds `/mnt/pve/vault`. With `/` at 14 % and `vault` at 22 % (2026-09-21), the 75 % rule is
 > in practice a `vault` rule. The alert message names the machine, not the disk.
 

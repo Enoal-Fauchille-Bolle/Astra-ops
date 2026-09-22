@@ -1,6 +1,6 @@
 [Unit]
 Description=Dump the live databases of Pulsar for off-site backup
-Documentation=https://github.com/Enoal-Fauchille-Bolle/Astra-ops/blob/main/docs/BACKUP.md
+Documentation=https://github.com/Enoal-Fauchille-Bolle/Astra-ops/blob/main/docs/backup/README.md
 After=k3s.service docker.service
 
 [Service]

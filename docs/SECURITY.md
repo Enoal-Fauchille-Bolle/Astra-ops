@@ -3,7 +3,7 @@
 > Open work from the security audit of 2026-09-08, which rated each fix P1 (urgent) to P5.
 > P1 and P2 are done; what follows is P3 to P5 and the closing step. The audit report itself
 > stays outside this public repository. Backup and storage tasks live in
-> [`BACKUP.md` §12](BACKUP.md#12-pending-tasks--future-work).
+> [`backup/README.md` §12](backup/README.md#12-pending-tasks--future-work).
 >
 > Items are checked only where the state was verified on the machines, not where a commit
 > merely exists.
@@ -16,7 +16,7 @@ into control of Pulsar, with every app, database and backup on it.
 - [x] **Remove the classic Filebrowser, hide the backups from Quantum** (2026-09-14, `f6d4527`,
       `ca56a5a`) — both apps ran as root and mounted `/mnt/data/backups` whole, dumps and
       Proxmox configuration copy included, reachable from the Internet through `drive.enoal.fr`
-      ([`BACKUP.md` §6](BACKUP.md#6-database-dump-strategy))
+      ([`backup/README.md` §6](backup/README.md#6-database-dump-strategy))
 - [x] **Run Filebrowser Quantum as non-root** (2026-09-14, `c1b5a9e`) — uid 1000
 - [x] **Run SFTPGo as non-root** (2026-09-15, `e87b3b6`) — uid 1000; as root, its account could
       read and delete the dumps

@@ -2,7 +2,7 @@
 # Dumps the live databases of Pulsar into /mnt/data/backups/dumps/, where Zerobyte job 13
 # ("Backups") ships them off-site to Backblaze every night at 02:00.
 # Installed as /usr/local/sbin/dump-databases, triggered by dump-databases.timer.
-# Why it exists and how to restore from it: docs/BACKUP.md §6.
+# Why it exists and how to restore from it: docs/backup/README.md §6.
 #
 # Reports to an Uptime Kuma push monitor when PUSH_URL is set (by the service, from
 # /etc/default/dump-databases — the token stays out of this repository). The monitor alerts

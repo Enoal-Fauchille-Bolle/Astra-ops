@@ -131,7 +131,7 @@ graph LR
 > disk itself is excluded from PBS (`backup=0`): a copy on the same drive never survived its
 > failure. Its irreplaceable content goes off-site through Layer 2 instead. A single Netac
 > failure still loses every PBS snapshot; this is a deliberate trade-off, documented in
-> [`docs/BACKUP.md` §2.3](docs/BACKUP.md#23-accepted-constraints) and §4.2.
+> [`docs/backup/README.md` §2.3](docs/backup/README.md#23-accepted-constraints) and §4.2.
 >
 > Both M.2 slots are occupied — two free SATA ports are the only internal expansion path.
 > Sizes measured 2026-09-09.
@@ -176,7 +176,7 @@ astra-ops/
 │   └── portainer/           # Container management UI
 ├── infra/
 │   ├── astra/                    # Host-level files for the Proxmox node (installed by hand)
-│   │   ├── proxmox-config-backup.*   # Nightly Proxmox + PBS config copy (see docs/BACKUP.md §4.2)
+│   │   ├── proxmox-config-backup.*   # Nightly Proxmox + PBS config copy (see docs/backup/README.md §4.2)
 │   │   ├── disable-subscription-nag.sh   # Silences the "No valid subscription" popup
 │   │   └── 89no-subscription-nag         # apt hook: re-applies the patch after every dpkg run
 │   ├── argocd/
@@ -726,7 +726,7 @@ ssh astra "sudo install -o root -g root -m 755 /tmp/disable-subscription-nag.sh 
 > [!NOTE]
 > `proxmox-config-backup.{sh,service,timer}` (same directory) needs both Astra **and** Pulsar
 > set up — a receiving account, a dedicated SSH key pair, the script and its systemd timer.
-> See `docs/BACKUP.md` §4.2, *Reinstalling this mechanism from scratch*.
+> See `docs/backup/README.md` §4.2, *Reinstalling this mechanism from scratch*.
 
 ---
 

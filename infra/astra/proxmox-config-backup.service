@@ -1,6 +1,6 @@
 [Unit]
 Description=Copy the Proxmox VE and PBS configuration to Pulsar for off-site backup
-Documentation=https://github.com/Enoal-Fauchille-Bolle/Astra-ops/blob/main/docs/BACKUP.md
+Documentation=https://github.com/Enoal-Fauchille-Bolle/Astra-ops/blob/main/docs/backup/README.md
 Wants=network-online.target
 After=network-online.target pve-cluster.service
 
