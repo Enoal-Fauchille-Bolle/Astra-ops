@@ -62,10 +62,10 @@ graph LR
         HOT["/opt/k3s-data/ · /opt/docker-data/ — hot data"]
         DRIVE["/mnt/drive/ — personal files"]
     end
-    subgraph NVMe2["NVMe 2 — Netac 1 To (vault) — 22% used"]
-        COLD["/mnt/data/ — movies, Crafty archives, dumps — 72G · not in PBS"]
-        PBS["PBS datastore — 113G · guest backups"]
-        ISO["ISOs — 4.6G"]
+    subgraph NVMe2["NVMe 2 — Netac 1 To (LVM VG netac) — split 2026-09-22"]
+        COLD["LV thin (vault-thin, 620G) — /mnt/data cold disk — 76G real"]
+        PBS["LV pbs (300G) — /mnt/pbs-datastore — 131G real"]
+        ISO["LV files (32G, storage vault) — ISOs — 5.5G"]
     end
 ```
 
@@ -73,7 +73,10 @@ graph LR
 > 2026-09-11 the cold disk itself is excluded from PBS (`backup=0`): a copy on the same drive
 > never survived its failure. Its irreplaceable content goes off-site through Layer 2 instead.
 > A single Netac failure still loses every PBS snapshot; this is a deliberate trade-off,
-> documented in [`backup/README.md` §2.3](backup/README.md#23-accepted-constraints).
+> documented in [`backup/README.md` §2.3](backup/README.md#23-accepted-constraints). **Splitting
+> the Netac into LVM compartments (2026-09-22, below) does not change this**: the datastore and
+> the cold disk sit in separate logical volumes so neither can starve the other, but both still
+> live on the same physical drive — a Netac failure still takes both at once.
 
 ## Disks
 
@@ -84,14 +87,12 @@ Figures measured 2026-09-21 unless stated otherwise.
 | Disk              | Model in `lsblk`    | Mount                    | Role                                           |
 | ----------------- | ------------------- | ------------------------ | ---------------------------------------------- |
 | WD Blue SN580 1To | `WD Blue SN580 1TB` | `pve-root` + `local-lvm` | Proxmox OS + VM/LXC virtual disks (production) |
-| Netac 1To         | `G932E1Q 1T`        | `/mnt/pve/vault`         | Pulsar cold disk (qcow2) + PBS datastore       |
+| Netac 1To         | `G932E1Q 1T`        | VG `netac` (3 LVs, below) | Pulsar cold disk + PBS datastore + ISOs        |
 
 > **Kernel names are not stable — found 2026-09-13.** Linux names NVMe drives in the order
 > they answer at boot. Until then the WD Blue was `nvme0n1` and the Netac `nvme1n1`; on the
-> 2026-09-13 reboot they came up the other way round. Nothing broke: `vault` mounts by
-> filesystem UUID (`mnt-pve-vault.mount`,
-> `What=/dev/disk/by-uuid/78f0c026-a80f-4a58-be0c-36734be85c5a`), LVM finds `pve` by its own
-> UUIDs, and Beszel watches the path `/mnt/pve/vault`. This document therefore names drives
+> 2026-09-13 reboot they came up the other way round. Nothing broke: LVM finds `pve` and
+> `netac` by their own UUIDs regardless of kernel name. This document therefore names drives
 > by model. Before any command on a drive, check `lsblk -d -o NAME,MODEL` and address it as
 > `/dev/disk/by-id/nvme-<model>_…` or by UUID, never as `nvmeXn1`.
 
@@ -106,14 +107,19 @@ WD Blue SN580 (931G)
     ├── vm-102-disk-0     4G  → Wireguard
     └── vm-103-disk-0    16G  → PBS
 
-Netac (938G — "vault")     199G used (22 %), 730G free
-├── vm-100-disk-0.qcow2  501G declared, sparse  → Pulsar cold disk (= sdb)
-├── template/            4.6G  → ISOs
-└── pbs-datastore/       113G  → PBS backup chunks
+Netac (954G — VG `netac`, split 2026-09-22, method A of the disk plan)
+├── LV pbs          300G ext4   → /mnt/pbs-datastore (nofail in fstab)  131G real  → PBS backup chunks
+├── LV files          32G ext4   → /mnt/pve/vault (Proxmox storage `vault`)  5.5G real  → ISOs, templates
+├── LV thin (pool)   620G thin   → Proxmox storage `vault-thin`  ~500G real  → Pulsar cold disk (= sdb)
+│                                  (started at 520G; grown same-day, see incident below)
+└── unallocated      672M
 ```
 
-The `.qcow2` is _sparse_: space freed inside Pulsar returns to `vault` only once
-`fstrim` runs in the guest and QEMU punches the holes.
+The cold disk is a **raw LVM-thin volume** (not a `.qcow2` file): space freed inside Pulsar
+only returns to the `thin` pool once `fstrim` runs in the guest **and** the discard reaches
+the pool. This broke during the 2026-09-22 split — see the incident note in
+[`decisions.md`](decisions.md) — leaving the pool at ~80% real usage against ~15% real usage
+inside the guest until a proper reclaim (unmount, not just remount) is done.
 
 Both M.2 slots are populated; only **two unused SATA ports** remain, and the case has no
 room for a SATA drive.
@@ -125,7 +131,7 @@ Pulsar (VM 100) sees three virtual disks:
 | Disk                                           | Proxmox | Device | Mount        | Size | Role                                                             | In PBS                                                                                 |
 | ---------------------------------------------- | ------- | ------ | ------------ | ---- | ---------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
 | OS disk (`vm-100-disk-0` on `local-lvm`)       | `scsi0` | `sda`  | `/`          | 200G | OS, hot app data, K3s/Docker state                               | ✅                                                                                     |
-| Cold disk (`vm-100-disk-0.qcow2` on vault)     | `scsi1` | `sdb`  | `/mnt/data`  | 500G | Cold data: media, PVCs, Crafty volumes                           | ❌ `backup=0` since 2026-09-11, see [backup/README.md §4.2](backup/README.md#42-scope) |
+| Cold disk (`vm-100-disk-0` on `vault-thin`)     | `scsi1` | `sdb`  | `/mnt/data`  | 500G | Cold data: media, PVCs, Crafty volumes                           | ❌ `backup=0` since 2026-09-11, see [backup/README.md §4.2](backup/README.md#42-scope) |
 | Personal disk (`vm-100-disk-1` on `local-lvm`) | `scsi2` | `sdc`  | `/mnt/drive` | 64G  | Personal files, served by Filebrowser Quantum and SFTPGo (below) | ✅ since 2026-09-21                                                                    |
 
 ```txt
@@ -147,8 +153,8 @@ sdc (64G) → /mnt/drive          Personal files (since 2026-09-20)
 `/etc/fstab`: kernel names follow detection order and are not stable. It is thin: the 64G
 reserve nothing on the WD Blue, and `fstrim.timer` hands deleted blocks back to the pool.
 
-Usage: `sda` **115G / 195G (62 %)** · `sdb` **72G / 492G (16 %)** · `sdc` **5.7G / 63G
-(10 %)**.
+Usage: `sda` **115G / 195G (62 %)** · `sdb` **76G / 492G (15 %)** · `sdc` **5.7G / 63G
+(10 %)**. [2026-09-22]
 
 ### What lives where
 
@@ -184,7 +190,7 @@ Pulsar /opt/ (sda — hot)          sizes below measured 2026-09-09
   /var/lib/docker                     8.0G   (reconstructible)
   /swap.img 4.1G · /usr 3.6G · /var/log 2.7G
 
-Pulsar /mnt/data/ (sdb — cold)     72G used / 492G (16 %)   [2026-09-21]
+Pulsar /mnt/data/ (sdb — cold)     76G used / 492G (15 %)   [2026-09-22]
                                    not in PBS since backup=0, 2026-09-11 (§4.2)
 ├── media/
 │   ├── movies/            47G   (Tier 3 — 19 re-downloadable files, no backup),

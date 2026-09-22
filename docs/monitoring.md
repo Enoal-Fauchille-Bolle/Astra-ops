@@ -10,7 +10,7 @@
 | PBS jobs (GC, verify, prune) | PBS notifications, `default-matcher`                                                   | Email, **errors only**: SMTP target `resend` (configured 2026-09-09)                               |
 | Proxmox config copy          | Uptime Kuma push monitor (§4.2)                                                        | Discord (`APS #monitoring`): `down` pushed on failure, or no push for 25 h                         |
 | Database dumps               | Uptime Kuma push monitor **Database Dumps**, id 38 (§6)                                | Discord (`APS #monitoring`): `down` pushed on failure, naming the databases, or no push for 25 h   |
-| Disk usage — `vault`         | Beszel agent on Astra, drop-in below                                                   | Discord (`APS #monitoring`, Beszel webhook): above 75 %                                            |
+| Disk usage — `vault` + `pbs-datastore` | Beszel agent on Astra, drop-in below                                         | Discord (`APS #monitoring`, Beszel webhook): above 75 %                                            |
 | Disk usage — Pulsar sda      | Beszel agent on Pulsar                                                                 | Discord (Beszel): above 85 %                                                                       |
 | LXC 101 `adguard`            | Beszel agent in the container                                                          | Discord (Beszel): disk or memory above 80 %                                                        |
 | AdGuard DNS answers          | Uptime Kuma DNS monitor **AdGuard DNS**: resolves `beszel.lan` through `192.168.1.202` | Discord (`APS #monitoring`)                                                                        |
@@ -30,13 +30,20 @@
 > **Beszel keeps one disk alert per machine, and it fires on the fullest disk.** The agent on
 > Astra only reports `/` until told otherwise; the drop-in
 > [`infra/astra/beszel-agent.service.d/extra-filesystems.conf`](../infra/astra/beszel-agent.service.d/extra-filesystems.conf)
-> adds `/mnt/pve/vault`. With `/` at 14 % and `vault` at 22 % (2026-09-21), the 75 % rule is
-> in practice a `vault` rule. The alert message names the machine, not the disk.
+> adds `/mnt/pve/vault` and, since the 2026-09-22 Netac split,
+> `/mnt/pbs-datastore` (the PBS vault's new, separate mount). With `/` at 14 %, `vault` at 17 %
+> and `pbs-datastore` at 44 % (2026-09-22), the 75 % rule is in practice a `pbs-datastore` rule.
+> The alert message names the machine, not the disk.
 
-> **`local-lvm` has no alert, on purpose.** A thin pool has no file system, so Beszel cannot
-> see it, and its `Data%` counts every block ever written, not what the guests use. Measured
-> 2026-09-11: 378G provisioned on a 794G pool, `Data` 20 %, `Meta` 0.93 %. The pool cannot
-> fill while provisioning stays below its size; add an alert before it goes above.
+> **`local-lvm` and `vault-thin` have no alert, on purpose — and this already bit once.** A
+> thin pool has no file system, so Beszel cannot see it, and its `Data%` counts every block
+> ever written, not what the guests use. Measured 2026-09-11 on `local-lvm`: 378G provisioned
+> on a 794G pool, `Data` 20 %, `Meta` 0.93 %. The pool cannot fill while provisioning stays
+> below its size; add an alert before it goes above. **`vault-thin` (created 2026-09-22) is the
+> same story, minus the safety margin**: a same-day disk move filled it to 96 % real usage
+> (500G physically written for ~76G of real guest data — see `decisions.md`), invisible to
+> Beszel the whole time. It was grown to 620G by hand; nothing would have caught it filling
+> further on its own.
 
 > **The agents in LXC 101 and 103 log `lookup beszel.lan on 1.1.1.1:53: no such host`.** Not a
 > failure: both containers resolve through `1.1.1.1`, which does not know `beszel.lan`, so the

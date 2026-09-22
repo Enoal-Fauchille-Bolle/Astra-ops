@@ -75,9 +75,10 @@ graph TB
             LVM --> DISK3[vm-103-disk-0 16G — PBS]
         end
 
-        subgraph VAULT["Vault — Netac 1To"]
-            VAULT_IMAGES[vm-100-disk-0.qcow2 500G — Pulsar cold disk]
-            PBS_DS[PBS Datastore — 494G · 53% of vault]
+        subgraph VAULT["Netac 1To — VG netac, split 2026-09-22"]
+            VAULT_THIN[LV thin 620G — vault-thin storage — Pulsar cold disk]
+            PBS_DS[LV pbs 300G — /mnt/pbs-datastore — PBS Datastore, 131G real]
+            VAULT_FILES[LV files 32G — vault storage — ISOs]
         end
     end
 
@@ -237,7 +238,8 @@ PBS (LXC 103 on Astra) operates at the **block level**. It uses QEMU dirty bitma
 
 Data is hashed, deduplicated, and compressed with **ZSTD** on the fly before being written to the datastore. Backups are taken in **snapshot mode**: the hypervisor momentarily freezes VM/LXC state (RAM + filesystem), reads the data, then releases the snapshot. Services continue running with no downtime.
 
-Datastore location: `/mnt/pve/vault/` (Netac NVMe).
+Datastore location: `/mnt/pbs-datastore` (Netac NVMe, its own LVM volume since the
+2026-09-22 split — was `/mnt/pve/vault/pbs-datastore` before, see `decisions.md`).
 
 The container: Debian 13 (trixie) and PBS 4.2.5 since 2026-09-13 — upgraded from Debian 12 /
 PBS 3.4.9, which reached end of life in 2026-08. Unprivileged, `features: nesting=1` since
@@ -272,12 +274,16 @@ so the safety net before maintenance is `vzdump 103 --mode stop --storage local`
 | Wireguard | 102 | LXC  | ✅                                                                                                            |
 | PBS       | 103 | LXC  | ❌ Excluded by design                                                                                         |
 
-**Why Pulsar's cold disk is excluded (decided 2026-09-11).** `scsi1` is a `.qcow2` file on the
+**Why Pulsar's cold disk is excluded (decided 2026-09-11).** `scsi1` was a `.qcow2` file on the
 Netac, and PBS wrote its backup to a datastore on the same Netac. That copy never protected
 against the drive failing — only against accidental deletion, which Zerobyte already covers
 for every Tier 2 path on `/mnt/data` (§3.2). Meanwhile each new Crafty `.zip` was stored twice
 on the drive: once in the `.qcow2`, once as fresh PBS chunks (the datastore grew 26G in two
 days). What loses its only backup: movies (47G, re-downloadable) and Crafty logs.
+
+> Since the 2026-09-22 split, `scsi1` is a raw LVM-thin volume (`vault-thin`), not a `.qcow2`
+> file — but the reasoning is unchanged: it and the datastore still sit on the same physical
+> Netac drive, just in separate LVM volumes now instead of separate files on one filesystem.
 
 - VM backups cannot exclude directories. `vzdump`'s `exclude-path` applies to containers
   only; for a VM the unit of exclusion is a whole disk (`backup=<1|0>` on `scsi[n]`).
@@ -309,7 +315,8 @@ PBS (LXC 103) is intentionally excluded — but **not** for the reason previousl
 
 > **Correction, 2026-09-09.** This section used to claim that backing up the PBS container
 > would "create circular I/O dependencies". That is **false**. LXC 103 reaches its datastore
-> through a _bind mount_ (`mp0: /mnt/pve/vault/pbs-datastore,mp=/mnt/datastore`), and the
+> through a _bind mount_ (`mp0: /mnt/pbs-datastore,mp=/mnt/datastore` — was
+> `/mnt/pve/vault/pbs-datastore` before the 2026-09-22 split), and the
 > Proxmox VE documentation is explicit: _"The contents of bind mount points are not backed up
 > when using vzdump."_ The `backup=1` option exists only for **volume** mount points. A
 > `vzdump` of LXC 103 would therefore capture its 16 GB rootfs and nothing else — no recursion

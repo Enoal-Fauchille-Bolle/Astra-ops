@@ -83,6 +83,31 @@ full measurements and checks are in the git history of this file and of
   held the cold disk weighed 349 GiB together; the datastore went from 476G to 113G and the
   Netac from 62 % to 22 %. The history of Pulsar's system disk before 2026-09-12 went with
   them.
+- **2026-09-22 — Netac split into LVM compartments (method A of the disk plan).** One ext4
+  filesystem holding the PBS datastore, the Pulsar cold disk and the ISOs let any of them
+  starve the others. Everything was staged on the WD Blue, the Netac wiped and repartitioned
+  as VG `netac`: LV `pbs` (300G ext4, fixed, `/mnt/pbs-datastore`, `nofail` in `fstab`), LV
+  `files` (32G ext4, fixed, mounted at `/mnt/pve/vault` — kept that name and path so the
+  105–108 lab VMs' CD-ROM references needed no change — Proxmox storage `vault`, content
+  restricted to `iso,vztmpl,backup,snippets`), and a thin pool `thin` (Proxmox storage
+  `vault-thin`) for Pulsar's cold disk. Chunk size forced to 64 KiB (`lvcreate -c 64k`) to
+  match the existing `pve/data` pool — LVM's own default for a pool this size picked 512 KiB
+  and warned about slow zeroing. ~100G left unallocated as reserve.
+  Names, the 32G `files` size and leaving the lab-VM move as a separate decision were all
+  confirmed with Enoal before the irreversible step (wiping the Netac).
+  **Incident, same day:** moving the cold disk from its temporary WD copy into the new thin
+  pool (`qm disk move 100 scsi1 vault-thin`) physically wrote all 500G of the declared virtual
+  disk, not just the ~76G of real guest data — unlike the initial Netac→WD move, which had
+  correctly skipped empty regions from the source `.qcow2` file. This filled the pool to
+  96.15%. Two `fstrim` attempts inside Pulsar (including one after `mount -o remount`)
+  reclaimed only ~57 MiB combined — ext4 most likely still believes it already reported that
+  free space as trimmed from before the disk move, and a real unmount (not just a remount)
+  would probably be needed to force a full re-trim, which was not attempted same-day since it
+  would require briefly stopping Crafty, Zerobyte, Filebrowser Quantum and SFTPGo. Mitigated
+  by growing `thin` from 520G to 620G using nearly all of the ~100G reserve (`lvextend -L
+  +100G netac/thin`), bringing real usage down to ~80.65%. The ~400G of wasted space and the
+  now-exhausted reserve remain open — see [monitoring.md](monitoring.md) for why Beszel could
+  not have caught this on its own (thin pools have no file system to watch).
 
 ## PBS (LXC 103)
 
