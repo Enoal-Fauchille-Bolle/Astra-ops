@@ -176,7 +176,9 @@ astra-ops/
 │   └── portainer/           # Container management UI
 ├── infra/
 │   ├── astra/                    # Host-level files for the Proxmox node (installed by hand)
-│   │   └── proxmox-config-backup.*   # Nightly Proxmox + PBS config copy (see docs/BACKUP.md §4.2)
+│   │   ├── proxmox-config-backup.*   # Nightly Proxmox + PBS config copy (see docs/BACKUP.md §4.2)
+│   │   ├── disable-subscription-nag.sh   # Silences the "No valid subscription" popup
+│   │   └── 89no-subscription-nag         # apt hook: re-applies the patch after every dpkg run
 │   ├── argocd/
 │   │   ├── argocd-ingress.yaml   # ArgoCD Ingress
 │   │   └── root-app.yaml         # App-of-Apps bootstrap (apply once)
