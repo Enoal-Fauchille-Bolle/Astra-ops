@@ -766,6 +766,25 @@ Access NPM at `http://<server-ip>:81` and configure:
 - Let's Encrypt SSL certificates
 - Proxy hosts for each public service pointing to `192.168.1.201` (Traefik)
 
+### 7. Install host-level files on Astra
+
+`infra/astra/` is not deployed automatically by ArgoCD or Portainer — it must be copied to the
+Proxmox host by hand after any fresh install of Astra:
+
+```bash
+scp infra/astra/disable-subscription-nag.sh astra:/tmp/
+scp infra/astra/89no-subscription-nag astra:/tmp/
+ssh astra "sudo install -o root -g root -m 755 /tmp/disable-subscription-nag.sh /usr/local/sbin/disable-subscription-nag && \
+  sudo install -o root -g root -m 644 /tmp/89no-subscription-nag /etc/apt/apt.conf.d/89no-subscription-nag && \
+  rm /tmp/disable-subscription-nag.sh /tmp/89no-subscription-nag && \
+  sudo /usr/local/sbin/disable-subscription-nag"
+```
+
+> [!NOTE]
+> `proxmox-config-backup.{sh,service,timer}` (same directory, see `docs/BACKUP.md` §4.2) has
+> no such copy-paste procedure yet — its target account (`astra-configs` on Pulsar) and SSH
+> key were set up by hand and are not scripted. Ask before relying on it after a full rebuild.
+
 ---
 
 ## Remote access
