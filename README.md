@@ -242,7 +242,8 @@ astra-ops/
 | [Database dumps](docs/backup/database-dumps.md) | Nightly consistent dumps of every database |
 | [Proxmox config copy](docs/backup/proxmox-config-copy.md) | Nightly copy of the Proxmox and PBS configuration, and how to restore it |
 | [Restore runbooks](docs/backup/restore.md) | Restore scenarios and restore testing |
-| [Security](docs/SECURITY.md) | Hardening tasks |
+| [To do](docs/todo.md) | Open work: backups, storage, security hardening |
+| [Decisions](docs/decisions.md) | Finished work and the reasons behind it |
 | [Contributing](CONTRIBUTING.md) | Git hooks and commit convention |
 
 Some apps keep their own notes next to their files: [NPM](docker/npm/README.md),
