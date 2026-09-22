@@ -176,7 +176,7 @@ astra-ops/
 │   └── portainer/           # Container management UI
 ├── infra/
 │   ├── astra/                    # Host-level files for the Proxmox node (installed by hand)
-│   │   ├── proxmox-config-backup.*   # Nightly Proxmox + PBS config copy (see docs/backup/README.md §4.2)
+│   │   ├── proxmox-config-backup.*   # Nightly Proxmox + PBS config copy (see docs/backup/proxmox-config-copy.md)
 │   │   ├── disable-subscription-nag.sh   # Silences the "No valid subscription" popup
 │   │   └── 89no-subscription-nag         # apt hook: re-applies the patch after every dpkg run
 │   ├── argocd/
@@ -726,7 +726,7 @@ ssh astra "sudo install -o root -g root -m 755 /tmp/disable-subscription-nag.sh 
 > [!NOTE]
 > `proxmox-config-backup.{sh,service,timer}` (same directory) needs both Astra **and** Pulsar
 > set up — a receiving account, a dedicated SSH key pair, the script and its systemd timer.
-> See `docs/backup/README.md` §4.2, *Reinstalling this mechanism from scratch*.
+> See `docs/backup/proxmox-config-copy.md`, *Reinstalling this mechanism from scratch*.
 
 ---
 
