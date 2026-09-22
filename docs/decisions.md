@@ -260,6 +260,23 @@ hours, not by a mirror, so ZFS was ruled out.
       (2026-09-11). Bucket `astra-pulsar-backup`, 43.4 GiB, lifecycle
       `daysFromHidingToDeleting: 1`
 
+### How `drive` was filled (2026-09-20)
+
+`rsync -a` as root, which keeps the owner
+`1000:1000` that both apps need to write; then `rsync -anic` (compare every file's
+checksum, change nothing) returned no line on any pair, 216 files on each side. Not carried
+over on purpose: a 6-byte test file (`filebrowser/a/b`) and the empty mount points `Media/`
+and `Backups/OnePlus-10T/`. `lost+found` was removed from `/mnt/drive`: it showed among the
+personal folders and made Filebrowser Quantum log an error at start-up; `e2fsck` recreates
+it if a repair ever needs it.
+
+| Before (Netac) | After (`/mnt/drive`) |
+| --- | --- |
+| `/mnt/data/k3s-pvc/filebrowser/Documents` | `Documents/` |
+| `/mnt/data/media/photos` | `Photos/` |
+| `/mnt/data/backups/OnePlus-10T` | `Téléphone/` |
+| `/mnt/data/k3s-pvc/filebrowser/Backups/Nexus Backup` and `Snapchat` | `Archives/` |
+
 ## Security
 
 ### P3 — Apps with more privileges than they need

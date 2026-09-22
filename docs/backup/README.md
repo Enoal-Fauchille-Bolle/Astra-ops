@@ -117,125 +117,22 @@ graph TB
 
 ### 2.1 Astra — Proxmox Host
 
-| Disk              | Model in `lsblk`    | Mount                    | Role                                           |
-| ----------------- | ------------------- | ------------------------ | ---------------------------------------------- |
-| WD Blue SN580 1To | `WD Blue SN580 1TB` | `pve-root` + `local-lvm` | Proxmox OS + VM/LXC virtual disks (production) |
-| Netac 1To         | `G932E1Q 1T`        | `/mnt/pve/vault`         | Pulsar cold disk (qcow2) + PBS datastore       |
-
-> **Kernel names are not stable — found 2026-09-13.** Linux names NVMe drives in the order
-> they answer at boot. Until then the WD Blue was `nvme0n1` and the Netac `nvme1n1`; on the
-> 2026-09-13 reboot they came up the other way round. Nothing broke: `vault` mounts by
-> filesystem UUID (`mnt-pve-vault.mount`,
-> `What=/dev/disk/by-uuid/78f0c026-a80f-4a58-be0c-36734be85c5a`), LVM finds `pve` by its own
-> UUIDs, and Beszel watches the path `/mnt/pve/vault`. This document therefore names drives
-> by model. Before any command on a drive, check `lsblk -d -o NAME,MODEL` and address it as
-> `/dev/disk/by-id/nvme-<model>_…` or by UUID, never as `nvmeXn1`.
-
-```txt
-WD Blue SN580 (931G)
-├── pve-swap        8G
-├── pve-root       96G   → Proxmox OS (/etc/pve, /etc/proxmox-backup)
-└── pve-data      793G   → local-lvm pool
-    ├── vm-100-disk-0   200G  → Pulsar OS disk (= sda in Pulsar)
-    ├── vm-101-disk-0     8G  → AdGuard
-    ├── vm-102-disk-0     4G  → Wireguard
-    └── vm-103-disk-0    16G  → PBS (8G until 2026-09-13)
-
-Netac (938G — "vault")
-├── vm-100-disk-0.qcow2  501G declared / 79G allocated  → Pulsar cold disk (= sdb)
-├── template/            4.6G  → ISOs
-└── pbs-datastore/       494G  → PBS backup chunks — largest consumer of this disk
-```
-
-> **Remeasured 2026-09-11.** `vault`: **578G used (63 %)**, 351G free. A second `fstrim -av`
-> on Pulsar, after `/mnt/data/backups` was triaged, shrank the `.qcow2` from 106 571 083 776 to
-> **84 823 097 344 bytes** (−20.25 GiB). The datastore grew from 468G to 494G in two days:
-> Crafty archives on `sdb` were still being backed up by PBS (see §4.2). `pve-data` is at
-> **19.96 %**.
-
-> **Remeasured 2026-09-09.** `vault`: **560G used / 938G (61 %)**, 369G free. The
-> `vm-100-state-*.raw` entry listed here previously no longer exists. `pve-data` is at
-> **24.5 %** (194.5 / 793.8 GiB) with 370 GiB provisioned — 47 % over-commit, comfortable.
->
-> Note the `.qcow2` is *sparse*: 501G declared, **88G actually allocated** after the
-> 2026-09-09 `fstrim`. Before that trim it held 225G, of which ~137G was dead space left by
-> the deleted Kiwix library — freeing files inside a guest returns nothing to the host until
-> `fstrim` issues the TRIM and QEMU punches the holes.
+Moved to [`docs/infrastructure.md`](../infrastructure.md#astra--proxmox-host).
 
 ### 2.2 Pulsar — Main VM
 
-Pulsar (VM 100) sees three virtual disks:
-
-| Disk                                       | Proxmox | Device | Mount       | Size | Role                                   | In PBS |
-| ------------------------------------------ | ------- | ------ | ----------- | ---- | -------------------------------------- | ------ |
-| OS disk (`vm-100-disk-0` on `local-lvm`)   | `scsi0` | `sda`  | `/`         | 200G | OS, hot app data, K3s/Docker state     | ✅     |
-| Cold disk (`vm-100-disk-0.qcow2` on vault) | `scsi1` | `sdb`  | `/mnt/data` | 500G | Cold data: media, PVCs, Crafty volumes | ❌ `backup=0` since 2026-09-11, see §4.2 |
-| Personal disk (`vm-100-disk-1` on `local-lvm`) | `scsi2` | `sdc` | `/mnt/drive` | 64G | Personal files, served by Filebrowser Quantum and SFTPGo (§8.1) | ✅ since 2026-09-21 |
-
-```txt
-sda (200G) → /
-├── /opt/k3s-data/      Hot persistent data for K3s services
-├── /opt/docker-data/   Hot persistent data for Docker services
-└── /opt/ops/           GitOps repo (astra-ops — also on GitHub)
-
-sdb (500G) → /mnt/data
-├── /mnt/data/k3s-pvc/          Cold PVC data for K3s services
-├── /mnt/data/docker-volumes/   Cold volume data for Docker services
-├── /mnt/data/backups/          Database dumps and the Proxmox configuration copy
-└── /mnt/data/media/            Movies (replaceable)
-
-sdc (64G) → /mnt/drive          Personal files (since 2026-09-20)
-```
-
-`sdc` is mounted by UUID (`e6ec6a2d-878e-4843-a8de-f10c55e200e7`, label `drive`) in
-`/etc/fstab`: kernel names follow detection order and are not stable. It is thin: the 64G
-reserve nothing on the WD Blue, and `fstrim.timer` hands deleted blocks back to the pool.
-
-> **Disk usage (measured 2026-09-09):**
-> `sda`: **103G used / 195G (55 %)** — 85G free
-> `sdb`: **87G used / 492G (19 %)** — 380G free
->
-> Of `sdb`'s 87G, roughly **73G is reconstructible or derived** (47G of re-downloadable
-> movies, 26G of Crafty archives that are themselves backups). Only about **13G is
-> irreplaceable**.
->
-> **Remeasured 2026-09-11:** `sda` **107G / 195G (57 %)** · `sdb` **79G / 492G (17 %)**.
->
-> **Remeasured 2026-09-21**, after the personal files left `sdb`: `sda` **115G / 195G
-> (62 %)** · `sdb` **72G / 492G (16 %)** · `sdc` **5.7G / 63G (10 %)**.
+Moved to [`docs/infrastructure.md`](../infrastructure.md#pulsar--main-vm).
 
 ### 2.3 Accepted Constraints
 
 The Netac NVMe hosts both the Pulsar cold disk and the PBS datastore. This means Layer 1 backups and the associated production data reside on the same physical device. A single Netac failure would result in simultaneous loss of Pulsar's cold data AND its Layer 1 backups.
 
-This is a known, accepted constraint given the single-server hardware budget. Layer 2 (cloud) is the mitigation.
+This is a known, accepted constraint given the single-server hardware budget. Layer 2 (cloud) is the mitigation: every Tier 2 path on the Netac has an off-site copy since 2026-09-11, which is what made it acceptable to exclude `sdb` from PBS (§4.2).
 
-> **Revision 2026-09-09 — the mitigation is not fully in service.** Several Layer 2 items in
-> §12 remain unchecked, and three directories are bind-mounted into the Zerobyte container
-> without a corresponding volume declaration, so they are **never** backed up off-site:
-> `/mnt/data/backups`, `/mnt/data/media/photos` and `/opt/docker-data/portainer`. Until
-> those are declared, the argument that justifies accepting the co-location does not hold.
->
-> **Resolved 2026-09-11.** The three volumes were declared on 2026-09-10 and back up nightly to
-> Backblaze. The Crafty backup job, found to cover only one of the three servers, now covers
-> all three (§5.4). Every Tier 2 path on the Netac therefore has an off-site copy, which is
-> what made it acceptable to exclude `sdb` from PBS (§4.2).
->
-> **Since 2026-09-21 the Netac holds no personal file.** They moved to `drive`, on the WD Blue
-> (§8.1). What stays on the Netac is either a copy (Crafty archives, dumps, the Proxmox
-> configuration copy, the PBS datastore) or replaceable (movies, Crafty logs).
->
-> **Also revised 2026-09-09:** hardware expansion is more constrained than assumed. Both M.2
-> slots are populated (`lspci` shows two NVMe controllers, both occupied); only **two unused
-> SATA ports** remain (`ata1`/`ata2`, both `SATA link down`). A third NVMe is not an option.
->
-> **Measured the same day**, the Netac was at **79 % (194 GB free)** and growing at
-> **9.38 GiB/day**, projecting saturation around 30 September 2026. Two non-destructive
-> reclaims brought it to **61 % (369 GB free)**: `fstrim -av` on Pulsar returned **137 GB**
-> of dead space still allocated in the `.qcow2` after the Kiwix deletion, and
-> `tune2fs -m 1 /dev/nvme1n1p1` (the Netac's name that day, see §2.1) released **38 GB** of
-> ext4 root reserve that PBS — running as uid `100034` — could never use. The growth rate is unchanged; see
-> `~/.claude/exports/plan-stockage-astra-2026-09-09.md` for the remaining steps.
+Since 2026-09-21 the Netac holds no personal file. They moved to `drive`, on the WD Blue
+([infrastructure.md](../infrastructure.md#disks)). What stays on the Netac is either a copy
+(Crafty archives, dumps, the Proxmox configuration copy, the PBS datastore) or replaceable
+(movies, Crafty logs).
 
 ---
 
@@ -670,85 +567,7 @@ Moved to [`docs/secrets.md`](../secrets.md).
 
 ### 8.1 Current Layout
 
-```txt
-Pulsar /opt/ (sda — hot)          103G used / 195G (55 %)   [2026-09-09]
-├── k3s-data/                    → Backblaze, job 16, since 2026-09-13 (exclusions §5.4)
-│   ├── immich/            32G   ├── library/upload   29G   (Tier 2)
-│   │                            ├── library/thumbs  1.5G   (Tier 3, regenerable)
-│   │                            ├── model-cache     786M   (Tier 3, re-downloaded)
-│   │                            └── postgres        295M   (Tier 1)
-│   ├── uptimekuma/       231M
-│   ├── scanopy/           68M
-│   ├── docker-registry/   57M
-│   ├── n8n/               41M
-│   ├── criteri-fresque/   38M
-│   ├── vaultwarden/      6.7M
-│   ├── homer/            5.3M
-│   ├── filebrowser-quantum/ 896K · sftpgo/ 380K · ntfy/ 160K
-│   └── diun/ 536K · convertx/ 356K
-├── docker-data/                 → Backblaze, job 17, since 2026-09-13 (exclusions §5.4)
-│   ├── crafty/            17G   └── servers/ 17G (Tier 3) · config/ 169M (Tier 2)
-│   ├── portainer/         83M   (Tier 1)
-│   ├── crowdsec/          92M
-│   ├── npm/               20M
-│   └── portracker/        68K
-└── ops/                   11M   GitOps clone (also on GitHub)
-
-  Not application data, but the bulk of this disk:
-  /var/lib/rancher/k3s/.../containerd  25G   container images (reconstructible)
-  /var/lib/containerd                  13G   second image store (reconstructible)
-  /var/lib/docker                     8.0G   (reconstructible)
-  /swap.img 4.1G · /usr 3.6G · /var/log 2.7G
-
-Pulsar /mnt/data/ (sdb — cold)     72G used / 492G (16 %)   [2026-09-21]
-                                   not in PBS since backup=0, 2026-09-11 (§4.2)
-├── media/
-│   ├── movies/            47G   (Tier 3 — 19 re-downloadable files, no backup),
-│   │                            shown read-only in Filebrowser Quantum and SFTPGo
-│   └── photos/          empty   moved to /mnt/drive/Photos, emptied 2026-09-21
-├── docker-volumes/crafty/
-│   ├── backups/           26G   (Tier 2) → Backblaze since 2026-09-11, all 3 servers
-│   └── logs/             432M   (Tier 3, no backup)
-├── backups/              156M   (Tier 2) → Backblaze, job 13
-│   ├── dumps/            154M   nightly database dumps (§6)
-│   └── proxmox-configs/   70K   Astra + PBS configuration, refreshed nightly (§4.2)
-└── k3s-pvc/
-    ├── filebrowser/     empty   moved to /mnt/drive, emptied 2026-09-21
-    ├── crafty/            92K
-    └── kiwix/            empty  (136G deleted 2026-09-09)
-
-Pulsar /mnt/drive/ (sdc — personal) 5.7G used / 63G (10 %)  [2026-09-21]
-                                   in PBS with VM 100 (§4.2) → Backblaze, job 18
-├── Archives/             4.7G   Nexus Backup/ 3.9G, Snapchat/ 750M
-├── Photos/               946M   AstralRedshift/ 807M, Timelaps/ 139M
-├── Téléphone/            102M   DataBackup/ — the OnePlus 10T backup
-└── Documents/             15M
-```
-
-**How `drive` was filled (2026-09-20).** `rsync -a` as root, which keeps the owner
-`1000:1000` that both apps need to write (§12); then `rsync -anic` (compare every file's
-checksum, change nothing) returned no line on any pair, 216 files on each side. Not carried
-over on purpose: a 6-byte test file (`filebrowser/a/b`) and the empty mount points `Media/`
-and `Backups/OnePlus-10T/`. `lost+found` was removed from `/mnt/drive`: it showed among the
-personal folders and made Filebrowser Quantum log an error at start-up; `e2fsck` recreates
-it if a repair ever needs it.
-
-| Before (Netac) | After (`/mnt/drive`) |
-| --- | --- |
-| `/mnt/data/k3s-pvc/filebrowser/Documents` | `Documents/` |
-| `/mnt/data/media/photos` | `Photos/` |
-| `/mnt/data/backups/OnePlus-10T` | `Téléphone/` |
-| `/mnt/data/k3s-pvc/filebrowser/Backups/Nexus Backup` and `Snapchat` | `Archives/` |
-
-Both apps mount `/mnt/drive` read-write and `/mnt/data/media/movies` read-only (commit
-`c9e98e1`): Filebrowser Quantum at `/srv/drive` and `/srv/Films`, SFTPGo at `/data/drive` and
-`/data/Films`. The read-only flag is set on the Kubernetes mount, so no setting inside either
-app can make the movies writable. Neither app mounts anything under `/mnt/data/backups` any
-more. Quantum's list of sources lives outside this repository, in
-`/opt/k3s-data/filebrowser-quantum/config.yaml`, and is read only at start-up: change it
-**before** removing a mount, never after, or the app starts in error.
-
----
+Moved to [`docs/infrastructure.md`](../infrastructure.md#what-lives-where).
 
 ## 9. Restoration Runbooks
 
