@@ -781,9 +781,9 @@ ssh astra "sudo install -o root -g root -m 755 /tmp/disable-subscription-nag.sh 
 ```
 
 > [!NOTE]
-> `proxmox-config-backup.{sh,service,timer}` (same directory, see `docs/BACKUP.md` §4.2) has
-> no such copy-paste procedure yet — its target account (`astra-configs` on Pulsar) and SSH
-> key were set up by hand and are not scripted. Ask before relying on it after a full rebuild.
+> `proxmox-config-backup.{sh,service,timer}` (same directory) needs both Astra **and** Pulsar
+> set up — a receiving account, a dedicated SSH key pair, the script and its systemd timer.
+> See `docs/BACKUP.md` §4.2, *Reinstalling this mechanism from scratch*.
 
 ---
 

@@ -3,8 +3,8 @@
 > **Status:** Layer 1 operational. Layer 2 in service for every Tier 2 path on `/mnt/data`,
 > every app directory, the Proxmox configuration and, since 2026-09-14, the database dumps
 > (restore tested end to end on 2026-09-15) — see §12.
-> **Last updated:** 2026-09-15 (first nightly run of the database dumps and their end-to-end
-> restore test — §6, §9.6, §12)
+> **Last updated:** 2026-09-22 (documented how to reinstall the Proxmox config backup
+> mechanism from scratch, verified against the live setup — §4.2)
 > **Language:** English (technical reference)
 
 ---
@@ -477,6 +477,78 @@ outside this repository.
 
 **Failure behaviour.** Every step runs under `set -e` and the transfer comes last: if one step
 fails (integrity check, LXC 103 stopped…), nothing is sent and Pulsar keeps the last good copy.
+
+#### Reinstalling this mechanism from scratch
+
+Nothing here is deployed by ArgoCD or Portainer — after a fresh Astra or Pulsar (§9.3), both
+sides must be rebuilt by hand, in this order. Verified against the live setup on 2026-09-22.
+
+**1. On Pulsar — the receiving account.** Root-owned home and `.ssh`, so a compromised
+`rrsync` command cannot rewrite its own restriction:
+
+```bash
+sudo useradd --system --home-dir /var/lib/astra-configs --create-home --shell /usr/bin/dash astra-configs
+sudo chown root:root /var/lib/astra-configs
+sudo chmod 755 /var/lib/astra-configs
+sudo mkdir -p /var/lib/astra-configs/.ssh
+sudo chown root:root /var/lib/astra-configs/.ssh
+sudo chmod 755 /var/lib/astra-configs/.ssh
+sudo touch /var/lib/astra-configs/.ssh/authorized_keys
+sudo chown root:root /var/lib/astra-configs/.ssh/authorized_keys
+sudo chmod 644 /var/lib/astra-configs/.ssh/authorized_keys
+
+sudo install -d -o astra-configs -g astra-configs -m 700 /mnt/data/backups/proxmox-configs
+```
+
+`rrsync` ships inside the `rsync` package, already installed by default on Ubuntu Server —
+nothing extra to install for it.
+
+**2. On Astra — the key pair and pinned host key.**
+
+```bash
+sudo ssh-keygen -t ed25519 -f /root/.ssh/proxmox-config-backup_ed25519 \
+  -C "root@astra proxmox-config-backup" -N ""
+sudo ssh-keyscan -t ed25519 192.168.1.201 | sudo tee /root/.ssh/proxmox-config-backup_known_hosts
+```
+
+> [!CAUTION]
+> `ssh-keyscan` trusts whatever answers on the network the first time (TOFU). On a LAN this is
+> usually fine, but for real confidence compare its output against Pulsar's actual host key,
+> read directly on its console: `ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub`.
+
+**3. Authorize that key on Pulsar.** Append one line to
+`/var/lib/astra-configs/.ssh/authorized_keys` (still root-owned — edit it as root, not as
+`astra-configs`), pasting the public key just generated after `command="..."`. The full line,
+with its `restrict` and `rrsync -wo` restriction, is shown above under *Transport*.
+
+**4. On Astra — install the script and the timer**, from a clone of this repository:
+
+```bash
+sudo install -o root -g root -m 755 infra/astra/proxmox-config-backup.sh /usr/local/sbin/proxmox-config-backup
+sudo install -o root -g root -m 644 infra/astra/proxmox-config-backup.service /etc/systemd/system/proxmox-config-backup.service
+sudo install -o root -g root -m 644 infra/astra/proxmox-config-backup.timer /etc/systemd/system/proxmox-config-backup.timer
+```
+
+**5. Recreate the push URL**, from the **Proxmox Config Backup** monitor in Uptime Kuma
+(§10) — copy its push URL and keep only the part before `?`:
+
+```bash
+printf 'PUSH_URL=%s\n' '<push URL from the Uptime Kuma monitor>' | sudo tee /etc/default/proxmox-config-backup
+sudo chmod 600 /etc/default/proxmox-config-backup
+```
+
+**6. Enable and test:**
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable --now proxmox-config-backup.timer
+sudo systemctl start proxmox-config-backup.service   # first run, on demand
+journalctl -u proxmox-config-backup --no-pager -n 30
+```
+
+A successful run leaves the four folders (`pve/`, `pmxcfs/`, `pbs/`, `host/`) and
+`MANIFEST.txt` under `/mnt/data/backups/proxmox-configs/` on Pulsar (owned by
+`astra-configs`, `700`/`600`, as in §4.2) and turns the Kuma monitor green.
 
 ### 4.3 Retention Policy
 
@@ -1027,32 +1099,34 @@ Zerobyte (§5.4) through its restore directory (§9.6).
    in the **official Bitwarden cloud** — not in the self-hosted Vaultwarden, which runs on
    Astra and would be lost with it.
 4. Create Pulsar VM (Ubuntu Server), install K3s and Docker.
-5. Install Zerobyte (Docker Compose in `docker/zerobyte/`). To get its 13 jobs back instead of
+5. Reinstall the Proxmox config backup mechanism (§4.2, *Reinstalling this mechanism from
+   scratch*) so nightly copies of the new Proxmox configuration resume.
+6. Install Zerobyte (Docker Compose in `docker/zerobyte/`). To get its 13 jobs back instead of
    re-creating them, fetch `dumps/zerobyte.sqlite` from job 13's latest snapshot with the
    `restic` command line (B2 key and restic password as above) and put it at
    `/var/lib/zerobyte/data/zerobyte.db` before the first start. Zerobyte encrypts the secrets
    it stores with `APP_SECRET`: the new stack needs the **same** value, or those secrets are
    lost. It is set in Portainer's stack 11 environment, on Astra; no copy elsewhere is
    recorded (2026-09-15).
-6. Configure rclone remotes (`mega-a`, `mega-c`, `mega-d`) on the new Pulsar, and re-create
+7. Configure rclone remotes (`mega-a`, `mega-c`, `mega-d`) on the new Pulsar, and re-create
    the Backblaze S3 repository in Zerobyte with the B2 key (skip the latter with the
-   database of step 5).
-7. Restore Tier 2 data from Backblaze and MEGA via Zerobyte, through `/mnt/data/restore` (§9.6).
-8. Apply K3s secrets from the operator's computer:
+   database of step 6).
+8. Restore Tier 2 data from Backblaze and MEGA via Zerobyte, through `/mnt/data/restore` (§9.6).
+9. Apply K3s secrets from the operator's computer:
 
    ```bash
    kubectl apply -f ~/astra-secrets/<service>/secrets.yaml
    ```
 
-9. Bootstrap ArgoCD and the App-of-Apps:
+10. Bootstrap ArgoCD and the App-of-Apps:
 
-   ```bash
-   kubectl apply -f /opt/ops/infra/argocd/root-app.yaml
-   ```
+    ```bash
+    kubectl apply -f /opt/ops/infra/argocd/root-app.yaml
+    ```
 
-10. ArgoCD will deploy all K3s services automatically from GitHub.
-11. Restore Docker Compose stacks via Portainer.
-12. Validate all services via Uptime Kuma and Homer dashboard.
+11. ArgoCD will deploy all K3s services automatically from GitHub.
+12. Restore Docker Compose stacks via Portainer.
+13. Validate all services via Uptime Kuma and Homer dashboard.
 
 **Estimated time:** 1–3 days for full restoration.
 
