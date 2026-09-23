@@ -44,8 +44,8 @@ Open work only. Finished items move to [decisions.md](decisions.md).
       [decisions.md](decisions.md).
       **Consequence for the item below:** the ~100G reserve meant to become the future S3
       datastore's local cache was almost entirely spent same-day fixing that incident (~672M
-      left) — revisit the cache plan once the wasted thin-pool space is reclaimed, or plan to
-      shrink something else.
+      left). The wasted thin-pool space was reclaimed on 2026-09-23 (`thin` at 14.32%), but
+      that 100G stays inside the pool — the cache plan still needs space found elsewhere.
 - [ ] Later: a PBS 4 datastore on Backblaze (S3 backend) to restore whole VMs after losing
       Astra. It needs a 64–128 GiB local cache; support status and B2 compatibility unchecked
 

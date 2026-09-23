@@ -105,9 +105,18 @@ full measurements and checks are in the git history of this file and of
   would probably be needed to force a full re-trim, which was not attempted same-day since it
   would require briefly stopping Crafty, Zerobyte, Filebrowser Quantum and SFTPGo. Mitigated
   by growing `thin` from 520G to 620G using nearly all of the ~100G reserve (`lvextend -L
-+100G netac/thin`), bringing real usage down to ~80.65%. The ~400G of wasted space and the
-  now-exhausted reserve remain open — see [monitoring.md](monitoring.md) for why Beszel could
-  not have caught this on its own (thin pools have no file system to watch).
++100G netac/thin`), bringing real usage down to ~80.65%. See [monitoring.md](monitoring.md)
+  for why Beszel could not have caught this on its own (thin pools have no file system to
+  watch).
+  **Resolved 2026-09-23:** a real `umount /mnt/data` inside Pulsar was not enough — it
+  returned OK, but no `EXT4-fs (sdb)` unmount/mount appeared in the kernel log, because 276
+  processes still held the disk in their own mount namespaces, so ext4 kept its in-memory
+  "already trimmed" state (the next `fstrim` freed 3.1 GiB, and the pool did not move). The
+  live move had also left Proxmox's `zeroinit` QEMU filter on `drive-scsi1`. A full
+  `qm shutdown 100` + `qm start 100` from Astra cleared both; `fstrim -v /mnt/data` then
+  trimmed 411.3 GiB and `thin` dropped from 80.65% to 14.32%. After any future live
+  `qm disk move` onto a thin pool: stop/start the VM from Proxmox, then `fstrim`. The reserve
+  stays at ~672M — the 100G went into the pool.
 
 ## PBS (LXC 103)
 
