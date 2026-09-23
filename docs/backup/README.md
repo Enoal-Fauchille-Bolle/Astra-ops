@@ -12,6 +12,7 @@
 ## Table of Contents
 
 1. [Overview](#1-overview)
+   - [Nightly Timeline](#nightly-timeline)
 2. [Physical Infrastructure](#2-physical-infrastructure)
    - 2.1 [Astra — Proxmox Host](#21-astra--proxmox-host)
    - 2.2 [Pulsar — Main VM](#22-pulsar--main-vm)
@@ -23,7 +24,7 @@
    - 4.1 [Mechanism](#41-mechanism)
    - 4.2 [Scope](#42-scope)
    - 4.3 [Retention Policy](#43-retention-policy)
-   - 4.4 [Automated Schedule](#44-automated-schedule)
+   - 4.4 [PBS Schedule](#44-pbs-schedule)
    - 4.5 [RTO / RPO](#45-rto--rpo)
 5. [Layer 2 — Zerobyte + Rclone (Cloud)](#5-layer-2--zerobyte--rclone-cloud)
    - 5.1 [Mechanism](#51-mechanism)
@@ -109,6 +110,28 @@ graph TB
 | ----------- | -------------------------------------------- | ----- | ----------------------------------------------------------------- |
 | **Layer 1** | Proxmox Backup Server (LXC 103)              | Block | Fast local restore from logical corruption or accidental deletion |
 | **Layer 2** | Zerobyte + Rclone (Docker Compose on Pulsar) | File  | Offsite disaster recovery — survives total hardware loss          |
+
+### Nightly Timeline
+
+Everything that runs on its own at night, both layers together, in Europe/Paris time. Each
+section holds the details; this table only puts them in order.
+
+| Time           | What                                                                   | Layer   | Details                 |
+| -------------- | ---------------------------------------------------------------------- | ------- | ----------------------- |
+| 01:00 daily    | Database dumps written to `/mnt/data/backups/dumps/`                   | —       | [§6](database-dumps.md) |
+| 01:00 daily    | Zerobyte jobs 16 (K3s Data) and 17 (Docker Data) → Backblaze           | Layer 2 | §5.4                    |
+| 01:30 daily    | Proxmox configuration copied to `/mnt/data/backups/proxmox-configs/`   | —       | §4.2                    |
+| 02:00 daily    | Zerobyte jobs 8 (Immich Library), 13 (Backups), 18 (Drive) → Backblaze | Layer 2 | §5.4                    |
+| 03:00 daily    | PBS snapshots Pulsar, AdGuard, Wireguard                               | Layer 1 | §4.4                    |
+| 04:00 daily    | PBS prune                                                              | Layer 1 | §4.4                    |
+| 04:00 daily    | Crafty writes Roots SMP's archive                                      | —       | §5.4                    |
+| 05:00 Saturday | PBS verify                                                             | Layer 1 | §4.4                    |
+| 05:00 Sunday   | PBS garbage collection                                                 | Layer 1 | §4.4                    |
+| 06:00 daily    | Zerobyte job 15 (Crafty Backups) → Backblaze                           | Layer 2 | §5.4                    |
+
+The order matters twice: job 13 at 02:00 sends the dumps (01:00) and the Proxmox
+configuration (01:30) off-site, and job 15 waits for Crafty's 04:00 archive and for PBS to
+leave the Netac free.
 
 ---
 
@@ -351,9 +374,10 @@ Moved to [proxmox-config-copy.md](proxmox-config-copy.md).
 | Weekly      | 4 weeks     |
 | Monthly     | 6 months    |
 
-### 4.4 Automated Schedule
+### 4.4 PBS Schedule
 
-All jobs run nightly during low-activity periods:
+PBS jobs only. The whole night, Zerobyte included, is in the
+[Nightly Timeline](#nightly-timeline) of §1.
 
 | Time           | Job                | Description                                                        |
 | -------------- | ------------------ | ------------------------------------------------------------------ |
