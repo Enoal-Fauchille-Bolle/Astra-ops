@@ -222,8 +222,8 @@ Bulk data that is either reconstructible (Minecraft servers, Kiwix ZIM archives)
 > declared. A mount makes a path visible to Zerobyte; only a _schedule_ backs it up.
 >
 > **Growth driver, measured 2026-09-09, revised 2026-09-11:** Crafty produced **28.6 GiB/week**
-> of new `.zip` archives. By volume the largest producer was **Survie Gay** (~2.9 GiB/day),
-> not the daily Roots SMP (~1.5 GiB/day). Survie Gay and Nous Deux are no longer played; their
+> of new `.zip` archives. By volume the largest producer was **Survie 1.20.4** (~2.9 GiB/day),
+> not the daily Roots SMP (~1.5 GiB/day). Survie 1.20.4 and Nous Deux are no longer played; their
 > Crafty backup schedules were paused on 2026-09-11, leaving only Roots SMP's daily archive.
 
 ---
@@ -532,7 +532,7 @@ snapshots and was in `success`.
   7 archives, found one new Roots SMP archive and added **574,541,862 bytes (0.54 GiB)** to
   the repository in 14 s. The other archives are deduplicated.
 - **Why job 9 was replaced:** it was restricted by `include_paths` to Nous Deux
-  (`9ca997b5-…`), so **Survie Gay and Roots SMP had no off-site copy until 2026-09-11**. Crafty
+  (`9ca997b5-…`), so **Survie 1.20.4 and Roots SMP had no off-site copy until 2026-09-11**. Crafty
   names archive folders by server UUID, not by name — see the table in
   [`docker/crafty/README.md`](../../docker/crafty/README.md#servers).
 

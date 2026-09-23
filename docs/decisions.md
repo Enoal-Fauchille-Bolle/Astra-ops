@@ -31,7 +31,7 @@ full measurements and checks are in the git history of this file and of
   never survived its failure; the Tier 2 content goes to Backblaze instead. Accepted
   because every Tier 2 path on the Netac had an off-site copy by then.
 - **2026-09-11 — One Crafty job for all three servers (job 15).** Job 9 only covered Nous
-  Deux, so Survie Gay and Roots SMP had no off-site copy until then.
+  Deux, so Survie 1.20.4 and Roots SMP had no off-site copy until then.
 - **2026-09-11 — Nightly copy of the Proxmox configuration.** Nothing else kept `/etc/pve`
   or `/etc/proxmox-backup` off the host ([proxmox-config-copy.md](backup/proxmox-config-copy.md)).
 - **2026-09-13 — Whole app roots instead of per-app jobs.** Jobs 16 and 17 copy
@@ -73,7 +73,7 @@ full measurements and checks are in the git history of this file and of
 - **2026-09-09 — Space reclaimed on the Netac.** `fstrim -av` in Pulsar returned 137G of
   dead space left by the deleted Kiwix library; `tune2fs -m 1` released 38G of ext4 reserve
   that PBS could never use; AdGuard's query log went from 90 to 7 days.
-- **2026-09-11 — Crafty growth cut at the source.** Survie Gay and Nous Deux archive
+- **2026-09-11 — Crafty growth cut at the source.** Survie 1.20.4 and Nous Deux archive
   schedules paused (worlds no longer played); only Roots SMP archives daily.
 - **2026-09-13 — Data placed by value, not by service.** Irreplaceable data (databases,
   configs, photos, worlds) lives on the WD Blue with three copies: the disk, PBS, Backblaze.
