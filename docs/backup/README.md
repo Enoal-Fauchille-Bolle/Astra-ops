@@ -94,15 +94,13 @@ graph TB
 
     subgraph CLOUD["Cloud — Layer 2"]
         B2[Backblaze B2 — every app directory, Immich, Crafty backups, backups, photos]
-        MEGA_A[MEGA Account A — small configs, jobs disabled 2026-09-13]
-        MEGA_C[MEGA Account C — Filebrowser]
-        MEGA_D[MEGA Account D — idle since 2026-09-11]
+        MEGA_A[MEGA Account A — frozen since 2026-09-13, purge ~2027-03-23]
+        MEGA_C[MEGA Account C — frozen since 2026-09-20, purge ~2027-03-23]
+        MEGA_D[MEGA Account D — frozen since 2026-09-11, purge ~2027-03-23]
     end
 
     PBS_LXC[LXC 103 — PBS] -->|block-level snapshots| PBS_DS
-    PULSAR -->|file-level · Zerobyte S3| B2
-    PULSAR -->|file-level · Zerobyte + Rclone| MEGA_A
-    PULSAR -->|file-level · Zerobyte + Rclone| MEGA_C
+    PULSAR -->|file-level · Zerobyte S3, only active path| B2
 ```
 
 ### Layer Responsibilities
