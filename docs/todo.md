@@ -12,8 +12,11 @@ Open work only. Finished items move to [decisions.md](decisions.md).
 - [ ] **Fix Zerobyte → Discord notifications**: a message over ~5,970 characters loses its
       first 6,000 with HTTP 400 — Shoutrrr does not count the title against Discord's
       6,000-character embed cap (§10). Accepted as is for now (2026-09-12)
-- [ ] Revisit `Mega D` about 2026-12-15 — kept as is for three months (decided 2026-09-15):
-      job disabled, 7 dormant Nous Deux snapshots
+- [ ] **Purge `Mega A`, `Mega C` and `Mega D` — about 2027-03-23** (decided 2026-09-23,
+      six months out): remove the three repositories from Zerobyte and delete their
+      frozen snapshots on MEGA, then drop the now-unused per-app mounts from
+      `docker-compose.yml`. `Mega B` is a separate, already-settled case (kept forever,
+      see [decisions.md](decisions.md))
 
 ### Storage
 
@@ -21,13 +24,14 @@ Open work only. Finished items move to [decisions.md](decisions.md).
 
 ### Disk layout — decided 2026-09-13
 
-- [ ] Delete job 12 and its snapshots, remove `Mega A` from Zerobyte and drop the unused
-      per-app mounts from `docker-compose.yml` — **about 2026-12-13**, once jobs 16 and 17
-      hold three months of history (§5.4)
-- [ ] Once jobs 10 and 14 are no longer wanted: delete them and their snapshots, then drop
-      the `/data/filebrowser` and `/data/media/photos` mounts from `docker-compose.yml` and the
-      two empty host folders. Their snapshots hold the off-site history of the personal files
-      before 2026-09-21
+- [ ] Delete job 12 (Portainer, Backblaze) and its snapshots, then drop the unused mount
+      from `docker-compose.yml` — **about 2026-12-13**, once job 17 holds three months of
+      history covering the same path (§5.4). Unrelated to MEGA: job 12 was never on MEGA
+- [ ] Once job 14 (Photos, Backblaze) is no longer wanted: delete it and its snapshots,
+      then drop the `/data/media/photos` mount from `docker-compose.yml` and the empty host
+      folder. Its snapshots hold the off-site history of the photos before 2026-09-21.
+      Job 10 (Filebrowser, `Mega C`) is **not** part of this cleanup — it is handled by the
+      `Mega A`/`Mega C`/`Mega D` purge above instead
 - [ ] Bring Termix (`/opt/ops/docker/termix/data`, 15M) under the app roots — it is outside
       them and has no off-site copy. Not urgent (2026-09-15): Termix is a test, started by
       hand outside Portainer, no backup wanted yet. Dawarich's file volumes were on the same

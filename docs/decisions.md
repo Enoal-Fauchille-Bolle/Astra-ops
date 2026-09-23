@@ -60,6 +60,12 @@ full measurements and checks are in the git history of this file and of
   watcher holds its port. Compression saves 3.3G on the Netac.
 - **2026-09-15 — Passwords from the deleted Google export rotated.** The export survives in
   PBS snapshots of VM 100 for up to ~6 months.
+- **2026-09-23 — `Mega A`, `Mega C` and `Mega D` left as is, purge planned for
+  ~2027-03-23.** No migration of their frozen snapshots to Backblaze. Replaces the earlier
+  `todo.md` dates (removing `Mega A` about 2026-12-13, revisiting `Mega D` about
+  2026-12-15) with a single date six months out, tracked as an open item in
+  [todo.md](todo.md). Job 12's own cleanup stays open on its original date, it was never
+  on MEGA.
 - **Films are not backed up.** 47G, re-downloadable.
 
 ## Storage
