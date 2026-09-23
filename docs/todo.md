@@ -16,7 +16,9 @@ Open work only. Finished items move to [decisions.md](decisions.md).
       six months out): remove the three repositories from Zerobyte and delete their
       frozen snapshots on MEGA, then drop the now-unused per-app mounts from
       `docker-compose.yml`. `Mega B` is a separate, already-settled case (kept forever,
-      see [decisions.md](decisions.md))
+      see [decisions.md](decisions.md)). Once done, drop `mega-a`/`mega-c`/`mega-d` from
+      the rclone remotes step of the disaster-recovery runbook
+      ([restore.md](backup/restore.md), §9.3 step 7)
 
 ### Storage
 
@@ -63,15 +65,6 @@ Open work only. Finished items move to [decisions.md](decisions.md).
 - [ ] Write rclone sync script with versioned backup dir
 - [ ] Create systemd timer on the workstation (daily sync)
 - [ ] First restore test: decrypt and apply secrets on a clean machine
-
-### Long-term
-
-- [ ] Decide whether to migrate the remaining MEGA jobs to B2 — Mega A's four jobs moved to
-      jobs 16 and 17 on 2026-09-13; Mega C's job 10 (Filebrowser) was replaced by job 18 to
-      Backblaze on 2026-09-20 and is disabled, its snapshots frozen. What to do with Mega A
-      and Mega C themselves is still open
-- [ ] `Mega B` is **retired**: removed from Zerobyte on 2026-09-09, its 10 snapshots left
-      intact on MEGA, neither copied nor purged. Still readable with `restic --no-lock`.
 
 ## Security
 

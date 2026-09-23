@@ -3,8 +3,8 @@
 > **Status:** Layer 1 operational. Layer 2 in service for every Tier 2 path on `/mnt/data`,
 > every app directory, the Proxmox configuration and, since 2026-09-14, the database dumps
 > (restore tested end to end on 2026-09-15) — see §12.
-> **Last updated:** 2026-09-22 (documented how to reinstall the Proxmox config backup
-> mechanism from scratch, verified against the live setup — §4.2)
+> **Last updated:** 2026-09-23 (`Mega A`, `Mega C` and `Mega D` purge planned for
+> ~2027-03-23 instead of three separate 2026-12 dates — §5.2, §12)
 > **Language:** English (technical reference)
 
 ---
@@ -412,9 +412,9 @@ Two providers, with a clear split:
 | Zerobyte repository            | Backend         | Used (Zerobyte stats, 2026-09-11) | Snapshots | Holds                                                                                                                                                          |
 | ------------------------------ | --------------- | --------------------------------- | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Backblaze**                  | S3 (B2)         | **43.4 GiB** (~$0.28/month)       | 7         | Immich, Crafty backups, dumps and Proxmox configuration (job 13), every app directory since 2026-09-13 (jobs 16, 17), personal files since 2026-09-21 (job 18) |
-| **Mega A**                     | rclone `mega-a` | 113 MiB                           | 44        | Homer, Criteri'Fresque, Crafty config, Docker Registry — **jobs disabled 2026-09-13**, snapshots kept until about 2026-12-13                                   |
-| **Mega C**                     | rclone `mega-c` | 3.7 GiB                           | 11        | Filebrowser files                                                                                                                                              |
-| **Mega D**                     | rclone `mega-d` | 874 MiB                           | 7         | old Nous Deux snapshots only — its job was disabled on 2026-09-11, snapshots kept until about 2026-12-15                                                       |
+| **Mega A**                     | rclone `mega-a` | 113 MiB                           | 44        | Homer, Criteri'Fresque, Crafty config, Docker Registry — **jobs disabled 2026-09-13**, purge planned ~2027-03-23 (§12)                                         |
+| **Mega C**                     | rclone `mega-c` | 3.7 GiB                           | 11        | Filebrowser files — **job disabled 2026-09-20**, purge planned ~2027-03-23 (§12)                                                                               |
+| **Mega D**                     | rclone `mega-d` | 874 MiB                           | 7         | old Nous Deux snapshots only — its job was disabled on 2026-09-11, purge planned ~2027-03-23 (§12)                                                             |
 | Mega B                         | rclone `mega-b` | —                                 | 10        | **retired** 2026-09-09: removed from Zerobyte, left intact on MEGA, readable with `restic --no-lock`                                                           |
 | `test-backblaze`, `test-local` | —               | negligible                        | —         | test repositories                                                                                                                                              |
 
@@ -501,10 +501,12 @@ snapshots and was in `success`.
   script cannot export a database that is not running.
 - **Disabled jobs keep their snapshots, frozen.** Zerobyte runs retention right after each
   backup and only for that job's tag (`forget --group-by tags --tag <short_id>`), so a
-  disabled job's snapshots are never pruned. Kept until about **2026-12-13**, when job 16/17
-  has built its own three months of history; then delete job 12 and its snapshots, remove
-  `Mega A` from Zerobyte, and drop the per-app mounts from `docker-compose.yml` that no
-  volume uses any more.
+  disabled job's snapshots are never pruned. Job 12 (Backblaze, Portainer) gets deleted
+  about **2026-12-13**, once job 17 has built its own three months of history covering the
+  same path. `Mega A`, `Mega C` and `Mega D` are purged as a group instead, about
+  **2027-03-23** (decided 2026-09-23, six months out) — removed from Zerobyte, their
+  snapshots deleted on MEGA, and the per-app mounts dropped from `docker-compose.yml`.
+  `Mega B` is a separate, already-settled case: kept as is, no purge date (§12).
 - **Job 18 copies the personal disk whole** (created 2026-09-20, no exclusion, no include
   filter), for the same reason as jobs 16 and 17: a folder added to `drive` is covered
   without touching Zerobyte. Zerobyte sees the disk read-only at `/data/drive` (volume
