@@ -6,25 +6,16 @@ All `*@enoal.fr` addresses are caught by Cloudflare Email Routing and forwarded 
 personal Gmail inbox. No per-alias configuration is needed — the catch-all rule handles
 everything automatically.
 
-Here are some example aliases and their intended purposes:
+`@enoal.fr` aliases are reserved for this project's own infrastructure and for public
+contact info. Sign-ups on third-party services use anonymous DuckDuckGo Email Protection
+aliases instead, not `@enoal.fr`.
 
-| Alias               | Purpose                                      |
-| ------------------- | -------------------------------------------- |
-| `enoal@enoal.fr`    | Primary professional address (CV, LinkedIn)  |
-| `contact@enoal.fr`  | General contact, portfolio                   |
-| `admin@enoal.fr`    | Infrastructure accounts (OVH, Cloudflare...) |
-| `dev@enoal.fr`      | Developer accounts (GitHub, npm, forums)     |
-| `noreply@enoal.fr`  | Sender address for homelab services          |
-| `alerts@enoal.fr`   | Monitoring alerts (Uptime Kuma, SFTPGo...)   |
-| `discord@enoal.fr`  | Discord account — breach tracing             |
-| `github@enoal.fr`   | GitHub account — breach tracing              |
-| `epitech@enoal.fr`  | Epitech services — breach tracing            |
-| `shopping@enoal.fr` | E-commerce accounts — breach tracing         |
-
-> [!TIP]
-> Breach tracing: if spam arrives on a specific alias, the leaking service is immediately
-> identified. Compromised aliases can be silently dropped in Cloudflare Email Routing
-> without changing any account password or primary address.
+| Alias              | Purpose                                                                               |
+| ------------------ | ------------------------------------------------------------------------------------- |
+| `contact@enoal.fr` | General contact, portfolio, CV                                                        |
+| `noreply@enoal.fr` | Sender address for homelab services                                                   |
+| `alerts@enoal.fr`  | Monitoring alerts (Uptime Kuma, SFTPGo...)                                            |
+| `proxmox@enoal.fr` | Proxmox account — each infra account gets its own alias (e.g. `vaultwarden@enoal.fr`) |
 
 ## Email infrastructure
 
