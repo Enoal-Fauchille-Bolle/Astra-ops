@@ -17,8 +17,7 @@ service:
 ingress:
   enabled: true
   hosts:
-    - uptime.enoal.fr
-    - status.enoal.fr
+    - uptime.lan
   # Public probe: UptimeRobot reads one badge, the backup scripts on Astra and
   # Pulsar push their result. Traefik answers 404 on every other path.
   probe:
