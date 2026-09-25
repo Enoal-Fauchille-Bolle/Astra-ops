@@ -142,6 +142,13 @@ versions` prints the APT _candidate_, not the installed version: check with `dpk
 
 - **2026-09-11 — Alerts on `vault` at 75 %, on LXC 101 and on LXC 103**, through Beszel,
   plus a Kuma DNS monitor for AdGuard ([monitoring.md](monitoring.md)).
+- **2026-09-25 — Uptime Kuma reorganised and closed to the Internet**
+  ([monitoring.md](monitoring.md#uptime-kuma)). One group held all 30 monitors and two
+  outages each sent 25 alerts with nothing naming the cause: groups now follow what fails
+  together, with a `Core` group for what everything else depends on. The UI moved to
+  `uptime.lan`; only a badge and the push paths stay public, on `kuma-probe.enoal.fr`, so
+  UptimeRobot can still watch Kuma. A second, louder Discord channel was dropped: the phone
+  cannot treat two channels differently, and no alert may wake anyone at night.
 
 ## Security
 

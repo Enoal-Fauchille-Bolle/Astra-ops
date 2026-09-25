@@ -20,6 +20,8 @@ Live databases cannot be safely copied at the file level while running — doing
 | Alerting    | Uptime Kuma push monitor **Database Dumps** (id 38)                                         | `up` when all 17 succeed, `down` naming the failed ones, alert on Discord if no push for 25 h (§10) |
 
 The push URL lives in `/etc/default/dump-databases` (root, `600`), outside this repository.
+Its host is `https://kuma-probe.enoal.fr`, not the `http://uptime.lan` Kuma displays: Pulsar
+does not resolve `.lan` names ([monitoring.md](../monitoring.md#uptime-kuma)).
 
 **Who else can read the dumps.** Root, and any container running as root that mounts
 `/mnt/data/backups` — the `700`/`600` modes stop users, not root. Until 2026-09-14 both

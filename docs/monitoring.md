@@ -65,3 +65,52 @@
 > full error stays readable in the Zerobyte UI.
 
 > **No ntfy webhook, by decision (2026-09-15):** Zerobyte notifies Discord only.
+
+## Uptime Kuma
+
+Reorganised on 2026-09-25. The UI answers on `http://uptime.lan` only (LAN and VPN). The
+Ingress in [`k3s/uptimekuma/values.yaml`](../k3s/uptimekuma/values.yaml) keeps two paths
+public on `kuma-probe.enoal.fr`, and Traefik answers 404 on every other one:
+
+| Public path            | Used by                                                                    |
+| ---------------------- | -------------------------------------------------------------------------- |
+| `/api/badge/41/status` | UptimeRobot — monitor 41 is **Pulsar**, which must stay on the status page |
+| `/api/push/…`          | The push monitors: Proxmox config copy (Astra), database dumps (Pulsar)    |
+
+**Who watches Kuma: UptimeRobot**, free plan, one monitor **Uptime Kuma** on the badge URL,
+every 5 min, alerting on Discord. A `200` proves both that the house answers from the
+Internet and that Kuma runs. No keyword check, on purpose: looking for `Up` would also
+alert when Pulsar is down, twice with Kuma's own alert.
+
+**Groups follow what fails together**, not how things are installed:
+
+| Group       | Holds                                                                                                                         | Retries                                                              |
+| ----------- | ----------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| `Core`      | What the rest depends on: `Internet (outbound)` (ping `1.1.1.1`), `Pulsar` (ping), `Traefik` (port 9080), AdGuard, NPM, Astra | 1; `Internet (outbound)` 2                                           |
+| `Public`    | Everything reached through Cloudflare → NPM → Traefik                                                                         | 3: that path hiccups and all its monitors fell together              |
+| `LAN Tools` | The `.lan` apps                                                                                                               | 1                                                                    |
+| `Bots`      | AzerBot, Bot Enoal                                                                                                            | 1                                                                    |
+| `Backups`   | The two push monitors, Zerobyte, PBS                                                                                          | 0 on push monitors, where each retry waits another 25 h; 1 otherwise |
+
+**Tags answer three other questions**, and never repeat a group name:
+
+- the category of the [README catalogue](../README.md) (`Web`, `Media`, `Security`…), in colour;
+- the machine, `Astra` or `Pulsar`, in grey;
+- the install, `K3s`, `Docker` or `LXC`, in grey.
+
+> **A `.lan` monitor tests the browser's path: AdGuard, then NPM.** Every `.lan` name
+> resolves to `192.168.1.201`, where NPM listens. When AdGuard or NPM fails, all of them
+> fall; the `Core` monitors name the cause. Only n8n goes straight to Traefik
+> (`http://192.168.1.201:9080`, header `Host: n8n.enoal.fr`).
+
+> **One notification, `APS #monitoring`**, the default for new monitors, attached to every
+> monitor but to no group: a group's alert only repeated its child's. Kuma has no way,
+> found in its documentation, to silence children while their parent is down: a Pulsar
+> outage still sends about twenty messages, and the `Core` one says why.
+
+> **Push URLs must use `https://kuma-probe.enoal.fr`.** Kuma displays them on its base URL,
+> `http://uptime.lan`, which neither Astra (`1.1.1.1`) nor Pulsar resolves.
+
+> **The status page `astra`** (_Astra Homelab Status_, `http://uptime.lan/status/astra`)
+> mirrors the five groups, tags hidden. Two inactive manual maintenances, _Crafty
+> Maintenance_ and _Maintenance_, are kept for later use.

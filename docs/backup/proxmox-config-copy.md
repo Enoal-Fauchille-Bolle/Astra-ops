@@ -101,7 +101,9 @@ sudo install -o root -g root -m 644 infra/astra/proxmox-config-backup.timer /etc
 ```
 
 **5. Recreate the push URL**, from the **Proxmox Config Backup** monitor in Uptime Kuma
-(§10) — copy its push URL and keep only the part before `?`:
+(§10) — copy its push URL, keep only the part before `?`, and replace the `http://uptime.lan`
+host Kuma displays with `https://kuma-probe.enoal.fr`: Astra resolves through `1.1.1.1` and
+does not know `.lan` names ([monitoring.md](../monitoring.md#uptime-kuma)).
 
 ```bash
 printf 'PUSH_URL=%s\n' '<push URL from the Uptime Kuma monitor>' | sudo tee /etc/default/proxmox-config-backup
