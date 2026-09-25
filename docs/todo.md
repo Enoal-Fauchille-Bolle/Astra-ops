@@ -57,9 +57,9 @@ Open work only. Finished items move to [decisions.md](decisions.md).
 
 ### Phase 3 — Secrets sync
 
-- [ ] Record where the Infisical bootstrap values and the hand-applied `secrets.yaml` files
-      are kept off Astra. [secrets.md](secrets.md) says to fetch them from Vaultwarden, which
-      is lost with Astra (found 2026-09-22)
+Decided 2026-09-25: official Bitwarden only for now. Whether to add the automated copy below,
+possibly to Backblaze instead of Mega A, is to be decided later.
+
 - [ ] Configure `rclone crypt` on the workstation for a `mega-a-crypt` remote
 - [ ] Create `~/astra-secrets/` and consolidate all secrets
 - [ ] Write rclone sync script with versioned backup dir

@@ -14,6 +14,9 @@ full measurements and checks are in the git history of this file and of
 - **Keep off Astra what a restore of Astra needs.** The B2 key, Zerobyte's restic password
   and the Obsidian LiveSync secrets are in the official Bitwarden cloud, and Zerobyte's
   `APP_SECRET` is saved outside Astra too — Vaultwarden runs on Astra and goes down with it.
+  Since 2026-09-25 the same cloud also holds Infisical's bootstrap and service token, the
+  AppFlowy and Immich secrets, and the Homarr and Speedtest keys
+  ([secrets.md](secrets.md)).
 - **Address drives by model or UUID, never `nvmeXn1`.** The two NVMe drives swapped kernel
   names on the reboot of 2026-09-13.
 - **`backup_user@pbs` cannot delete backups, on purpose.** It only holds `DatastoreBackup`,

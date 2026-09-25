@@ -44,8 +44,10 @@ the `Secret` — no manual intervention required.
 ### Bootstrap after a K3s reinstall
 
 Infisical data persists on disk (`/opt/k3s-data/infisical/`). After a cluster reinstall,
-two manual `kubectl apply` are needed before ArgoCD can sync secrets — retrieve them from
-Vaultwarden if needed:
+two manual `kubectl apply` are needed before ArgoCD can sync secrets. Both filled files are
+kept in the **official Bitwarden cloud** (notes `Astra – Infisical bootstrap` and
+`Astra – Infisical service token`), not in Vaultwarden, which runs on Astra and would be lost
+with it:
 
 ```bash
 # Fill in values from infra/eso/infisical-bootstrap.example, then:
@@ -66,8 +68,9 @@ cp k3s/<service>/secrets.example.yaml k3s/<service>/secrets.yaml   # immich, sca
 kubectl apply -f k3s/<service>/secrets.yaml
 ```
 
-The filled files are gitignored. Where they are kept off Astra is not consolidated yet — see
-the _Secrets_ section of [todo.md](todo.md).
+The filled files are gitignored. Off Astra, the AppFlowy and Immich ones are in the official
+Bitwarden cloud (notes `Astra – AppFlowy secrets` and `Astra – Immich DB`). criteri-fresque's
+secrets have no copy off Astra, nor do those of the disabled ntfy and scanopy.
 
 ## Registry credentials
 
@@ -85,7 +88,9 @@ kubectl apply -f regcred.yaml
 Secrets for Docker Compose stacks are injected via Portainer's **Environment variables**
 UI — no `.env` file on disk, no repository changes required. Portainer stores them on
 Astra only: a value that must survive the loss of Astra needs a copy elsewhere (Zerobyte's
-`APP_SECRET`, for instance — [backup/restore.md](backup/restore.md), scenario C).
+`APP_SECRET`, for instance — [backup/restore.md](backup/restore.md), scenario C). Those
+copies are in the official Bitwarden cloud: Zerobyte's `APP_SECRET`, and the notes
+`Astra – Homarr` (`SECRET_ENCRYPTION_KEY`) and `Astra – Speedtest` (`APP_KEY`).
 
 ## gitignore patterns
 
