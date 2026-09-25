@@ -18,4 +18,18 @@ spec:
                 port:
                   number: {{ $.Values.service.port }}
     {{- end }}
+    {{- with .Values.ingress.probe }}
+    - host: {{ .host }}
+      http:
+        paths:
+          {{- range .paths }}
+          - path: {{ .path }}
+            pathType: {{ .pathType }}
+            backend:
+              service:
+                name: {{ $.Chart.Name }}-svc
+                port:
+                  number: {{ $.Values.service.port }}
+          {{- end }}
+    {{- end }}
 {{- end }}

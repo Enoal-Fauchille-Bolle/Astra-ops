@@ -19,6 +19,15 @@ ingress:
   hosts:
     - uptime.enoal.fr
     - status.enoal.fr
+  # Public probe: UptimeRobot reads one badge, the backup scripts on Astra and
+  # Pulsar push their result. Traefik answers 404 on every other path.
+  probe:
+    host: kuma-probe.enoal.fr
+    paths:
+      - path: /api/badge/41/status # monitor 41 = Pulsar
+        pathType: Exact
+      - path: /api/push/
+        pathType: Prefix
 
 dns:
   policy: None
