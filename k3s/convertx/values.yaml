@@ -29,6 +29,10 @@ env:
     value: "/tmp/.cache"
   - name: HTTP_ALLOWED
     value: "true"
+  - name: PUID
+    value: "1000"
+  - name: PGID
+    value: "1000"
 
 volumes:
   data:
