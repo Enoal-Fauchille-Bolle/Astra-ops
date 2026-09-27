@@ -1,0 +1,10 @@
+[Unit]
+Description=QEMU virtual RAPL helper
+Before=pve-guests.service
+
+[Service]
+ExecStart=/usr/bin/qemu-vmsr-helper --socket=/run/qemu-vmsr-helper.sock
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
