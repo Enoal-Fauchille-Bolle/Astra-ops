@@ -230,6 +230,7 @@ astra-ops/
 | [Secrets](docs/secrets.md)                                | External Secrets Operator + Infisical, registry credentials, gitignore patterns   |
 | [Email](docs/email.md)                                    | Aliases, Cloudflare Email Routing, Resend, SMTP for homelab services              |
 | [Monitoring](docs/monitoring.md)                          | What watches what, and where the alerts go                                        |
+| [VM template](docs/vm-template.md)                        | Debian 13 cloud-init template for lab VMs: clone, back up, rebuild                |
 | [Backups](docs/backup/README.md)                          | Backup strategy, data inventory, PBS and Zerobyte layers                          |
 | [Database dumps](docs/backup/database-dumps.md)           | Nightly consistent dumps of every database                                        |
 | [Proxmox config copy](docs/backup/proxmox-config-copy.md) | Nightly copy of the Proxmox and PBS configuration, and how to restore it          |
