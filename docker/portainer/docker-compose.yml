@@ -1,7 +1,7 @@
 services:
   portainer:
     container_name: portainer
-    image: portainer/portainer-ee:lts
+    image: portainer/portainer-ee:latest # The UI "Update now" button always recreates with :latest
     restart: always
     environment:
       - TRUSTED_ORIGINS=http://portainer.lan,https://portainer.lan
