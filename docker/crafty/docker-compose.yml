@@ -28,6 +28,8 @@ services:
       - /opt/docker-data/crafty/watcher/state:/data
       # Read the servers' own whitelist.json to decide who may wake them.
       - /opt/docker-data/crafty/servers:/servers:ro
+      # Log file, read by CrowdSec to ban clients the proxy rejects.
+      - /opt/docker-data/crafty/watcher/logs:/var/log/crafty-server-watcher
     environment:
       - CRAFTY_API_TOKEN=${CRAFTY_API_TOKEN}
     depends_on:

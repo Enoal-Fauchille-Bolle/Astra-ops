@@ -1,0 +1,8 @@
+# Crafty Server Watcher (fork) — its log file, bind-mounted read-only from
+# /opt/docker-data/crafty/watcher/logs (see docker/crowdsec/docker-compose.yml).
+filenames:
+  - /var/log/crafty-watcher/service.log
+# Watch the directory even before the watcher has created the file.
+force_inotify: true
+labels:
+  type: crafty-watcher

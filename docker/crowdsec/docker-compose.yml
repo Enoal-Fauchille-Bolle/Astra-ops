@@ -13,6 +13,8 @@ services:
       - /opt/docker-data/crowdsec/data:/var/lib/crowdsec/data
       # Mount NPM data directory to Crowdsec
       - /opt/docker-data/npm/data/logs:/var/log/npm:ro
+      # Crafty Server Watcher's log file, for the Minecraft scan scenario
+      - /opt/docker-data/crafty/watcher/logs:/var/log/crafty-watcher:ro
     ports:
       - "8080:8080"
     security_opt:

@@ -1,0 +1,15 @@
+# A single rejected packet is enough: the watcher only logs what no real
+# Minecraft client can send. "connection reset by peer" is excluded, since a
+# real client can hang up abruptly too.
+type: trigger
+name: enoal/crafty-watcher-malformed
+description: "Client sent the Minecraft proxy a packet no real client can send"
+filter: "evt.Meta.log_type == 'crafty_rejected' && evt.Parsed.reason != 'connection reset by peer'"
+groupby: evt.Meta.source_ip
+blackhole: 1m
+labels:
+  service: minecraft
+  confidence: 3
+  spoofable: 0
+  label: "Minecraft protocol scan"
+  remediation: true

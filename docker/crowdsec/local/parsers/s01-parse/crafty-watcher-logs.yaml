@@ -1,0 +1,19 @@
+# One line per client the watcher's proxy rejected, e.g.
+# 2026-10-01 08:52:54 WARNING [crafty_server_watcher.proxy_listener] Rejected client 203.0.113.7 on port 25500 (server 'survival'): Packet too large: 31862890361 bytes
+# Every other watcher line is left unparsed on purpose.
+filter: "evt.Parsed.program == 'crafty-watcher'"
+onsuccess: next_stage
+name: enoal/crafty-watcher-logs
+description: "Parse the clients rejected by Crafty Server Watcher's proxy"
+pattern_syntax:
+  CRAFTY_REJECTED: '^%{TIMESTAMP_ISO8601:timestamp} WARNING \[crafty_server_watcher\.proxy_listener\] Rejected client %{IP:source_ip} on port %{INT:port} \(server ''%{DATA:server}''\): %{GREEDYDATA:reason}$'
+grok:
+  name: CRAFTY_REJECTED
+  apply_on: message
+statics:
+  - meta: log_type
+    value: crafty_rejected
+  - meta: service
+    value: minecraft
+  - meta: source_ip
+    expression: evt.Parsed.source_ip
