@@ -60,6 +60,28 @@ docker restart crowdsec
 After editing one of these files on Pulsar, copy it back to `local/` and restart the
 container. `cscli explain --log "<line>" --type crafty-watcher` shows how a line is handled.
 
+## Web UI
+
+[CrowdSec Web UI](https://github.com/TheDuffman85/crowdsec-web-ui) (`web-ui` service) shows
+the alerts, the active and expired decisions, simulated ones included, and the metrics; it
+can add and remove bans. It answers on `crowdsec.lan` through NPM (port 3000, LAN only) and
+keeps its own login: the administrator account is created on the first visit.
+
+It reaches the LAPI as the machine `crowdsec-web-ui`, whose password is the Portainer
+variable `CROWDSEC_WEB_UI_PASSWORD`. To create or replace that account:
+
+```sh
+docker exec crowdsec cscli machines delete crowdsec-web-ui  # replacing only
+docker exec crowdsec cscli machines add crowdsec-web-ui --password '<password>' -f /dev/null
+```
+
+`-f /dev/null` keeps cscli from overwriting the container's own credentials file.
+
+Deleting alerts fails with `403 Forbidden`, on purpose: CrowdSec only allows it from the
+addresses in `api.server.trusted_ips`, still `127.0.0.1` and `::1` alone. Removing a ban
+works. Its cache, in `/opt/docker-data/crowdsec/web-ui`, keeps seven days of history and is
+backed up with the rest of the directory.
+
 ## What it does not block
 
 Traffic proxied by Cloudflare reaches Pulsar from Cloudflare's addresses, so the firewall

@@ -19,3 +19,22 @@ services:
       - "8080:8080"
     security_opt:
       - no-new-privileges:true
+
+  web-ui:
+    # Dashboard to browse alerts and add or remove bans, served as crowdsec.lan
+    image: ghcr.io/theduffman85/crowdsec-web-ui:2026.9.2
+    container_name: crowdsec_web_ui
+    restart: unless-stopped
+    environment:
+      CONFIG_INSTANCE_LAPI_URL: http://crowdsec:8080
+      CONFIG_INSTANCE_LAPI_AUTH_USERNAME: crowdsec-web-ui
+      CONFIG_INSTANCE_LAPI_AUTH_PASSWORD: ${CROWDSEC_WEB_UI_PASSWORD}
+      CONFIG_INSTANCE_METRICS_URL: http://crowdsec:6060/metrics
+      # Show the (simul)ban decisions of scenarios still in simulation
+      CONFIG_CROWDSEC_SIMULATIONS_ENABLED: "true"
+    volumes:
+      - /opt/docker-data/crowdsec/web-ui:/app/data
+    ports:
+      - "3000:3000"
+    depends_on:
+      - crowdsec
