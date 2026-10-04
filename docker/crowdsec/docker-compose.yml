@@ -38,3 +38,28 @@ services:
       - "3000:3000"
     depends_on:
       - crowdsec
+
+  cloudflare-sync:
+    # Copies CrowdSec's own bans into the Cloudflare list crowdsec_bans, which a WAF
+    # custom rule blocks: the firewall bans never see traffic proxied by Cloudflare
+    image: python:3.14.8-alpine3.24
+    container_name: crowdsec_cloudflare_sync
+    restart: unless-stopped
+    user: "65534:65534"
+    read_only: true
+    command: ["python", "-u", "/app/cloudflare_sync.py"]
+    environment:
+      PYTHONDONTWRITEBYTECODE: "1"
+      CROWDSEC_LAPI_URL: http://crowdsec:8080
+      CROWDSEC_BOUNCER_KEY: ${CROWDSEC_CLOUDFLARE_SYNC_KEY}
+      CLOUDFLARE_API_TOKEN: ${CLOUDFLARE_SYNC_TOKEN}
+      CLOUDFLARE_ACCOUNT_ID: ${CLOUDFLARE_ACCOUNT_ID}
+      CLOUDFLARE_LIST_NAME: crowdsec_bans
+      KUMA_PUSH_URL: ${CLOUDFLARE_SYNC_KUMA_PUSH_URL}
+    volumes:
+      # Copy of cloudflare-sync/cloudflare_sync.py in this repository
+      - /opt/docker-data/crowdsec/cloudflare-sync:/app:ro
+    security_opt:
+      - no-new-privileges:true
+    depends_on:
+      - crowdsec

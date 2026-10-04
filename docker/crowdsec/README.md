@@ -4,7 +4,8 @@ CrowdSec reads Nginx Proxy Manager's access logs (mounted read-only from
 `/opt/docker-data/npm/data/logs`) and the Crafty Server Watcher's log (see
 [Minecraft proxy scans](#minecraft-proxy-scans)), and decides which addresses to ban. The
 bans are applied by the **firewall bouncer**, installed on Pulsar itself, not in this
-repository.
+repository, and, for traffic proxied by Cloudflare, by a Cloudflare rule (see
+[Bans behind Cloudflare](#bans-behind-cloudflare)).
 
 CrowdSec's configuration lives on Pulsar in `/opt/docker-data/crowdsec/config`, mounted as
 `/etc/crowdsec`, and is backed up with the rest of `/opt/docker-data` (see
@@ -82,9 +83,48 @@ addresses in `api.server.trusted_ips`, still `127.0.0.1` and `::1` alone. Removi
 works. Its cache, in `/opt/docker-data/crowdsec/web-ui`, keeps seven days of history and is
 backed up with the rest of the directory.
 
-## What it does not block
+## Bans behind Cloudflare
 
 Traffic proxied by Cloudflare reaches Pulsar from Cloudflare's addresses, so the firewall
 bans only stop **direct** traffic (sites in DNS-only mode, such as `immich.enoal.fr`). On
-2026-09-15 that was 1 488 requests against 39 949 through Cloudflare. Blocking the rest is
-an open item in [`docs/todo.md`](../../docs/todo.md) (Security, P3).
+2026-09-15 that was 1 488 requests against 39 949 through Cloudflare.
+
+For the rest, the `cloudflare-sync` service runs
+[`cloudflare-sync/cloudflare_sync.py`](cloudflare-sync/cloudflare_sync.py) once a minute:
+it reads the active bans from the LAPI and, when they changed, replaces the content of the
+Cloudflare IP list `crowdsec_bans`. A WAF custom rule on `enoal.fr` blocks every address in
+that list before the request leaves Cloudflare. An expired ban leaves the list at the next
+pass.
+
+**Only CrowdSec's own bans are copied** (origins `crowdsec` and `cscli`), not the community
+list: its ~27 000 addresses do not fit in the free plan (one list, 10 000 items). Measured
+over 2026-09-16 → 2026-10-04, the community list would have stopped 1 754 of 1 207 055
+requests through NPM, 1 657 of them crawlers and 97 attack attempts. The firewall bouncer
+still applies the whole community list to direct traffic.
+
+| Piece              | Where                                                                                       |
+| ------------------ | ------------------------------------------------------------------------------------------- |
+| Script             | `/opt/docker-data/crowdsec/cloudflare-sync/cloudflare_sync.py` on Pulsar, copy here         |
+| CrowdSec access    | Bouncer `cloudflare-sync`, key in the Portainer variable `CROWDSEC_CLOUDFLARE_SYNC_KEY`     |
+| Cloudflare token   | `CLOUDFLARE_SYNC_TOKEN`: _Account Filter Lists: Edit_ only, limited to Pulsar's public IPv4 |
+| Cloudflare account | `CLOUDFLARE_ACCOUNT_ID`                                                                     |
+| List               | `crowdsec_bans`, type IP (account _Settings_ → _Lists_)                                     |
+| Rule               | _CrowdSec bans_ on `enoal.fr`: `(ip.src in $crowdsec_bans)` → _Block_                       |
+| Alerting           | Kuma push monitor _CrowdSec Cloudflare Sync_, URL in `CLOUDFLARE_SYNC_KUMA_PUSH_URL`        |
+
+The token can only edit lists, not rules: someone holding it could fill the list, never
+change what the rule does with it. The list and the rule were created by hand.
+
+**If the service stops, the list freezes**: expired bans stay blocked and new ones never
+arrive. The Kuma monitor catches it. To undo everything, disable the rule in Cloudflare
+first (instant), then remove the service.
+
+To create or replace the bouncer key:
+
+```sh
+docker exec crowdsec cscli bouncers delete cloudflare-sync  # replacing only
+docker exec crowdsec cscli bouncers add cloudflare-sync
+```
+
+The container's log (`docker logs crowdsec_cloudflare_sync`) has one line per change of the
+list and one per failure.
