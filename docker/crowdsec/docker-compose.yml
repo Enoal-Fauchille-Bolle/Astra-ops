@@ -52,6 +52,8 @@ services:
     command: ["python", "-u", "/app/cloudflare_sync.py"]
     environment:
       PYTHONDONTWRITEBYTECODE: "1"
+      # Log in Paris time, like the Web UI; Pulsar's own clock stays UTC
+      TZ: "Europe/Paris"
       CROWDSEC_LAPI_URL: http://crowdsec:8080
       CROWDSEC_BOUNCER_KEY: ${CROWDSEC_CLOUDFLARE_SYNC_KEY}
       CLOUDFLARE_API_TOKEN: ${CLOUDFLARE_SYNC_TOKEN}
