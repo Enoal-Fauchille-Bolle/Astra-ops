@@ -3,7 +3,7 @@
 ## Email aliases
 
 All `*@enoal.fr` addresses are caught by Cloudflare Email Routing and forwarded to the
-personal Gmail inbox. No per-alias configuration is needed — the catch-all rule handles
+personal Gmail inbox. No per-alias configuration is needed: the catch-all rule handles
 everything automatically.
 
 `@enoal.fr` aliases are reserved for this project's own infrastructure and for public
@@ -19,7 +19,7 @@ aliases instead, not `@enoal.fr`.
 
 ## Email infrastructure
 
-Self-hosting a mail server on a residential IP is not viable — ISPs block port 25 and
+Self-hosting a mail server on a residential IP is not viable: ISPs block port 25 and
 residential IPs are universally blacklisted. The stack instead relies on two external
 services that handle inbound and outbound mail separately, at zero cost.
 
@@ -46,7 +46,7 @@ flowchart LR
 [Cloudflare Email Routing](https://developers.cloudflare.com/email-routing/) intercepts
 all mail addressed to `@enoal.fr` and forwards it to Gmail. No infrastructure required.
 
-- **Catch-all rule**: active — any `*@enoal.fr` address works immediately without
+- **Catch-all rule**: active: any `*@enoal.fr` address works immediately without
   per-alias configuration
 - **MX records**: managed automatically by Cloudflare
 
@@ -56,7 +56,7 @@ all mail addressed to `@enoal.fr` and forwards it to Gmail. No infrastructure re
 sends from `@enoal.fr` via DKIM and routes them through AWS SES infrastructure, ensuring
 high deliverability.
 
-- **Free tier**: 3 000 emails/month, 100/day — sufficient for personal and homelab use
+- **Free tier**: 3 000 emails/month, 100/day, sufficient for personal and homelab use
 - **Domain**: `enoal.fr` verified via Cloudflare DomainConnect (one-time authorization)
 - **SMTP credentials**: `smtp.resend.com:587`, username `resend`, password = API key
 
@@ -95,7 +95,7 @@ one-time verification email (delivered via Cloudflare Email Routing).
 
 Vaultwarden and SFTPGo read their SMTP credentials (`SMTP_HOST`, `SMTP_PASSWORD`, etc.)
 from Kubernetes Secrets injected as environment variables. The values are stored in
-Infisical and synced into the cluster by ESO, through the `ExternalSecret` of each chart —
+Infisical and synced into the cluster by ESO, through the `ExternalSecret` of each chart, with
 no manual `kubectl apply` required after the initial bootstrap ([secrets.md](secrets.md)).
 The other services that send email (n8n, Immich, Uptime Kuma) have no SMTP setting in this
 repository.
