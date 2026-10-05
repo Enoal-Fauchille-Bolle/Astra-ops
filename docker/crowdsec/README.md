@@ -91,31 +91,42 @@ bans only stop **direct** traffic (sites in DNS-only mode, such as `immich.enoal
 
 For the rest, the `cloudflare-sync` service runs
 [`cloudflare-sync/cloudflare_sync.py`](cloudflare-sync/cloudflare_sync.py) once a minute:
-it reads the active bans from the LAPI and, when they changed, replaces the content of the
-Cloudflare IP list `crowdsec_bans`. A WAF custom rule on `enoal.fr` blocks every address in
-that list before the request leaves Cloudflare. An expired ban leaves the list at the next
-pass.
+it reads the active bans from the LAPI and, when they changed, writes them into the
+expression of the WAF custom rule _CrowdSec bans_ on `enoal.fr`, such as
+`(ip.src in {203.0.113.7 198.51.100.0/24})`. The rule blocks them before the request leaves
+Cloudflare. An expired ban leaves the rule at the next pass; with no ban at all, the
+expression holds `192.0.2.1`, an address reserved for documentation.
+
+**The script owns the expression**: an edit made by hand is overwritten at the next change.
+It only writes the expression, so the rule's action and whether it is enabled stay as set
+in the dashboard.
+
+**Why not a Cloudflare IP list**: the first version filled the list `crowdsec_bans`, which
+the rule referenced. From 2026-10-04 23:11, every write to the account's lists answered
+`429` with code `10040` ("you have been ratelimited"), from the dashboard too, still after
+eleven hours of tries spaced up to 30 minutes apart, and even on a list created the next
+morning. Cloudflare does not document that code; other accounts on its community forum
+report the same lock lasting days.
 
 **Only CrowdSec's own bans are copied** (origins `crowdsec` and `cscli`), not the community
-list: its ~27 000 addresses do not fit in the free plan (one list, 10 000 items). Measured
-over 2026-09-16 → 2026-10-04, the community list would have stopped 1 754 of 1 207 055
-requests through NPM, 1 657 of them crawlers and 97 attack attempts. The firewall bouncer
-still applies the whole community list to direct traffic.
+list: its ~27 000 addresses would never fit in an expression, limited to 4 096 characters
+(about 250 IPv4 addresses). Measured over 2026-09-16 → 2026-10-04, the community list would
+have stopped 1 754 of 1 207 055 requests through NPM, 1 657 of them crawlers and 97 attack
+attempts. The firewall bouncer still applies the whole community list to direct traffic.
 
-| Piece              | Where                                                                                       |
-| ------------------ | ------------------------------------------------------------------------------------------- |
-| Script             | `/opt/docker-data/crowdsec/cloudflare-sync/cloudflare_sync.py` on Pulsar, copy here         |
-| CrowdSec access    | Bouncer `cloudflare-sync`, key in the Portainer variable `CROWDSEC_CLOUDFLARE_SYNC_KEY`     |
-| Cloudflare token   | `CLOUDFLARE_SYNC_TOKEN`: _Account Filter Lists: Edit_ only, limited to Pulsar's public IPv4 |
-| Cloudflare account | `CLOUDFLARE_ACCOUNT_ID`                                                                     |
-| List               | `crowdsec_bans`, type IP (account _Settings_ → _Lists_)                                     |
-| Rule               | _CrowdSec bans_ on `enoal.fr`: `(ip.src in $crowdsec_bans)` → _Block_                       |
-| Alerting           | Kuma push monitor _CrowdSec Cloudflare Sync_, URL in `CLOUDFLARE_SYNC_KUMA_PUSH_URL`        |
+| Piece            | Where                                                                                    |
+| ---------------- | ---------------------------------------------------------------------------------------- |
+| Script           | `/opt/docker-data/crowdsec/cloudflare-sync/cloudflare_sync.py` on Pulsar, copy here      |
+| CrowdSec access  | Bouncer `cloudflare-sync`, key in the Portainer variable `CROWDSEC_CLOUDFLARE_SYNC_KEY`  |
+| Cloudflare token | `CLOUDFLARE_SYNC_TOKEN`: _Zone WAF: Edit_ on `enoal.fr`, limited to Pulsar's public IPv4 |
+| Cloudflare zone  | `CLOUDFLARE_ZONE_ID`, the zone ID of `enoal.fr`                                          |
+| Rule             | _CrowdSec bans_ on `enoal.fr`, action _Block_, found by that name                        |
+| Alerting         | Kuma push monitor _CrowdSec Cloudflare Sync_, URL in `CLOUDFLARE_SYNC_KUMA_PUSH_URL`     |
 
-The token can only edit lists, not rules: someone holding it could fill the list, never
-change what the rule does with it. The list and the rule were created by hand.
+The token can edit every WAF rule of `enoal.fr`, but only from Pulsar's address. The rule
+was created by hand.
 
-**If the service stops, the list freezes**: expired bans stay blocked and new ones never
+**If the service stops, the rule freezes**: expired bans stay blocked and new ones never
 arrive. The Kuma monitor catches it. To undo everything, disable the rule in Cloudflare
 first (instant), then remove the service.
 
@@ -127,4 +138,4 @@ docker exec crowdsec cscli bouncers add cloudflare-sync
 ```
 
 The container's log (`docker logs crowdsec_cloudflare_sync`) has one line per change of the
-list and one per failure.
+rule and one per failure.

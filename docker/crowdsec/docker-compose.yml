@@ -40,8 +40,8 @@ services:
       - crowdsec
 
   cloudflare-sync:
-    # Copies CrowdSec's own bans into the Cloudflare list crowdsec_bans, which a WAF
-    # custom rule blocks: the firewall bans never see traffic proxied by Cloudflare
+    # Copies CrowdSec's own bans into the WAF custom rule "CrowdSec bans" on enoal.fr:
+    # the firewall bans never see traffic proxied by Cloudflare
     image: python:3.14.8-alpine3.24
     container_name: crowdsec_cloudflare_sync
     restart: unless-stopped
@@ -57,8 +57,8 @@ services:
       CROWDSEC_LAPI_URL: http://crowdsec:8080
       CROWDSEC_BOUNCER_KEY: ${CROWDSEC_CLOUDFLARE_SYNC_KEY}
       CLOUDFLARE_API_TOKEN: ${CLOUDFLARE_SYNC_TOKEN}
-      CLOUDFLARE_ACCOUNT_ID: ${CLOUDFLARE_ACCOUNT_ID}
-      CLOUDFLARE_LIST_NAME: crowdsec_bans
+      CLOUDFLARE_ZONE_ID: ${CLOUDFLARE_ZONE_ID}
+      CLOUDFLARE_RULE_NAME: CrowdSec bans
       KUMA_PUSH_URL: ${CLOUDFLARE_SYNC_KUMA_PUSH_URL}
     volumes:
       # Copy of cloudflare-sync/cloudflare_sync.py in this repository
