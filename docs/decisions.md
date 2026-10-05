@@ -102,8 +102,6 @@ full measurements and checks are in the git history of this file and of
   `vault-thin`) for Pulsar's cold disk. Chunk size forced to 64 KiB (`lvcreate -c 64k`) to
   match the existing `pve/data` pool — LVM's own default for a pool this size picked 512 KiB
   and warned about slow zeroing. ~100G left unallocated as reserve.
-  Names, the 32G `files` size and leaving the lab-VM move as a separate decision were all
-  confirmed with Enoal before the irreversible step (wiping the Netac).
   **Incident, same day:** moving the cold disk from its temporary WD copy into the new thin
   pool (`qm disk move 100 scsi1 vault-thin`) physically wrote all 500G of the declared virtual
   disk, not just the ~76G of real guest data — unlike the initial Netac→WD move, which had
