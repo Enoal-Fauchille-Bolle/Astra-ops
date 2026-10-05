@@ -11,7 +11,7 @@
 
 1. Access PBS web UI at `pbs.enoal.fr` (or directly at the LXC IP).
 2. Navigate to the relevant datastore → find the most recent healthy snapshot of Pulsar (VM 100).
-3. If restoring the entire VM: Proxmox UI → VM 100 → Backups → Restore — **to a new VMID**.
+3. If restoring the entire VM: Proxmox UI → VM 100 → Backups → Restore, **to a new VMID**.
    Snapshots taken after `backup=0` do not contain `scsi1`, and the documentation does not say
    what an in-place restore does to an excluded disk (§4.2).
 4. If restoring individual files: use `proxmox-backup-client` to mount the snapshot and extract specific paths.
@@ -47,14 +47,14 @@ Zerobyte (§5.4) through its restore directory (§9.6).
 
 **What survives:**
 
-- Pulsar OS disk (`sda`, on the WD Blue) — `/opt/k3s-data/`, `/opt/docker-data/`, running services
+- Pulsar OS disk (`sda`, on the WD Blue): `/opt/k3s-data/`, `/opt/docker-data/`, running services
 - Layer 2 cloud backups (Backblaze B2, MEGA)
 
 **Recovery steps:**
 
 1. Replace Netac NVMe with a new drive.
 2. In Proxmox, create a new storage pool on the new drive (e.g., `vault`).
-3. Create a new PBS LXC (ID 103) and point it to the new datastore — no historical backups, but PBS is operational again.
+3. Create a new PBS LXC (ID 103) and point it to the new datastore: no historical backups, but PBS is operational again.
    Restore its configuration (users, retention, verify job, notifications) from the Proxmox config copy (§9.4).
 4. Add the new drive as a second disk to Pulsar (Proxmox UI → VM 100 → Hardware → Add → Hard Disk).
 5. Inside Pulsar, format and mount the new disk at `/mnt/data`.
@@ -79,17 +79,17 @@ Zerobyte (§5.4) through its restore directory (§9.6).
 
 **What survives:**
 
-- Layer 2 cloud backups (Backblaze B2, MEGA) — all Tier 2 data
-- The `astra-ops` GitOps repository (GitHub) — all manifests, Helm charts, configurations
+- Layer 2 cloud backups (Backblaze B2, MEGA): all Tier 2 data
+- The `astra-ops` GitOps repository (GitHub): all manifests, Helm charts, configurations
 - The secrets kept off Astra ([secrets.md](../secrets.md))
 
 **Recovery steps:**
 
 1. Provision a new server (or reinstall on repaired hardware).
-2. Install Proxmox VE — the version recorded in the config copy's `MANIFEST.txt`.
+2. Install Proxmox VE, the version recorded in the config copy's `MANIFEST.txt`.
 3. Recreate the VM/LXC structure from the Proxmox config copy (§9.4). That copy sits in
    Backblaze, and opening it takes the B2 key and Zerobyte's restic password. Both are kept
-   in the **official Bitwarden cloud** — not in the self-hosted Vaultwarden, which runs on
+   in the **official Bitwarden cloud**, not in the self-hosted Vaultwarden, which runs on
    Astra and would be lost with it.
 4. Create Pulsar VM (Ubuntu Server), install K3s and Docker.
 5. Reinstall the Proxmox config backup mechanism
@@ -136,7 +136,7 @@ Moved to [`k3s/couchdb/README.md`](../../k3s/couchdb/README.md).
 ## 9.6 Restoring files with Zerobyte
 
 Every data mount of the Zerobyte container is read-only, so a backup can never damage its
-source — and Zerobyte cannot restore to the _original location_ either. Since 2026-09-14 it
+source, and Zerobyte cannot restore to the _original location_ either. Since 2026-09-14 it
 has one writable directory for that: `/mnt/data/restore` on Pulsar (root, `700`), mounted at
 **`/restore`** in the container. Restore there, check, then copy into place by hand.
 
@@ -153,7 +153,7 @@ has one writable directory for that: `/mnt/data/restore` on Pulsar (root, `700`)
    modification times are kept (uid `1000` for Quantum and SFTPGo, root for the rest), so no
    `chown` is needed after the copy.
 5. Empty the directory afterwards: `sudo find /mnt/data/restore -mindepth 1 -delete`. A plain
-   `sudo rm -rf /mnt/data/restore/*` removes nothing — the `*` is expanded by the user's shell,
+   `sudo rm -rf /mnt/data/restore/*` removes nothing: the `*` is expanded by the user's shell,
    which cannot read a root-only directory.
 
 Where it lives, and why: on the Netac with the data it usually restores (a move into
