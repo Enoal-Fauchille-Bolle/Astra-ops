@@ -3,7 +3,7 @@
 VM 9000 `debian13-template` on Astra is a Debian 13 template for lab VMs (energy measurement,
 bit-flip tests on a local LLM, and whatever comes next). It is built from Debian's official
 **cloud image**, not from the installer ISO, and gets its identity from **cloud-init** at the
-first boot of each clone. Built 2026-09-27.
+first boot of each clone.
 
 ## What the template holds, and what it leaves out
 
@@ -23,9 +23,10 @@ Left to each clone, because it depends on the use:
 
 - CPU type `host`: exposes AVX2 (Ollama) and the Intel model the guest's RAPL driver needs.
 - Memory, cores, and core pinning if needed (P-cores are host CPUs 0-7, E-cores 8-15).
-  Clones keep the ballooning device with **minimum = memory**: the guest never loses RAM, and
-  Proxmox still gets the guest's real usage through it (`balloon: 0` shows the QEMU process's
-  host memory instead, cache included: 805 MiB for a guest using 311 MiB).
+  Measurement VMs keep the ballooning device with **minimum = memory**: the guest never loses
+  RAM, and Proxmox still gets the guest's real usage through it (`balloon: 0` shows the QEMU
+  process's host memory instead, cache included: about 800 MiB for a guest using about
+  300 MiB). Other clones may use a lower minimum.
 - Applications (Ollama…) and the virtual RAPL `args:` line.
 
 Proxmox's cloud-init setting `ciupgrade` is left at its default: each clone installs pending
@@ -42,7 +43,7 @@ still writes the deprecated `user:` key; the warning is harmless.
    on the template's disk, which then can no longer be removed).
 3. On the clone → **Cloud-Init** → **IP Config (net0)** → `192.168.1.<n>/24`, gateway
    `192.168.1.254`. Then **Hardware** → **Processors** → Type `host` (not `kvm64`, which hides
-   even AVX), and **Memory** → Advanced → _Minimum memory_ = _Memory_.
+   even AVX), and for a measurement VM **Memory** → Advanced → _Minimum memory_ = _Memory_.
 4. Start it. About 30 s later: `ssh enoal@192.168.1.<n>`.
 
 Command-line equivalent on Astra (`qm` needs `sudo` for user `enoal`):
@@ -69,10 +70,10 @@ of its vCPU threads. The guest sees an ordinary `/sys/class/powercap/intel-rapl:
 
 - Package domain only (no DRAM, no cores), Intel hosts only.
 - The guest needs CPU type `host`, or its `intel_rapl_msr` driver does not recognise the CPU.
-- A **share**, not a meter. Measured 2026-09-27 on VM 110, 10 s each: idle 0.01 W in the
-  guest (Astra 30 W); 4 busy vCPUs 11.7 W in the guest while Astra rose from 30 to 60 W. Fine
-  to compare runs with each other; for absolute watts read Astra's own counter alongside, with
-  the other lab VMs off.
+- The guest reads a **share** of the host's package energy. Measured on VM 110, 10 s each:
+  idle 0.01 W in the guest (Astra 30 W); 4 busy vCPUs 11.7 W in the guest while Astra rose
+  from 30 to 60 W. Fine to compare runs with each other; for absolute watts read Astra's own
+  counter alongside, with the other lab VMs off.
 
 Setup, on Astra:
 
@@ -95,9 +96,9 @@ sudo cat /sys/class/powercap/intel-rapl:0/energy_uj   # microjoules, grows over 
 
 ## Backup
 
-Only the template is backed up; clones are rebuilt from it. VM 9000 belongs in the nightly PBS
-job (Datacenter → Backup → the 03:00 job → Edit → tick 9000). A template never changes, so
-PBS deduplicates every night's snapshot to nothing new.
+Only the template is backed up; clones are rebuilt from it. VM 9000 is in the nightly PBS job
+(Datacenter → Backup → the 03:00 job). A template never changes, so PBS deduplicates every
+night's snapshot to nothing new.
 
 ## Rebuild the template from scratch
 
