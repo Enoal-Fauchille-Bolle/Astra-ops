@@ -25,7 +25,7 @@ Left to each clone, because it depends on the use:
 - Memory, cores, and core pinning if needed (P-cores are host CPUs 0-7, E-cores 8-15).
   Clones keep the ballooning device with **minimum = memory**: the guest never loses RAM, and
   Proxmox still gets the guest's real usage through it (`balloon: 0` shows the QEMU process's
-  host memory instead, cache included — 805 MiB for a guest using 311 MiB).
+  host memory instead, cache included: 805 MiB for a guest using 311 MiB).
 - Applications (Ollama…) and the virtual RAPL `args:` line.
 
 Proxmox's cloud-init setting `ciupgrade` is left at its default: each clone installs pending
