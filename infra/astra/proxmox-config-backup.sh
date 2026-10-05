@@ -1,11 +1,11 @@
 #!/bin/bash
 # Copies the Proxmox VE and Proxmox Backup Server configuration of Astra to Pulsar, where
-# Zerobyte job 13 ("Backups") ships it off-site to Backblaze every night at 02:00.
+# the Zerobyte Backups job ships it off-site to Backblaze every night at 02:00.
 # Installed as /usr/local/sbin/proxmox-config-backup, triggered by proxmox-config-backup.timer.
 # Why it exists and how to restore from it: docs/backup/proxmox-config-copy.md.
 #
 # Reports to an Uptime Kuma push monitor when PUSH_URL is set (by the service, from
-# /etc/default/proxmox-config-backup — the token stays out of this repository). The monitor
+# /etc/default/proxmox-config-backup, so the token stays out of this repository). The monitor
 # alerts when no push arrives in time, which also covers a timer that never fires.
 
 set -euo pipefail

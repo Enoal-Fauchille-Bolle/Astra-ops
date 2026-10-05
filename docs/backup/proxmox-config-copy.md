@@ -3,10 +3,8 @@
 > Section numbers (§) refer to the [backup overview](README.md); each numbered section there
 > is either in place or points to where it moved.
 
-A nightly job on Astra copies both configurations to Pulsar, where Zerobyte job 13
-(**Backups**) ships them to Backblaze at 02:00, so no new Zerobyte volume was needed.
-First unattended night, 2026-09-12: copy sent at 01:30:05, Kuma push `up`, and job 13 went
-from 12 to 62 files (50 new) in `succeeded`.
+A nightly job on Astra copies both configurations to Pulsar, where the Zerobyte **Backups**
+job ships them to Backblaze at 02:00, so no new Zerobyte volume was needed.
 
 | Piece       | Where                                                                                     | What it does                                                                       |
 | ----------- | ----------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
@@ -15,7 +13,7 @@ from 12 to 62 files (50 new) in `succeeded`.
 | Destination | `/mnt/data/backups/proxmox-configs/` on Pulsar                                            | owned by `astra-configs`, directories `700`, files `600`                           |
 | Alerting    | Uptime Kuma push monitor **Proxmox Config Backup**                                        | `up` on success, `down` on any failure, alert on Discord if no push for 25 h (§10) |
 
-What the copy holds (~70 KB):
+What the copy holds:
 
 | Folder                | Content                                                                                       | Used for                                     |
 | --------------------- | --------------------------------------------------------------------------------------------- | -------------------------------------------- |
@@ -42,9 +40,9 @@ confines a script mistake or a leaked key to one directory.
 **Secrets.** The copy contains private keys, password hashes, the PBS storage password and
 the Resend API key. They are protected by file permissions on Pulsar and by restic encryption
 off-site, with no second encryption layer, since Zerobyte on Pulsar already holds the keys to
-every repository. File permissions do not stop a container running as root: both Filebrowser
-apps could browse this copy until 2026-09-14 (§6, _Who else can read the dumps_). The push URL lives in `/etc/default/proxmox-config-backup` (root, `600`),
-outside this repository.
+every repository. File permissions do not stop a container running as root, so no app mounts
+`/mnt/data/backups` (§6, _Who else can read the dumps_). The push URL lives in
+`/etc/default/proxmox-config-backup` (root, `600`), outside this repository.
 
 **Failure behaviour.** Every step runs under `set -e` and the transfer comes last: if one step
 fails (integrity check, LXC 103 stopped…), nothing is sent and Pulsar keeps the last good copy.
@@ -126,7 +124,7 @@ A successful run leaves the four folders (`pve/`, `pmxcfs/`, `pbs/`, `host/`) an
 ## 9.4 Restoring the Proxmox configuration
 
 **Where to get it:** `/mnt/data/backups/proxmox-configs/` on Pulsar if it survived, otherwise
-Zerobyte job 13 (**Backups**, repository **Backblaze**): pick a snapshot from before the
+the Zerobyte **Backups** job (repository **Backblaze**): pick a snapshot from before the
 incident, since the nightly copy mirrors the current state with `--delete`.
 
 **Proxmox VE: full recovery** (`pmxcfs` documentation, section _Recovery_), on a fresh

@@ -1,5 +1,5 @@
 [Unit]
-Description=Nightly copy of the Proxmox configuration, before Zerobyte job 13 at 02:00
+Description=Nightly copy of the Proxmox configuration, before the Zerobyte Backups job at 02:00
 
 [Timer]
 OnCalendar=*-*-* 01:30:00
