@@ -104,7 +104,7 @@ cd /opt/ops
 ### 2. Start Docker infrastructure (Layer A)
 
 Portainer manages all Docker Compose stacks. Start it first, then deploy the others
-from its web UI at `http://<server-ip>:9444`:
+from its web UI at `http://<server-ip>:9000`:
 
 ```bash
 cd docker/portainer && docker compose up -d

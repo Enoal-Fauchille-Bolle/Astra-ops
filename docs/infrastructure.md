@@ -21,7 +21,7 @@ AdGuard Home acts as the local DNS server, resolving `.lan` hostnames to the Pul
 | 81          | TCP      | NPM Admin UI               |
 | 8098        | TCP      | squaremap SMP (web map)    |
 | 8443        | TCP      | Crafty Admin UI            |
-| 9444        | TCP      | Portainer                  |
+| 9000        | TCP      | Portainer                  |
 | 25500-25599 | TCP      | Minecraft servers (Crafty) |
 | 30022       | TCP      | SFTPGo SFTP (K3s NodePort) |
 
