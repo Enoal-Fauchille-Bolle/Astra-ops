@@ -44,13 +44,13 @@ The infrastructure is split into two deployment layers:
 
 Astra is not the simplest way to run a homelab: one reverse proxy, bare metal or an all-in-one distribution would all be easier. I built it this way to learn, and each piece taught me something:
 
-- **Kubernetes (K3s)** — container orchestration, namespaces, Helm packaging, HPA/VPA autoscaling, and the GitOps feedback loop with ArgoCD.
-- **Networking** — split-horizon DNS with AdGuard Home, NAT and port forwarding, SSL termination, and the Traefik ingress controller.
-- **SysAdmin / Linux** — Proxmox VE, VM and LXC provisioning, NVMe storage layout, and keeping a production-like system running continuously on a mini PC.
-- **DevOps** — GitOps with ArgoCD, Renovate for automated dependency updates, and self-hosted GitHub Actions runners on K3s with ARC.
-- **Email infrastructure** — SPF, DKIM, DMARC, routing inbound mail through Cloudflare Email Routing and outbound through an SMTP relay, without ever touching a mail server.
-- **Backup strategy** — designing a 3-2-1 architecture with Proxmox Backup Server for local block-level snapshots and Zerobyte + Rclone + Backblaze B2 and MEGA for offsite cloud backups, including data classification tiers and RTO/RPO planning.
-- **Secrets management** — External Secrets Operator (ESO) syncing secrets from Infisical into Kubernetes, keeping credentials entirely out of Git.
+- **Kubernetes (K3s)**: container orchestration, namespaces, Helm packaging, HPA/VPA autoscaling, and the GitOps feedback loop with ArgoCD.
+- **Networking**: split-horizon DNS with AdGuard Home, NAT and port forwarding, SSL termination, and the Traefik ingress controller.
+- **SysAdmin / Linux**: Proxmox VE, VM and LXC provisioning, NVMe storage layout, and keeping a production-like system running on a mini PC.
+- **DevOps**: GitOps with ArgoCD, Renovate for automated dependency updates, and self-hosted GitHub Actions runners on K3s with ARC.
+- **Email infrastructure**: SPF, DKIM, DMARC, routing inbound mail through Cloudflare Email Routing and outbound through an SMTP relay, without running a mail server.
+- **Backup strategy**: designing a 3-2-1 architecture with Proxmox Backup Server for local block-level snapshots and Zerobyte + Rclone + Backblaze B2 and MEGA for offsite cloud backups, including data classification tiers and RTO/RPO planning.
+- **Secrets management**: External Secrets Operator (ESO) syncing secrets from Infisical into Kubernetes, keeping credentials out of Git.
 
 > [!NOTE]
 > The most visible architectural compromise is the double reverse proxy: Nginx Proxy Manager handles SSL termination and public routing, then passes plain HTTP to Traefik inside the cluster. The cleaner approach would be Traefik directly exposed with cert-manager — but NPM was already familiar and added a useful management UI.
