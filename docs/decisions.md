@@ -13,7 +13,7 @@ full measurements and checks are in the git history of this file and of
 - **Keep off Astra what a restore of Astra needs.** The B2 key, Zerobyte's restic password
   and the Obsidian LiveSync secrets are in the official Bitwarden cloud, and Zerobyte's
   `APP_SECRET` is saved outside Astra too, because Vaultwarden runs on Astra and goes down with it.
-  Since 2026-09-25 the same cloud also holds Infisical's bootstrap and service token, the
+  The same cloud also holds Infisical's bootstrap and service token, the
   AppFlowy and Immich secrets, and the Homarr and Speedtest keys
   ([secrets.md](secrets.md)).
 - **Address drives by model or UUID, never `nvmeXn1`.** The two NVMe drives swapped kernel
@@ -32,15 +32,15 @@ full measurements and checks are in the git history of this file and of
 - **2026-09-11 — Cold disk out of PBS (`backup=0` on `scsi1`).** A copy on the same Netac
   never survived its failure; the Tier 2 content goes to Backblaze instead. Accepted
   because every Tier 2 path on the Netac had an off-site copy by then.
-- **2026-09-11 — One Crafty job for all three servers (job 15).** Job 9 only covered Nous
-  Deux, so Survie 1.20.4 and Roots SMP had no off-site copy until then.
+- **2026-09-11 — One Crafty job for all three servers (Crafty Backups).** The MEGA job only
+  covered Nous Deux, so Survie 1.20.4 and Roots SMP had no off-site copy until then.
 - **2026-09-11 — Nightly copy of the Proxmox configuration.** Nothing else kept `/etc/pve`
   or `/etc/proxmox-backup` off the host ([proxmox-config-copy.md](backup/proxmox-config-copy.md)).
-- **2026-09-13 — Whole app roots instead of per-app jobs.** Jobs 16 and 17 copy
-  `/opt/k3s-data` and `/opt/docker-data` whole, so a new app is covered without a new job.
-  Live database directories are excluded: their dumps are the copy.
+- **2026-09-13 — Whole app roots instead of per-app jobs.** The K3s Data and Docker Data
+  jobs copy `/opt/k3s-data` and `/opt/docker-data` whole, so a new app is covered without a
+  new job. Live database directories are excluded: their dumps are the copy.
 - **2026-09-13 — No separate Zerobyte job for the dumps.** `/mnt/data/backups/dumps/` is
-  already inside job 13.
+  already inside the Backups job.
 - **2026-09-14 — Nightly database dumps.** A file-level copy of a running database may be
   corrupt; the dumps are consistent. Installed by copy in `/usr/local/sbin`, not run from
   `/opt/ops`, because that clone is editable by a user account. Restore tested end to end on
@@ -48,8 +48,8 @@ full measurements and checks are in the git history of this file and of
 - **2026-09-14 — Immich is not in the dump script.** Its PostgreSQL carries vector
   extensions, so a plain `pg_dump` cannot be restored on a vanilla server; Immich dumps
   itself into `library/backups/`, which Backblaze covers.
-- **2026-09-14 — CouchDB is not dumped.** Its files are copied raw by job 16 and the notes
-  are end-to-end encrypted by LiveSync; a restore was tested on 2026-09-14.
+- **2026-09-14 — CouchDB is not dumped.** Its files are copied raw by the K3s Data job and the
+  notes are end-to-end encrypted by LiveSync; a restore was tested on 2026-09-14.
 - **2026-09-14 — Zerobyte restores to `/mnt/data/restore` only.** Every data mount is
   read-only, so a backup can never damage its source.
 - **2026-09-15 — `zerobyte.db` joins the dumps.** `/var/lib/zerobyte` lies outside every
@@ -59,14 +59,13 @@ full measurements and checks are in the git history of this file and of
 - **2026-09-15 — Crafty archives stay compressed and taken live (`compress=1`,
   `shutdown=0`).** The watcher already stops Roots SMP when empty, so the 04:00 archive
   usually copies a stopped server; `shutdown=1` would restart a sleeping server while the
-  watcher holds its port. Compression saves 3.3G on the Netac.
+  watcher holds its port. Compression saves about 3G on the Netac.
 - **2026-09-23 — `Mega A`, `Mega C` and `Mega D` left as is, purge planned for
   ~2027-03-23.** No migration of their frozen snapshots to Backblaze. Replaces the earlier
-  `todo.md` dates (removing `Mega A` about 2026-12-13, revisiting `Mega D` about
-  2026-12-15) with a single date six months out, tracked as an open item in
-  [todo.md](todo.md). Job 12's own cleanup stays open on its original date, it was never
-  on MEGA.
-- **Films are not backed up.** 47G, re-downloadable.
+  `todo.md` dates for `Mega A` and `Mega D` with a single date six months out, tracked as
+  an open item in [todo.md](todo.md). The Portainer job's own cleanup stays open on its
+  original date, it was never on MEGA.
+- **Films are not backed up.** They can be downloaded again.
 
 ## Storage
 
@@ -86,47 +85,30 @@ full measurements and checks are in the git history of this file and of
   both apps need; the originals on the Netac were deleted on 2026-09-21 after a second
   checksum comparison. Films stay on the Netac, shown read-only.
 - **2026-09-21 — Old PBS snapshots of `vm/100` deleted.** The seven snapshots that still
-  held the cold disk weighed 349 GiB together; the datastore went from 476G to 113G and the
-  Netac from 62 % to 22 %. The history of Pulsar's system disk before 2026-09-12 went with
-  them.
-- **2026-09-22 — Netac split into LVM compartments (method A of the disk plan).** One ext4
-  filesystem holding the PBS datastore, the Pulsar cold disk and the ISOs let any of them
-  starve the others. Everything was staged on the WD Blue, the Netac wiped and repartitioned
-  as VG `netac`: LV `pbs` (300G ext4, fixed, `/mnt/pbs-datastore`, `nofail` in `fstab`), LV
-  `files` (32G ext4, fixed, mounted at `/mnt/pve/vault`, the same name and path so the
-  105–108 lab VMs' CD-ROM references needed no change; Proxmox storage `vault`, content
-  restricted to `iso,vztmpl,backup,snippets`), and a thin pool `thin` (Proxmox storage
-  `vault-thin`) for Pulsar's cold disk. Chunk size forced to 64 KiB (`lvcreate -c 64k`) to
-  match the existing `pve/data` pool, since LVM's own default for a pool this size picked 512 KiB
-  and warned about slow zeroing. ~100G left unallocated as reserve.
-  **Incident, same day:** moving the cold disk from its temporary WD copy into the new thin
-  pool (`qm disk move 100 scsi1 vault-thin`) physically wrote all 500G of the declared virtual
-  disk, not just the ~76G of real guest data, unlike the initial Netac→WD move, which had
-  correctly skipped empty regions from the source `.qcow2` file. This filled the pool to
-  96.15%. Two `fstrim` attempts inside Pulsar (including one after `mount -o remount`)
-  reclaimed only ~57 MiB combined: ext4 most likely still believes it already reported that
-  free space as trimmed from before the disk move, and a real unmount (not just a remount)
-  would probably be needed to force a full re-trim, which was not attempted same-day since it
-  would require briefly stopping Crafty, Zerobyte, Filebrowser Quantum and SFTPGo. Mitigated
-  by growing `thin` from 520G to 620G using nearly all of the ~100G reserve (`lvextend -L
-+100G netac/thin`), bringing real usage down to ~80.65%. See [monitoring.md](monitoring.md)
-  for why Beszel could not have caught this on its own (thin pools have no file system to
-  watch).
-  **Resolved 2026-09-23:** a real `umount /mnt/data` inside Pulsar was not enough: it
-  returned OK, but no `EXT4-fs (sdb)` unmount/mount appeared in the kernel log, because 276
-  processes still held the disk in their own mount namespaces, so ext4 kept its in-memory
-  "already trimmed" state (the next `fstrim` freed 3.1 GiB, and the pool did not move). The
-  live move had also left Proxmox's `zeroinit` QEMU filter on `drive-scsi1`. A full
-  `qm shutdown 100` + `qm start 100` from Astra cleared both; `fstrim -v /mnt/data` then
-  trimmed 411.3 GiB and `thin` dropped from 80.65% to 14.32%. After any future live
-  `qm disk move` onto a thin pool: stop/start the VM from Proxmox, then `fstrim`. The reserve
-  stays at ~672M, because the 100G went into the pool.
+  held the cold disk took about 350G of the datastore. The history of Pulsar's system disk
+  before 2026-09-12 went with them.
+- **2026-09-22 — Netac split into LVM compartments.** One ext4 filesystem holding the PBS
+  datastore, the Pulsar cold disk and the ISOs let any of them starve the others. The Netac
+  is now VG `netac`: LV `pbs` (300G, fixed), LV `files` (32G, fixed, mounted at
+  `/mnt/pve/vault` under the old name and path so the CD-ROM references of lab VMs 105–108
+  needed no change) and the thin pool `thin` for Pulsar's cold disk
+  ([infrastructure.md](infrastructure.md#disks)). Chunk size forced to 64 KiB
+  (`lvcreate -c 64k`) to match `pve/data`: LVM's default for a pool this size was 512 KiB
+  and warned about slow zeroing.
+  **Incident, same day:** the live `qm disk move 100 scsi1 vault-thin` wrote all 500G of the
+  virtual disk and filled the pool to 96 %. `fstrim` in Pulsar barely moved it, even after
+  `umount /mnt/data`: other mount namespaces still held the disk, and the move had left
+  Proxmox's `zeroinit` filter on `drive-scsi1`. Growing `thin` to 620G spent the ~100G
+  reserve. On 2026-09-23, `qm shutdown 100` then `qm start 100` let `fstrim` hand the space
+  back (pool down to about 14 %). After any live `qm disk move` onto a thin pool: stop and
+  start the VM from Proxmox, then run `fstrim`.
 
 ## PBS (LXC 103)
 
-- **2026-09-12 — PBS upgraded to 3.4.9, then to 4 on 2026-09-13.** `proxmox-backup-manager
-versions` prints the APT _candidate_, not the installed version: check with `dpkg`. The
-  root disk was grown from 8G to 16G first, as the upgrade guide asks for 10G free.
+- **2026-09-12 — PBS upgraded to 3.4.9, then to 4 on 2026-09-13.**
+  `proxmox-backup-manager versions` prints the APT _candidate_, not the installed version:
+  check with `dpkg`. The root disk was grown from 8G to 16G first, as the upgrade guide
+  asks for 10G free.
 - **2026-09-12 — `nesting=1` on LXC 103.** Without it, every unit that asks systemd for
   sandboxing died with `226/NAMESPACE`, so `logrotate` had never run since install.
 - **2026-09-13 — LXC 103 on the host's time zone.** Its jobs ran two hours late in UTC.
@@ -147,7 +129,7 @@ versions` prints the APT _candidate_, not the installed version: check with `dpk
 
 ## Security
 
-Fixes from the security audit of 2026-09-08 (P3: apps with more privileges than they need).
+Fixes from the security audit of 2026-09-08 for apps with more privileges than they need.
 A container that holds host-level privileges turns a flaw in one small app into control of
 Pulsar.
 
