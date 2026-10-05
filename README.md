@@ -81,7 +81,9 @@ graph TB
         end
     end
 
-    INTERNET((Internet)) -->|NAT 443| NPM
+    INTERNET((Internet)) -->|most sites| CF[Cloudflare proxy + WAF]
+    CF -->|NAT 443| NPM
+    INTERNET -.->|DNS-only hosts, NAT 443| NPM
     NPM -->|HTTP| TRAEFIK
     TRAEFIK --> PODS
     AGH -.->|".lan" DNS| VM100
@@ -92,12 +94,15 @@ graph TB
 ```mermaid
 flowchart TD
     INET((Internet\nhttps://app.enoal.fr))
+    CF[Cloudflare\nproxy + WAF]
     ROUTER[Router\nNAT 443 → 192.168.1.201]
     NPM[Nginx Proxy Manager\nSSL termination]
     TRAEFIK[Traefik\nK3s ingress routing]
     POD[Target Pod]
 
-    INET --> ROUTER --> NPM --> TRAEFIK --> POD
+    INET -->|most sites| CF --> ROUTER
+    INET -.->|DNS-only hosts| ROUTER
+    ROUTER --> NPM --> TRAEFIK --> POD
 ```
 
 ---
