@@ -1,10 +1,6 @@
 # Backup Architecture — Astra Homelab
 
-> **Status:** Layer 1 operational. Layer 2 in service for every Tier 2 path on `/mnt/data`,
-> every app directory, the Proxmox configuration and, since 2026-09-14, the database dumps
-> (restore tested end to end on 2026-09-15) — see §12.
-> **Last updated:** 2026-09-23 (`Mega A`, `Mega C` and `Mega D` purge planned for
-> ~2027-03-23 instead of three separate 2026-12 dates — §5.2, §12)
+> **Status:** both layers in service, restore tested end to end on 2026-09-15 (§12).
 
 ---
 
