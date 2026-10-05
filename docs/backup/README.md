@@ -236,7 +236,7 @@ Bulk data that is either reconstructible (Minecraft servers, Kiwix ZIM archives)
 > **Resolved 2026-09-10 — the three "mounted, never declared" paths.** Portainer, personal
 > backups and photos were bind-mounted into Zerobyte but had no matching _volume_, so no job
 > ever backed them up. `/mnt/data/backups/` was triaged first (8.8G → 102M: a redundant
-> Minecraft archive and a plaintext password export were deleted), then all three were
+> Minecraft archive and an old export were deleted), then all three were
 > declared. A mount makes a path visible to Zerobyte; only a _schedule_ backs it up.
 >
 > **Growth driver, measured 2026-09-09, revised 2026-09-11:** Crafty produced **28.6 GiB/week**
