@@ -24,16 +24,9 @@ Its host is `https://kuma-probe.enoal.fr`, not the `http://uptime.lan` Kuma disp
 does not resolve `.lan` names ([monitoring.md](../monitoring.md#uptime-kuma)).
 
 **Who else can read the dumps.** Root, and any container running as root that mounts
-`/mnt/data/backups`; the `700`/`600` modes stop users, not root. Until 2026-09-14 both
-Filebrowser apps (`runAsUser: 0`) mounted that whole directory: the dumps and the Proxmox
-configuration copy (§4.2) could be browsed and downloaded, from the Internet through
-`drive.enoal.fr` for the classic one. Since commit `f6d4527` both mount
-`/mnt/data/backups/OnePlus-10T` only; checked after ArgoCD's sync, neither pod sees `dumps/`
-or `proxmox-configs/` any more. The classic app was removed the same day (`ca56a5a`) and
-`drive.enoal.fr` now reaches Quantum, which runs as uid 1000 since `c1b5a9e` (§12). Since
-`c9e98e1` (2026-09-20) neither app mounts anything under `/mnt/data/backups`: the phone backup
-moved to `/mnt/drive` (§8.1). **Never mount
-`/mnt/data/backups` whole into an app.**
+`/mnt/data/backups`; the `700`/`600` modes stop users, not root. No app mounts anything under
+`/mnt/data/backups`: Filebrowser Quantum (`drive.enoal.fr`, uid 1000) and SFTPGo mount only
+`/mnt/drive` and the movies (§8.1). **Never mount `/mnt/data/backups` whole into an app.**
 The script is installed by copy, not run from `/opt/ops`: that clone is updated by hand (last
 pull 2026-08-31) and owned by `enoal`, and root must not run a file a user account can edit.
 
