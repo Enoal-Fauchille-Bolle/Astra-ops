@@ -368,9 +368,9 @@ Two providers, with a clear split:
 | Zerobyte repository            | Backend         | Holds                                                                                                                                      |
 | ------------------------------ | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
 | **Backblaze**                  | S3 (B2)         | Immich, Crafty backups, dumps and Proxmox configuration (Backups job), every app directory (K3s Data, Docker Data), personal files (Drive) |
-| **Mega A**                     | rclone `mega-a` | Homer, Criteri'Fresque, Crafty config, Docker Registry — **jobs disabled**, purge planned ~2027-03-23 (§12)                                |
-| **Mega C**                     | rclone `mega-c` | Filebrowser files — **job disabled**, purge planned ~2027-03-23 (§12)                                                                      |
-| **Mega D**                     | rclone `mega-d` | old Nous Deux snapshots only — **job disabled**, purge planned ~2027-03-23 (§12)                                                           |
+| **Mega A**                     | rclone `mega-a` | Homer, Criteri'Fresque, Crafty config, Docker Registry — **jobs disabled**, purge planned ~2027-03-23 ([todo.md](../todo.md))              |
+| **Mega C**                     | rclone `mega-c` | Filebrowser files — **job disabled**, purge planned ~2027-03-23 ([todo.md](../todo.md))                                                    |
+| **Mega D**                     | rclone `mega-d` | old Nous Deux snapshots only — **job disabled**, purge planned ~2027-03-23 ([todo.md](../todo.md))                                         |
 | Mega B                         | rclone `mega-b` | **retired**: removed from Zerobyte, left intact on MEGA, readable with `restic --no-lock`                                                  |
 | `test-backblaze`, `test-local` | —               | test repositories                                                                                                                          |
 
@@ -458,7 +458,7 @@ monthly** snapshots.
   the same path. `Mega A`, `Mega C` and `Mega D` are purged as a group instead, about
   **2027-03-23**: removed from Zerobyte, their snapshots deleted on MEGA, and the per-app
   mounts dropped from `docker-compose.yml`. `Mega B` is a separate, already-settled case:
-  kept as is, no purge date (§12).
+  kept as is, no purge date ([decisions.md](../decisions.md)).
 - **Drive copies the personal disk whole** (no exclusion, no include filter), for the same
   reason as K3s Data and Docker Data: a folder added to `drive` is covered without touching
   Zerobyte. Zerobyte sees the disk read-only at `/data/drive` (volume `Drive`).
