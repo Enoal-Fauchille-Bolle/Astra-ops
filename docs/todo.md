@@ -15,7 +15,8 @@ Open work only. Finished items move to [decisions.md](decisions.md).
 - [ ] **Purge `Mega A`, `Mega B`, `Mega C` and `Mega D`, about 2027-03-23**, all four on
       the same day ([decisions.md](decisions.md)): delete their frozen snapshots on MEGA,
       remove `Mega A`, `Mega C` and `Mega D` from Zerobyte (`Mega B` is already out), then
-      drop the now-unused per-app mounts from `docker-compose.yml`. Once done, drop
+      drop the now-unused per-app mounts from `docker-compose.yml` and the four `mega-*`
+      remotes from rclone on Pulsar (`rclone config delete`). Once done, drop
       `mega-a`/`mega-c`/`mega-d` from the rclone remotes step of the disaster-recovery
       runbook ([restore.md](backup/restore.md), §9.3 step 7)
 
