@@ -9,7 +9,7 @@ Each change is offered upstream as its own pull request; the fork's README
 tracks what diverges and why.
 
 > This directory previously held a `Dockerfile` that patched the upstream image
-> at build time. That is gone — see "Why an image, never a build" below. Only
+> at build time. That is gone; see "Why an image, never a build" below. Only
 > this README and `config.example.yaml` remain.
 
 ## Why an image, never a build
@@ -18,7 +18,7 @@ tracks what diverges and why.
 
 Portainer redeploys the stack from Git every ~5 minutes. A `build:` service is
 rebuilt on every poll, the resulting image ID differs, and Compose therefore
-*recreates* the container — while `crafty` next to it, on a fixed image tag,
+_recreates_ the container, while `crafty` next to it, on a fixed image tag,
 is merely reported as `Running`:
 
 ```
@@ -37,7 +37,7 @@ The idle countdown lives in the watcher's memory, so every recreation reset it:
 
 A 10-minute threshold reset every 5 minutes is unreachable. Crafty's audit log
 confirms the outcome: over weeks it recorded `start_server` from the `watcher`
-user many times and `stop_server` **never** — the only stops were manual.
+user many times and `stop_server` **never**: the only stops were manual.
 
 Two independent fixes, so this cannot come back:
 
@@ -49,7 +49,7 @@ Two independent fixes, so this cannot come back:
 ## Wake-up whitelist
 
 Any login attempt used to start a server, and a scanner (`Cornbread2100_`) was
-booting both of them nightly. The Minecraft whitelist refused it — but only
+booting both of them nightly. The Minecraft whitelist refused it, but only
 after the JVM was up and holding 1.5 GB.
 
 `access.mode: whitelist` refuses the wake-up first, reading each server's own
@@ -60,8 +60,8 @@ The player name arrives before Mojang authentication, so it is a claim rather
 than a proof: someone who knows a whitelisted name can still trigger a start.
 That stops scanners trying arbitrary names, which is the actual problem here.
 
-If the whitelist cannot be read, the watcher allows everyone and logs an error
-— a broken mount must not lock us out of our own servers.
+If the whitelist cannot be read, the watcher allows everyone and logs an error,
+because a broken mount must not lock us out of our own servers.
 
 ## Starting a server from the Crafty console
 
@@ -72,8 +72,8 @@ Pressing **Start** in Crafty used to kill the server it was starting:
 The exception was: ... bind(..) failed with error(-98): Address already in use
 ```
 
-The watcher holds a sleeping server's port — that is how it shows the MOTD and
-wakes it on connect — and it only polls Crafty every 30s. A start it did not
+The watcher holds a sleeping server's port (that is how it shows the MOTD and
+wakes it on connect), and it only polls Crafty every 30s. A start it did not
 trigger itself therefore loses the race: the JVM asks for the port about five
 seconds after being spawned, long before the next poll.
 
@@ -96,12 +96,12 @@ This needs two halves, and **neither lives in this repo**:
 
 2. In Crafty, per server: **Config → Webhooks → New webhook**
 
-   | Field | Value |
-   |---|---|
-   | Type | `Discord` — any provider works, only the URL and body matter |
-   | URL | `http://127.0.0.1:8095/events/crafty?token=<the same secret>` |
-   | Triggers | `start_server` — the trigger is not called `server_start` |
-   | Body | `{"server_id": "{{ server_id }}", "event": "{{ event_type }}"}` |
+   | Field    | Value                                                           |
+   | -------- | --------------------------------------------------------------- |
+   | Type     | `Discord` (any provider works, only the URL and body matter)    |
+   | URL      | `http://127.0.0.1:8095/events/crafty?token=<the same secret>`   |
+   | Triggers | `start_server` (not `server_start`)                             |
+   | Body     | `{"server_id": "{{ server_id }}", "event": "{{ event_type }}"}` |
 
 The secret matters even though the endpoint binds to `127.0.0.1`: `crafty` and
 `crafty_watcher` both run with `network_mode: host`, so every container on that
@@ -110,7 +110,7 @@ network shares the same localhost.
 Two consequences worth remembering:
 
 - The webhook is stored in Crafty's own database, so it is one more piece of
-  unversioned state — like the scheduled backups.
+  unversioned state, like the scheduled backups.
 - **Rolling the watcher back below 1.2.0 requires disabling that webhook.** The
   older health server answers `405` to any POST, and Crafty calls
   `raise_for_status()` from inside the very call that started the server, so
@@ -126,10 +126,10 @@ holds the Discord webhook URL and the Crafty server UUIDs. See
 
 Two host paths are mounted beyond the config:
 
-| Host | Container | Why |
-|---|---|---|
-| `/opt/docker-data/crafty/watcher/state` | `/data` | Idle countdowns, survives restarts |
-| `/opt/docker-data/crafty/servers` | `/servers` (ro) | Each server's `whitelist.json` |
+| Host                                    | Container       | Why                                |
+| --------------------------------------- | --------------- | ---------------------------------- |
+| `/opt/docker-data/crafty/watcher/state` | `/data`         | Idle countdowns, survives restarts |
+| `/opt/docker-data/crafty/servers`       | `/servers` (ro) | Each server's `whitelist.json`     |
 
 Create the state directory before the first deploy:
 
