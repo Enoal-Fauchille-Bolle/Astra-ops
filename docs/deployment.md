@@ -11,7 +11,7 @@ This repository uses the **App-of-Apps** pattern: a single root application defi
 
 - **Sync policy**: automated with `prune: true` and `selfHeal: true`
 - **Namespace creation**: via `CreateNamespace=true`
-- **Disabled apps**: placed in `apps/.disabled/` — present in the repo but not synced
+- **Disabled apps**: placed in `apps/.disabled/`: present in the repo but not synced
 
 ### Renovate
 
@@ -43,7 +43,7 @@ k3s/<service>/
 
 [VPA](https://github.com/kubernetes/autoscaler/tree/master/vertical-pod-autoscaler) is
 deployed via the `cowboysysop/vertical-pod-autoscaler` Helm chart and runs in **Off mode**
-(recommendations only — pods are never automatically evicted or modified).
+(recommendations only: pods are never automatically evicted or modified).
 
 The recommender watches all application deployments and builds CPU/memory usage histograms
 over time using `metrics-server`. After 24-48 h of observation, it produces per-container
@@ -75,16 +75,16 @@ are described in [CONTRIBUTING.md](../CONTRIBUTING.md).
 
 ### Software — server
 
-- [Proxmox VE](https://www.proxmox.com/) — hypervisor
+- [Proxmox VE](https://www.proxmox.com/): hypervisor
 - Linux VM with [K3s](https://k3s.io/), [Docker](https://docs.docker.com/engine/install/), [Helm](https://helm.sh/docs/intro/install/)
 - LXC container with [AdGuard Home](https://adguard.com/adguard-home.html)
 
 ### Software — workstation
 
-- [kubectl](https://kubernetes.io/docs/tasks/tools/) — Kubernetes CLI
-- [Helm](https://helm.sh/docs/intro/install/) — chart management
-- [k9s](https://k9scli.io/) — terminal-based K8s UI (recommended)
-- [lazydocker](https://github.com/jesseduffield/lazydocker) — Docker terminal UI (optional)
+- [kubectl](https://kubernetes.io/docs/tasks/tools/): Kubernetes CLI
+- [Helm](https://helm.sh/docs/intro/install/): chart management
+- [k9s](https://k9scli.io/): terminal-based K8s UI (recommended)
+- [lazydocker](https://github.com/jesseduffield/lazydocker): Docker terminal UI (optional)
 
 ### Networking
 
@@ -130,7 +130,7 @@ kubectl apply -f infra/argocd/argocd-ingress.yaml
 
 ### 4. Bootstrap all K3s services
 
-Apply the root App-of-Apps once — ArgoCD then deploys and manages everything in `apps/`:
+Apply the root App-of-Apps once. ArgoCD then deploys and manages everything in `apps/`:
 
 ```bash
 kubectl apply -f infra/argocd/root-app.yaml
@@ -151,7 +151,7 @@ Access NPM at `http://<server-ip>:81` and configure:
 
 ### 7. Install host-level files on Astra
 
-`infra/astra/` is not deployed automatically by ArgoCD or Portainer — it must be copied to the
+`infra/astra/` is not deployed automatically by ArgoCD or Portainer: it must be copied to the
 Proxmox host by hand after any fresh install of Astra:
 
 ```bash
@@ -163,7 +163,7 @@ ssh astra "sudo install -o root -g root -m 755 /tmp/disable-subscription-nag.sh 
   sudo /usr/local/sbin/disable-subscription-nag"
 ```
 
-PBS (LXC 103) needs the same two files, but has no SSH of its own — land them on Astra first,
+PBS (LXC 103) needs the same two files, but has no SSH of its own, so land them on Astra first,
 then use `pct push`/`pct exec` to reach inside the container:
 
 ```bash
@@ -177,7 +177,7 @@ ssh astra "sudo pct push 103 /tmp/disable-subscription-nag.sh /usr/local/sbin/di
 
 > [!NOTE]
 > `proxmox-config-backup.{sh,service,timer}` (same directory) needs both Astra **and** Pulsar
-> set up — a receiving account, a dedicated SSH key pair, the script and its systemd timer.
+> set up: a receiving account, a dedicated SSH key pair, the script and its systemd timer.
 > See `docs/backup/proxmox-config-copy.md`, _Reinstalling this mechanism from scratch_.
 
 ## Remote access
@@ -194,5 +194,5 @@ kubectl config rename-context default pulsar
 
 ### Recommended tools
 
-- **k9s** — powerful terminal UI for Kubernetes (`k9s -c pod`)
-- **lazydocker** — terminal UI for Docker containers and images
+- **k9s**: terminal UI for Kubernetes (`k9s -c pod`)
+- **lazydocker**: terminal UI for Docker containers and images
