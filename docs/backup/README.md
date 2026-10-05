@@ -169,7 +169,7 @@ Live databases and application runtime state. Backed up exclusively by PBS block
 Static personal files, cold PVC data, pre-generated database dumps, and other irreplaceable data that is safe to copy at the file level. This is the only data sent to cloud storage.
 
 **Tier 3 — Disposable (No cloud backup)**
-Bulk data that is either reconstructible (Minecraft servers, Kiwix ZIM archives) or acceptable to lose and re-download (movies). Tier 3 data on `sda` (Crafty server worlds, container images) is protected by PBS snapshots of the Pulsar VM. Tier 3 data on `sdb` (`/mnt/data`: movies, Crafty logs) has **no backup at all** since `backup=0` was applied on 2026-09-11 — an accepted loss.
+Bulk data that is either reconstructible (Minecraft servers, Kiwix ZIM archives) or acceptable to lose and re-download (movies). Tier 3 data on `sda` (Crafty server worlds, container images) is protected by PBS snapshots of the Pulsar VM. Tier 3 data on `sdb` (`/mnt/data`: movies, Crafty logs) has **no backup at all** since `backup=0` was applied on 2026-09-11, an accepted loss.
 
 ### 3.2 Complete Data Inventory
 
@@ -250,14 +250,14 @@ Bulk data that is either reconstructible (Minecraft servers, Kiwix ZIM archives)
 
 ### 4.1 Mechanism
 
-PBS (LXC 103 on Astra) operates at the **block level**. It uses QEMU dirty bitmaps to track modified storage blocks since the last backup. Only changed blocks are transferred — no full copies after the first run.
+PBS (LXC 103 on Astra) operates at the **block level**. It uses QEMU dirty bitmaps to track modified storage blocks since the last backup. Only changed blocks are transferred, so there are no full copies after the first run.
 
 Data is hashed, deduplicated, and compressed with **ZSTD** on the fly before being written to the datastore. Backups are taken in **snapshot mode**: the hypervisor momentarily freezes VM/LXC state (RAM + filesystem), reads the data, then releases the snapshot. Services continue running with no downtime.
 
 Datastore location: `/mnt/pbs-datastore` (Netac NVMe, its own LVM volume since the
-2026-09-22 split — was `/mnt/pve/vault/pbs-datastore` before, see `decisions.md`).
+2026-09-22 split; it was `/mnt/pve/vault/pbs-datastore` before, see `decisions.md`).
 
-The container: Debian 13 (trixie) and PBS 4.2.5 since 2026-09-13 — upgraded from Debian 12 /
+The container: Debian 13 (trixie) and PBS 4.2.5 since 2026-09-13, upgraded from Debian 12 /
 PBS 3.4.9, which reached end of life in 2026-08. Unprivileged, `features: nesting=1` since
 2026-09-12, time zone `timezone: host` (Europe/Paris) since 2026-09-13; it was `Etc/UTC`
 before, which shifted every PBS schedule by two hours (§4.4). Root disk 16G since
@@ -267,7 +267,7 @@ from `pbs-no-subscription` only; `pbs-enterprise` is disabled (no subscription, 
 `/etc/apt/sources.list.d/pbs-enterprise.sources`; the commented-out `.list` did not carry
 over. Disabled again in the PBS UI (Administration → Repositories → Disable), which writes
 `Enabled: false`. Proxmox refuses to snapshot it because of the bind mount `mp0`,
-so the safety net before maintenance is `vzdump 103 --mode stop --storage local` — 846 MB and
+so the safety net before maintenance is `vzdump 103 --mode stop --storage local`: 846 MB and
 19 seconds of downtime on 2026-09-12.
 
 > **"No valid subscription" popup silenced since 2026-09-22.** PBS shares the exact same
@@ -277,7 +277,7 @@ so the safety net before maintenance is `vzdump 103 --mode stop --storage local`
 > (`docs/deployment.md` §7) instead of `scp`/`ssh`, since LXC 103 has no SSH of its own.
 
 > **`pam_systemd` removed on 2026-05-02.** `/etc/pam.d/common-session` lacks the
-> `session optional pam_systemd.so` line — the usual workaround for logins that hang while
+> `session optional pam_systemd.so` line, the usual workaround for logins that hang while
 > `systemd-logind` is dead, which it was until `nesting=1`. A PAM upgrade asks whether to
 > override the local changes: answer **No** unless you mean to restore the line.
 
@@ -292,13 +292,13 @@ so the safety net before maintenance is `vzdump 103 --mode stop --storage local`
 
 **Why Pulsar's cold disk is excluded (decided 2026-09-11).** `scsi1` was a `.qcow2` file on the
 Netac, and PBS wrote its backup to a datastore on the same Netac. That copy never protected
-against the drive failing — only against accidental deletion, which Zerobyte already covers
+against the drive failing, only against accidental deletion, which Zerobyte already covers
 for every Tier 2 path on `/mnt/data` (§3.2). Meanwhile each new Crafty `.zip` was stored twice
 on the drive: once in the `.qcow2`, once as fresh PBS chunks (the datastore grew 26G in two
 days). What loses its only backup: movies (47G, re-downloadable) and Crafty logs.
 
 > Since the 2026-09-22 split, `scsi1` is a raw LVM-thin volume (`vault-thin`), not a `.qcow2`
-> file — but the reasoning is unchanged: it and the datastore still sit on the same physical
+> file, but the reasoning is unchanged: it and the datastore still sit on the same physical
 > Netac drive, just in separate LVM volumes now instead of separate files on one filesystem.
 
 - VM backups cannot exclude directories. `vzdump`'s `exclude-path` applies to containers
@@ -327,24 +327,24 @@ Its PBS copy lands on the Netac, a different drive, which is exactly what `scsi1
   `drive-scsi2.img.fidx`. The datastore's `.chunks` went from 476.3 GiB (after the GC of
   2026-09-20) to **482G**: the ~5.7G of personal files.
 
-PBS (LXC 103) is intentionally excluded — but **not** for the reason previously given here.
+PBS (LXC 103) is intentionally excluded, but **not** for the reason previously given here.
 
 > **Correction, 2026-09-09.** This section used to claim that backing up the PBS container
 > would "create circular I/O dependencies". That is **false**. LXC 103 reaches its datastore
-> through a _bind mount_ (`mp0: /mnt/pbs-datastore,mp=/mnt/datastore` — was
+> through a _bind mount_ (`mp0: /mnt/pbs-datastore,mp=/mnt/datastore`, which was
 > `/mnt/pve/vault/pbs-datastore` before the 2026-09-22 split), and the
 > Proxmox VE documentation is explicit: _"The contents of bind mount points are not backed up
 > when using vzdump."_ The `backup=1` option exists only for **volume** mount points. A
-> `vzdump` of LXC 103 would therefore capture its 16 GB rootfs and nothing else — no recursion
+> `vzdump` of LXC 103 would therefore capture its 16 GB rootfs and nothing else, so no recursion
 > is possible.
 
 The real reason to exclude it: a backup of LXC 103 would live **inside the datastore it is
-meant to help rebuild**, making it useless in the one scenario that matters — loss of the
+meant to help rebuild**, making it useless in the one scenario that matters: loss of the
 Netac drive. And it is unnecessary, because the datastore is self-describing: point a fresh
 PBS install at the existing directory (or pass `reuse-datastore`) and every chunk and index
 is recovered.
 
-What genuinely needs protecting is the **configuration**, which is _not_ in the datastore —
+What genuinely needs protecting is the **configuration**, which is _not_ in the datastore:
 about **60 KB** in `/etc/proxmox-backup/`:
 
 | File                                           | Lost without it                                 |
@@ -386,7 +386,7 @@ PBS jobs only. The whole night, Zerobyte included, is in the
 > was on `Etc/UTC` until 2026-09-13, so prune actually ran at 06:00 Paris and verify/GC at
 > 07:00 (task history 2026-08-12 → 2026-09-13); in winter the Saturday verify would have met
 > the 06:00 Crafty upload. Since `timezone: host`, the times above are Paris time all year.
-> Keep heavy jobs that read the Netac — Zerobyte's Crafty upload, manual `fstrim` — out of
+> Keep heavy jobs that read the Netac (Zerobyte's Crafty upload, manual `fstrim`) out of
 > the 03:00–05:59 window; the Saturday verify takes ~38 min (2026-09-12).
 
 ### 4.5 RTO / RPO
@@ -416,13 +416,13 @@ Because Restic cuts files by **content**, identical files cost nothing twice: on
 
 Two providers, with a clear split:
 
-- **Backblaze B2** — bucket `astra-pulsar-backup`, about **$0.006/GB/month**, no size limit.
+- **Backblaze B2**: bucket `astra-pulsar-backup`, about **$0.006/GB/month**, no size limit.
   Everything large or growing goes here. Two safeguards: the account's spending cap (_Caps &
-  Alerts_) must be raised before adding a large job — it blocked the first Immich upload on
-  2026-09-09 — and the bucket lifecycle rule `daysFromHidingToDeleting: 1` makes deleted
+  Alerts_) must be raised before adding a large job (it blocked the first Immich upload on
+  2026-09-09), and the bucket lifecycle rule `daysFromHidingToDeleting: 1` makes deleted
   data disappear the next day. Zerobyte's S3 connector has no path field, so one Zerobyte
   repository = one bucket.
-- **MEGA** free accounts (20 GB each) — small, slowly-changing data only. A full MEGA account
+- **MEGA** free accounts (20 GB each): small, slowly-changing data only. A full MEGA account
   fails **silently**: Mega B overflowed on 2026-09-03 and nobody noticed. Nothing that grows
   is sent to MEGA.
 
@@ -521,7 +521,7 @@ snapshots and was in `success`.
   disabled job's snapshots are never pruned. Job 12 (Backblaze, Portainer) gets deleted
   about **2026-12-13**, once job 17 has built its own three months of history covering the
   same path. `Mega A`, `Mega C` and `Mega D` are purged as a group instead, about
-  **2027-03-23** (decided 2026-09-23, six months out) — removed from Zerobyte, their
+  **2027-03-23** (decided 2026-09-23, six months out): removed from Zerobyte, their
   snapshots deleted on MEGA, and the per-app mounts dropped from `docker-compose.yml`.
   `Mega B` is a separate, already-settled case: kept as is, no purge date (§12).
 - **Job 18 copies the personal disk whole** (created 2026-09-20, no exclusion, no include
@@ -529,8 +529,8 @@ snapshots and was in `success`.
   without touching Zerobyte. Zerobyte sees the disk read-only at `/data/drive` (volume
   `Drive`, commit `646c539`). First run, 2026-09-21 at 02:00: `success` in 2 min 03 s,
   **216 files** read (6,074,504,976 bytes), all new, **4,077,623,950 bytes added** (4.02 GB
-  after compression). The ~2 GB not added were chunks already in the repository — the
-  photos and phone backup, sent by jobs 14 and 13, account for about 1 GB — or repeated
+  after compression). The ~2 GB not added were chunks already in the repository (the
+  photos and phone backup, sent by jobs 14 and 13, account for about 1 GB) or repeated
   inside the new files; the split was not measured.
 - **Jobs 10 and 14 were disabled on 2026-09-20 at 23:32** (last runs that morning at 02:00,
   `success`). Their snapshots stay frozen like those of the other disabled jobs, and hold
@@ -552,7 +552,7 @@ snapshots and was in `success`.
   the repository in 14 s. The other archives are deduplicated.
 - **Why job 9 was replaced:** it was restricted by `include_paths` to Nous Deux
   (`9ca997b5-…`), so **Survie 1.20.4 and Roots SMP had no off-site copy until 2026-09-11**. Crafty
-  names archive folders by server UUID, not by name — see the table in
+  names archive folders by server UUID, not by name; see the table in
   [`docker/crafty/README.md`](../../docker/crafty/README.md#servers).
 
 #### No job planned
@@ -563,7 +563,7 @@ of their own:
 - the Proxmox configuration, which Astra copies nightly into
   `/mnt/data/backups/proxmox-configs/` (§4.2);
 - the database dumps, which the script of §6 writes to `/mnt/data/backups/dumps/` at 01:00
-  since 2026-09-14 — decided 2026-09-13, replacing the `tier2-db-dumps` job planned earlier.
+  since 2026-09-14 (decided 2026-09-13), replacing the `tier2-db-dumps` job planned earlier.
 
 ### 5.5 RTO / RPO
 
@@ -575,7 +575,7 @@ of their own:
 
 > **Restores go through `/restore`.** Every data mount in `docker-compose.yml` is `:ro`, so
 > Zerobyte restores into its one writable directory, `/mnt/data/restore` (since 2026-09-14),
-> and the files are copied into place by hand — §9.6.
+> and the files are copied into place by hand (§9.6).
 
 ---
 
