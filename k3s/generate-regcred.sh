@@ -1,10 +1,18 @@
 #!/bin/bash
 # This script generates a Kubernetes secret to access the GitHub Container Registry.
 # It is used to deploy private images from the registry to the cluster.
+#
+# Usage: generate-regcred.sh <namespace> <secret-name>
+# The secret name is the one listed under imagePullSecrets in the service's values.yaml.
 
 # --- CONFIGURATION ---
-NAMESPACE="redirects"
-SECRET_NAME="regcred-azerdev-status"
+if [ "$#" -ne 2 ]; then
+    echo "Usage: $0 <namespace> <secret-name>"
+    echo "Example: $0 bots regcred-botenoal"
+    exit 1
+fi
+NAMESPACE="$1"
+SECRET_NAME="$2"
 OUTPUT_FILE="regcred.yaml"
 # ---------------------
 

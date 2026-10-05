@@ -30,7 +30,6 @@ Services remaining to migrate from raw manifests to Helm: `immich`, `n8n`, `scan
 k3s/<service>/
 ├── Chart.yaml
 ├── values.yaml
-├── generate-regcred.sh    # (if GHCR access needed)
 └── templates/
     ├── _helpers.tpl
     ├── deployment.yaml

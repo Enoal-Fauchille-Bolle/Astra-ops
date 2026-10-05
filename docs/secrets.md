@@ -74,12 +74,13 @@ secrets have no copy off Astra, nor do those of the disabled ntfy and scanopy.
 
 ## Registry credentials
 
-Services using GHCR images need a `regcred` pull secret. Each such service includes a
-`generate-regcred.sh` script:
+Services using private GHCR images need a `regcred` pull secret, named under
+`imagePullSecrets` in their `values.yaml`. `k3s/generate-regcred.sh` takes the namespace and
+that name:
 
 ```bash
-cd k3s/<service>
-./generate-regcred.sh   # prompts for GitHub username + PAT
+cd k3s/botenoal
+../generate-regcred.sh bots regcred-botenoal   # prompts for GitHub username + PAT
 kubectl apply -f regcred.yaml
 ```
 
