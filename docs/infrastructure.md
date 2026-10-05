@@ -263,9 +263,9 @@ Pulsar /mnt/data/ (sdb — cold)     76G used / 492G (15 %)   [2026-09-22]
 
 Pulsar /mnt/drive/ (sdc — personal) 5.7G used / 63G (10 %)  [2026-09-21]
                                    in PBS with VM 100 (§4.2) → Backblaze, job 18
-├── Archives/             4.7G   Nexus Backup/ 3.9G, Snapchat/ 750M
-├── Photos/               946M   AstralRedshift/ 807M, Timelaps/ 139M
-├── Téléphone/            102M   DataBackup/ — the OnePlus 10T backup
+├── Archives/             4.7G
+├── Photos/               946M
+├── Téléphone/            102M   phone backup
 └── Documents/             15M
 ```
 
