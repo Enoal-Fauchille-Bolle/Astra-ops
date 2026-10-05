@@ -2,7 +2,7 @@
 
 Serves the personal files on `drive.enoal.fr`. It mounts `/mnt/drive` read-write at
 `/srv/drive` and the movies read-only at `/srv/Films`. It mounts nothing under
-`/mnt/data/backups`: **never mount that directory whole into an app** — it holds the
+`/mnt/data/backups`: **never mount that directory whole into an app**: it holds the
 database dumps and the Proxmox configuration copy.
 
 ## Sources are configured outside this repository
@@ -12,7 +12,7 @@ Pulsar, and is read only at start-up. Change it **before** removing a mount, nev
 or the app starts in error.
 
 A new account's sidebar lists one source only: add the others with the pencil next to
-*Navigation*.
+_Navigation_.
 
 ## Runs as uid 1000
 
