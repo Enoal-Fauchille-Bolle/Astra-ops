@@ -181,3 +181,7 @@ Pulsar.
   The community list stays on the firewall alone: it would not fit, and over 18 days it
   would have stopped 97 attack attempts through NPM
   ([`docker/crowdsec/README.md`](../docker/crowdsec/README.md#bans-behind-cloudflare)).
+- **2026-10-05 — Samba, the k3s API and AdGuard limited to the LAN and the VPN.** The
+  Freebox's IPv6 firewall is on, and each machine also filters on its own, so a box reset
+  exposes nothing private. Only IPv4 is allowed: no device used them over IPv6
+  ([infrastructure.md](infrastructure.md#firewalls)).

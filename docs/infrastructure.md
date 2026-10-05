@@ -25,6 +25,60 @@ AdGuard Home acts as the local DNS server, resolving `.lan` hostnames to the Pul
 | 25500-25599 | TCP      | Minecraft servers (Crafty) |
 | 30022       | TCP      | SFTPGo SFTP (K3s NodePort) |
 
+### Firewalls
+
+The Freebox's IPv6 firewall is on. In IPv4 the box only lets in the ports it forwards, but
+in IPv6 each machine has its own public address, so without that option a machine's own
+firewall is the only filter. The option is all or nothing: it blocks every incoming IPv6
+connection and has no per-port rules. Nothing here needs incoming IPv6, since no DNS record
+points home over IPv6.
+
+Each machine also filters on its own, so a box reset or replacement exposes nothing that
+should stay private. "LAN" below means `192.168.1.0/24`, and "VPN" the Freebox's WireGuard
+clients, `192.168.27.0/24`.
+
+| Machine           | Tool     | Open to everyone                      | LAN and VPN only                                |
+| ----------------- | -------- | ------------------------------------- | ----------------------------------------------- |
+| Pulsar            | UFW      | SSH (keys only), Minecraft and Crafty | Samba, k3s API `6443`, squaremap `8098`         |
+| LXC 101 `adguard` | nftables | nothing                               | DNS `53`, web UI `80`, SSH `22`, Beszel `45876` |
+
+The LAN-only rules are IPv4 only. No device reaches Samba or AdGuard over IPv6, and allowing
+the home IPv6 prefix would hard-code a prefix Free can change.
+
+**Pulsar.** UFW does not govern the ports Docker publishes in IPv4: Docker writes its own
+rules ahead of UFW's, so NPM's `80`, `443` and `81` answer whatever UFW says. In IPv6, Docker
+relays those ports through a process on the host, and UFW does apply. The k3s API must also
+accept the pod network (`10.42.0.0/16`): pods reach it through the `kubernetes` service, and
+without that rule ArgoCD and every app that talks to the cluster lose it.
+
+```sh
+sudo ufw allow from 192.168.1.0/24 to any port 6443 proto tcp comment "k3s API (LAN)"
+sudo ufw allow from 192.168.27.0/24 to any port 6443 proto tcp comment "k3s API (VPN Freebox)"
+sudo ufw allow from 10.42.0.0/16 to any port 6443 proto tcp comment "k3s API <- pods"
+sudo ufw allow from 192.168.1.0/24 to any app Samba comment "samba (LAN)"
+sudo ufw allow from 192.168.27.0/24 to any app Samba comment "samba (VPN Freebox)"
+```
+
+**AdGuard.** Its rules are [`infra/adguard/nftables.conf`](../infra/adguard/nftables.conf),
+loaded at boot by the `nftables` service. They keep ICMP open in both versions: IPv6 needs
+it to find its neighbours and keep its address. To change them without risk of locking
+yourself out, arm a rollback first:
+
+```sh
+scp infra/adguard/nftables.conf adguard:/etc/nftables.conf.new
+ssh adguard
+nft -c -f /etc/nftables.conf.new          # syntax check only
+systemd-run --on-active=120 --unit=nft-rollback nft -f /etc/nftables.conf
+nft -f /etc/nftables.conf.new
+# From another machine: DNS, web UI, SSH, then Beszel from Pulsar. If all answer:
+systemctl stop nft-rollback.timer
+mv /etc/nftables.conf.new /etc/nftables.conf
+```
+
+If nothing answers, wait two minutes: the timer reloads the previous file. As a last
+resort, `pct enter 101` on Astra opens a shell in the container, where `nft flush ruleset`
+opens everything again.
+
 ## Storage strategy
 
 Both drives are NVMe, with distinct roles:
