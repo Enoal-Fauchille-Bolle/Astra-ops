@@ -4,7 +4,7 @@
 > is either in place or points to where it moved.
 
 A nightly job on Astra copies both configurations to Pulsar, where Zerobyte job 13
-(**Backups**) ships them to Backblaze at 02:00 — no new Zerobyte volume was needed.
+(**Backups**) ships them to Backblaze at 02:00, so no new Zerobyte volume was needed.
 First unattended night, 2026-09-12: copy sent at 01:30:05, Kuma push `up`, and job 13 went
 from 12 to 62 files (50 new) in `succeeded`.
 
@@ -41,7 +41,7 @@ confines a script mistake or a leaked key to one directory.
 
 **Secrets.** The copy contains private keys, password hashes, the PBS storage password and
 the Resend API key. They are protected by file permissions on Pulsar and by restic encryption
-off-site — no second encryption layer, since Zerobyte on Pulsar already holds the keys to
+off-site, with no second encryption layer, since Zerobyte on Pulsar already holds the keys to
 every repository. File permissions do not stop a container running as root: both Filebrowser
 apps could browse this copy until 2026-09-14 (§6, _Who else can read the dumps_). The push URL lives in `/etc/default/proxmox-config-backup` (root, `600`),
 outside this repository.
@@ -51,10 +51,10 @@ fails (integrity check, LXC 103 stopped…), nothing is sent and Pulsar keeps th
 
 ## Reinstalling this mechanism from scratch
 
-Nothing here is deployed by ArgoCD or Portainer — after a fresh Astra or Pulsar (§9.3), both
+Nothing here is deployed by ArgoCD or Portainer: after a fresh Astra or Pulsar (§9.3), both
 sides must be rebuilt by hand, in this order. Verified against the live setup on 2026-09-22.
 
-**1. On Pulsar — the receiving account.** Root-owned home and `.ssh`, so a compromised
+**1. On Pulsar: the receiving account.** Root-owned home and `.ssh`, so a compromised
 `rrsync` command cannot rewrite its own restriction:
 
 ```bash
@@ -71,10 +71,10 @@ sudo chmod 644 /var/lib/astra-configs/.ssh/authorized_keys
 sudo install -d -o astra-configs -g astra-configs -m 700 /mnt/data/backups/proxmox-configs
 ```
 
-`rrsync` ships inside the `rsync` package, already installed by default on Ubuntu Server —
+`rrsync` ships inside the `rsync` package, already installed by default on Ubuntu Server, so
 nothing extra to install for it.
 
-**2. On Astra — the key pair and pinned host key.**
+**2. On Astra: the key pair and pinned host key.**
 
 ```bash
 sudo ssh-keygen -t ed25519 -f /root/.ssh/proxmox-config-backup_ed25519 \
@@ -88,11 +88,11 @@ sudo ssh-keyscan -t ed25519 192.168.1.201 | sudo tee /root/.ssh/proxmox-config-b
 > read directly on its console: `ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub`.
 
 **3. Authorize that key on Pulsar.** Append one line to
-`/var/lib/astra-configs/.ssh/authorized_keys` (still root-owned — edit it as root, not as
+`/var/lib/astra-configs/.ssh/authorized_keys` (still root-owned, so edit it as root, not as
 `astra-configs`), pasting the public key just generated after `command="..."`. The full line,
 with its `restrict` and `rrsync -wo` restriction, is shown above under _Transport_.
 
-**4. On Astra — install the script and the timer**, from a clone of this repository:
+**4. On Astra: install the script and the timer**, from a clone of this repository:
 
 ```bash
 sudo install -o root -g root -m 755 infra/astra/proxmox-config-backup.sh /usr/local/sbin/proxmox-config-backup
@@ -101,7 +101,7 @@ sudo install -o root -g root -m 644 infra/astra/proxmox-config-backup.timer /etc
 ```
 
 **5. Recreate the push URL**, from the **Proxmox Config Backup** monitor in Uptime Kuma
-(§10) — copy its push URL, keep only the part before `?`, and replace the `http://uptime.lan`
+(§10): copy its push URL, keep only the part before `?`, and replace the `http://uptime.lan`
 host Kuma displays with `https://kuma-probe.enoal.fr`: Astra resolves through `1.1.1.1` and
 does not know `.lan` names ([monitoring.md](../monitoring.md#uptime-kuma)).
 
@@ -126,10 +126,10 @@ A successful run leaves the four folders (`pve/`, `pmxcfs/`, `pbs/`, `host/`) an
 ## 9.4 Restoring the Proxmox configuration
 
 **Where to get it:** `/mnt/data/backups/proxmox-configs/` on Pulsar if it survived, otherwise
-Zerobyte job 13 (**Backups**, repository **Backblaze**) — pick a snapshot from before the
+Zerobyte job 13 (**Backups**, repository **Backblaze**): pick a snapshot from before the
 incident, since the nightly copy mirrors the current state with `--delete`.
 
-**Proxmox VE — full recovery** (`pmxcfs` documentation, section _Recovery_), on a fresh
+**Proxmox VE: full recovery** (`pmxcfs` documentation, section _Recovery_), on a fresh
 install with nothing running:
 
 1. Install the Proxmox VE version listed in `MANIFEST.txt`.
@@ -137,11 +137,11 @@ install with nothing running:
 3. Copy `pmxcfs/config.db` to `/var/lib/pve-cluster/config.db` and set it to `0600`, owned by root.
 4. Adapt `/etc/hostname` and `/etc/hosts` from `host/`, and `/etc/network/interfaces` if the
    hardware (NIC names) is the same.
-5. Reboot, then check storage, VMs and LXCs — the disks themselves come from PBS or Layer 2.
+5. Reboot, then check storage, VMs and LXCs; the disks themselves come from PBS or Layer 2.
 
 For a single setting, read the matching file under `pve/` instead.
 
-**Proxmox Backup Server** — in a fresh LXC with the same PBS version, stop
+**Proxmox Backup Server**: in a fresh LXC with the same PBS version, stop
 `proxmox-backup-proxy` and `proxmox-backup`, copy `pbs/proxmox-backup/*` into
 `/etc/proxmox-backup/`, and restore the original ownership, which the copy does not keep
 (every file arrives as `600`):
