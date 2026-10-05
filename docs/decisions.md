@@ -65,6 +65,8 @@ full measurements and checks are in the git history of this file and of
   `todo.md` dates for `Mega A` and `Mega D` with a single date six months out, tracked as
   an open item in [todo.md](todo.md). The Portainer job's own cleanup stays open on its
   original date, it was never on MEGA.
+- **2026-09-25 — Secrets copied by hand to the official Bitwarden cloud only.** Whether to
+  add an automated encrypted copy is still open ([todo.md](todo.md)).
 - **Films are not backed up.** They can be downloaded again.
 
 ## Storage

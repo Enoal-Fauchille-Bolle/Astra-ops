@@ -11,54 +11,43 @@ Open work only. Finished items move to [decisions.md](decisions.md).
 
 - [ ] **Fix Zerobyte → Discord notifications**: a message over ~5,970 characters loses its
       first 6,000 with HTTP 400: Shoutrrr does not count the title against Discord's
-      6,000-character embed cap (§10). Accepted as is for now (2026-09-12)
-- [ ] **Purge `Mega A`, `Mega C` and `Mega D`, about 2027-03-23** (decided 2026-09-23,
-      six months out): remove the three repositories from Zerobyte and delete their
-      frozen snapshots on MEGA, then drop the now-unused per-app mounts from
-      `docker-compose.yml`. `Mega B` is a separate, already-settled case (kept forever,
-      see [decisions.md](decisions.md)). Once done, drop `mega-a`/`mega-c`/`mega-d` from
-      the rclone remotes step of the disaster-recovery runbook
-      ([restore.md](backup/restore.md), §9.3 step 7)
+      6,000-character embed cap ([monitoring.md](monitoring.md)). Accepted as is for now
+- [ ] **Purge `Mega A`, `Mega C` and `Mega D`, about 2027-03-23**: remove the three
+      repositories from Zerobyte and delete their frozen snapshots on MEGA, then drop the
+      now-unused per-app mounts from `docker-compose.yml`. `Mega B` is a separate,
+      already-settled case (kept forever, see [decisions.md](decisions.md)). Once done, drop
+      `mega-a`/`mega-c`/`mega-d` from the rclone remotes step of the disaster-recovery
+      runbook ([restore.md](backup/restore.md), §9.3 step 7)
 
 ### Storage
 
 - [ ] Decide the fate of LXC 102 (`wireguard`, stopped since 2026-05-04) in the vzdump job
 
-### Disk layout — decided 2026-09-13
+### Disk layout
 
-- [ ] Delete job 12 (Portainer, Backblaze) and its snapshots, then drop the unused mount
-      from `docker-compose.yml`, **about 2026-12-13**, once job 17 holds three months of
-      history covering the same path (§5.4). Unrelated to MEGA: job 12 was never on MEGA
-- [ ] Once job 14 (Photos, Backblaze) is no longer wanted: delete it and its snapshots,
+- [ ] Delete the Portainer job (Backblaze) and its snapshots, then drop the unused mount
+      from `docker-compose.yml`, **about 2026-12-13**, once Docker Data holds three months of
+      history covering the same path (§5.4). It was never on MEGA, so the purge above does
+      not cover it
+- [ ] Once the Photos job (Backblaze) is no longer wanted: delete it and its snapshots,
       then drop the `/data/media/photos` mount from `docker-compose.yml` and the empty host
-      folder. Its snapshots hold the off-site history of the photos before 2026-09-21.
-      Job 10 (Filebrowser, `Mega C`) is **not** part of this cleanup: it is handled by the
-      `Mega A`/`Mega C`/`Mega D` purge above instead
-- [ ] Bring Termix (`/opt/ops/docker/termix/data`, 15M) under the app roots: it is outside
-      them and has no off-site copy. Not urgent (2026-09-15): Termix is a test, started by
-      hand outside Portainer, no backup wanted yet. Dawarich's file volumes were on the same
-      list until Dawarich was removed on 2026-09-21
-- [ ] Move the lab VMs to `vault-thin` (the thin pool from the Netac split below). Template 105
-      is undecided, and 106 is a linked clone of it
-- [x] **Split the Netac with LVM**: done 2026-09-22 with method A (staged on the WD, wiped
-      and rebuilt the Netac as VG `netac`, synced back): fixed LV `pbs` for the PBS datastore,
-      fixed LV `files` for the ISOs, thin pool `thin` for the cold disk. Prep work: PBS 4
-      verify/GC clean (2026-09-19/20), `drive` moved off first (2026-09-21), the seven old
-      `vm/100` snapshots holding `drive-scsi1` measured (349.20 GiB) and deleted in the PBS
-      UI, manual GC freed 367.491 GiB leaving the datastore at 113.238 GiB. Full
-      write-up, including the same-day thin-pool overfill incident, in
-      [decisions.md](decisions.md).
-      **Consequence for the item below:** the ~100G reserve meant to become the future S3
-      datastore's local cache was almost entirely spent same-day fixing that incident (~672M
-      left). The wasted thin-pool space was reclaimed on 2026-09-23 (`thin` at 14.32%), but
-      that 100G stays inside the pool, so the cache plan still needs space found elsewhere.
+      folder. Its snapshots hold the off-site history of the photos from before the move to
+      `drive`. The Filebrowser Files job (`Mega C`) is **not** part of this cleanup: it is
+      handled by the `Mega A`/`Mega C`/`Mega D` purge above instead
+- [ ] Bring Termix (`/opt/ops/docker/termix/data`) under the app roots: it is outside them
+      and has no off-site copy. Not urgent: Termix is a test, started by hand outside
+      Portainer, no backup wanted yet
+- [ ] Move the lab VMs to `vault-thin` (the thin pool on the Netac). Template 105 is
+      undecided, and 106 is a linked clone of it
 - [ ] Later: a PBS 4 datastore on Backblaze (S3 backend) to restore whole VMs after losing
-      Astra. It needs a 64–128 GiB local cache; support status and B2 compatibility unchecked
+      Astra. It needs a 64–128 GiB local cache. The ~100G reserve meant for it went into the
+      `thin` pool, so that space has to be found elsewhere. Support status and B2
+      compatibility unchecked
 
 ### Phase 3 — Secrets sync
 
-Decided 2026-09-25: official Bitwarden only for now. Whether to add the automated copy below,
-possibly to Backblaze instead of Mega A, is to be decided later.
+Official Bitwarden only for now. Whether to add the automated copy below, possibly to
+Backblaze instead of Mega A, is to be decided later.
 
 - [ ] Configure `rclone crypt` on the workstation for a `mega-a-crypt` remote
 - [ ] Create `~/astra-secrets/` and consolidate all secrets
