@@ -211,13 +211,13 @@ Sizes: `du -sh /opt/k3s-data/* /opt/docker-data/* /mnt/data/*/* /mnt/drive/*` in
 
 ```txt
 Pulsar /opt/ (sda — hot)
-├── k3s-data/                    → Backblaze, job 16 (exclusions §5.4)
+├── k3s-data/                    → Backblaze, K3s Data job (exclusions §5.4)
 │   ├── <service>/               one directory per app
 │   └── immich/                  ├── library/upload    (Tier 2)
 │                                ├── library/thumbs    (Tier 3, regenerable)
 │                                ├── model-cache       (Tier 3, re-downloaded)
 │                                └── postgres          (Tier 1)
-├── docker-data/                 → Backblaze, job 17 (exclusions §5.4)
+├── docker-data/                 → Backblaze, Docker Data job (exclusions §5.4)
 │   ├── <service>/               one directory per app
 │   ├── crafty/                  └── servers/ (Tier 3) · config/ (Tier 2)
 │   └── portainer/               (Tier 1)
@@ -233,14 +233,14 @@ Pulsar /mnt/data/ (sdb — cold)     not in PBS, backup=0 (§4.2)
 ├── docker-volumes/crafty/
 │   ├── backups/                 (Tier 2) → Backblaze, all 3 servers
 │   └── logs/                    (Tier 3, no backup)
-├── backups/                     (Tier 2) → Backblaze, job 13
+├── backups/                     (Tier 2) → Backblaze, Backups job
 │   ├── dumps/                   nightly database dumps (§6)
 │   └── proxmox-configs/         Astra + PBS configuration, refreshed nightly (§4.2)
 └── k3s-pvc/
     └── crafty/
 
 Pulsar /mnt/drive/ (sdc — personal)
-                                 in PBS with VM 100 (§4.2) → Backblaze, job 18
+                                 in PBS with VM 100 (§4.2) → Backblaze, Drive job
 ├── Archives/
 ├── Photos/
 ├── Téléphone/                   phone backup
