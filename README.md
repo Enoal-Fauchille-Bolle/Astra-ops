@@ -1,6 +1,6 @@
 # Astra-ops
 
-GitOps monorepo for my homelab called **Astra** — a personal infrastructure running on Proxmox,
+GitOps monorepo for my homelab called **Astra**, a personal infrastructure running on Proxmox,
 orchestrated with K3s and Docker Compose, and continuously deployed via ArgoCD.
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
@@ -33,10 +33,10 @@ up by ArgoCD and synced to the cluster.
 
 The infrastructure is split into two deployment layers:
 
-- **Layer A — Docker Compose**: infrastructure and a few apps, deployed by Portainer from
+- **Layer A (Docker Compose)**: infrastructure and a few apps, deployed by Portainer from
   Git (Nginx Proxy Manager, Crafty, Zerobyte, CrowdSec, Beszel…).
-- **Layer B — K3s (Kubernetes)**: most application workloads, packaged as Helm charts or
-  raw manifests and deployed through ArgoCD — except Immich and n8n, applied by hand.
+- **Layer B (Kubernetes with K3s)**: most application workloads, packaged as Helm charts or
+  raw manifests and deployed through ArgoCD, except Immich and n8n, which are applied by hand.
 
 ---
 
@@ -53,7 +53,7 @@ Astra is not the simplest way to run a homelab: one reverse proxy, bare metal or
 - **Secrets management**: External Secrets Operator (ESO) syncing secrets from Infisical into Kubernetes, keeping credentials out of Git.
 
 > [!NOTE]
-> The most visible architectural compromise is the double reverse proxy: Nginx Proxy Manager handles SSL termination and public routing, then passes plain HTTP to Traefik inside the cluster. The cleaner approach would be Traefik directly exposed with cert-manager — but NPM was already familiar and added a useful management UI.
+> The most visible architectural compromise is the double reverse proxy: Nginx Proxy Manager handles SSL termination and public routing, then passes plain HTTP to Traefik inside the cluster. The cleaner approach would be Traefik directly exposed with cert-manager, but NPM was already familiar and added a useful management UI.
 
 ---
 
@@ -162,12 +162,12 @@ astra-ops/
 ## Services catalog
 
 > [!NOTE]
-> **Status** — ✅ Active: running · ⏸️ Disabled: in repo but not deployed · 🔜 Planned: not yet in repo
+> **Status**: ✅ Active: running · ⏸️ Disabled: in repo but not deployed · 🔜 Planned: not yet in repo
 >
-> **Type** — Helm and Raw apps are deployed by ArgoCD from `apps/`, except _Raw (by hand)_:
+> **Type**: Helm and Raw apps are deployed by ArgoCD from `apps/`, except _Raw (by hand)_:
 > applied with `kubectl apply`. Docker Compose stacks are deployed by Portainer from Git.
 >
-> **Access** — 🌍 Public: internet-accessible · 🔒 LAN only: LAN-restricted
+> **Access**: 🌍 Public: internet-accessible · 🔒 LAN only: LAN-restricted
 
 | Service                                        | Description                                       | Category          | Namespace          | Type            | Exposure                                                   | Access      | Status      |
 | ---------------------------------------------- | ------------------------------------------------- | ----------------- | ------------------ | --------------- | ---------------------------------------------------------- | ----------- | ----------- |
