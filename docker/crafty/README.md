@@ -38,5 +38,5 @@ Crafty names server and archive folders by UUID, not by name:
 
 Job 15 runs at 06:00 because Crafty writes Roots SMP's archive at 04:00 and PBS verifies
 the same drive at 05:00. Archives are compressed and taken without stopping the server, on
-purpose — the reasons are in [`docs/decisions.md`](../../docs/decisions.md). No Crafty
+purpose; the reasons are in [`docs/decisions.md`](../../docs/decisions.md). No Crafty
 archive has been test-restored yet.
