@@ -44,8 +44,8 @@ Open work only. Finished items move to [decisions.md](decisions.md).
       and rebuilt the Netac as VG `netac`, synced back): fixed LV `pbs` for the PBS datastore,
       fixed LV `files` for the ISOs, thin pool `thin` for the cold disk. Prep work: PBS 4
       verify/GC clean (2026-09-19/20), `drive` moved off first (2026-09-21), the seven old
-      `vm/100` snapshots holding `drive-scsi1` measured (349.20 GiB) and deleted by Enoal in
-      the PBS UI, manual GC freed 367.491 GiB leaving the datastore at 113.238 GiB. Full
+      `vm/100` snapshots holding `drive-scsi1` measured (349.20 GiB) and deleted in the PBS
+      UI, manual GC freed 367.491 GiB leaving the datastore at 113.238 GiB. Full
       write-up, including the same-day thin-pool overfill incident, in
       [decisions.md](decisions.md).
       **Consequence for the item below:** the ~100G reserve meant to become the future S3
