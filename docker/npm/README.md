@@ -48,11 +48,18 @@ are not affected, host 47 catches them first.
 ## Visitor addresses behind Cloudflare
 
 `server_proxy.conf` is a copy of `/opt/docker-data/npm/data/nginx/custom/server_proxy.conf`,
-which NPM includes in every proxy host. NPM already trusts Cloudflare's ranges
-(`ip_ranges.conf`), but reads the visitor's address from `X-Real-IP`, a header Cloudflare
-does not send: the logs showed Cloudflare's addresses, and CrowdSec analysed those. The file
-makes NPM read `CF-Connecting-IP` instead. The header is only believed when the connection
-comes from Cloudflare or a private network; a direct visitor keeps its own address.
+which NPM includes in every proxy host. NPM reads the visitor's address from `X-Real-IP`, a
+header Cloudflare does not send: the logs showed Cloudflare's addresses, and CrowdSec
+analysed those. The file makes NPM read `CF-Connecting-IP` instead.
+
+It also sets which connections may send that header. NPM rewrites `ip_ranges.conf` every
+six hours with Cloudflare's ranges and CloudFront's, and anyone can put a CloudFront
+distribution in front of the server. A list declared in a `server` block replaces the one
+inherited from `http` instead of adding to it, so the header is only believed when the
+connection comes from Cloudflare or a private network; a direct visitor keeps its own
+address. `IP_RANGES_FETCH_ENABLED: 'false'` does not help: it only skips the fetch at
+startup, the six-hour timer still runs. Cloudflare publishes its ranges at
+<https://www.cloudflare.com/ips/>; the file needs updating when they change.
 
 Put it in `server_proxy.conf`, not `http_top.conf`: NPM's `nginx.conf` already sets
 `real_ip_header` at `http` level, and a second one there makes nginx reject the whole
