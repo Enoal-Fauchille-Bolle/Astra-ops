@@ -42,11 +42,7 @@ The infrastructure is split into two deployment layers:
 
 ## About
 
-Astra is not the most practical homelab architecture. A single reverse proxy handling both SSL termination and internal routing would be simpler. Running everything on bare metal would eliminate the VM overhead entirely. An opinionated all-in-one solution would take an afternoon to set up.
-
-But simplicity was not the goal — learning was.
-
-Every piece of this stack was chosen because it forced me to understand something real:
+Astra is not the simplest way to run a homelab: one reverse proxy, bare metal or an all-in-one distribution would all be easier. I built it this way to learn, and each piece taught me something:
 
 - **Kubernetes (K3s)** — container orchestration, namespaces, Helm packaging, HPA/VPA autoscaling, and the GitOps feedback loop with ArgoCD.
 - **Networking** — split-horizon DNS with AdGuard Home, NAT and port forwarding, SSL termination, and the Traefik ingress controller.
