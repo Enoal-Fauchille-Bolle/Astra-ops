@@ -1,11 +1,11 @@
 #!/bin/bash
-# Dumps the live databases of Pulsar into /mnt/data/backups/dumps/, where Zerobyte job 13
-# ("Backups") ships them off-site to Backblaze every night at 02:00.
+# Dumps the live databases of Pulsar into /mnt/data/backups/dumps/, where the Zerobyte
+# Backups job ships them off-site to Backblaze every night at 02:00.
 # Installed as /usr/local/sbin/dump-databases, triggered by dump-databases.timer.
 # Why it exists and how to restore from it: docs/backup/database-dumps.md.
 #
 # Reports to an Uptime Kuma push monitor when PUSH_URL is set (by the service, from
-# /etc/default/dump-databases — the token stays out of this repository). The monitor alerts
+# /etc/default/dump-databases, so the token stays out of this repository). The monitor alerts
 # when no push arrives in time, which also covers a timer that never fires.
 #
 # Each database is dumped on its own: a failure keeps that database's last good dump, lets
@@ -28,8 +28,8 @@ KUMA_DEPLOYMENT="monitoring/uptimekuma"
 KUMA_SOCKET="/app/data/run/mariadb.sock"
 KUMA_DATABASE="kuma"
 # SQLite databases worth a guaranteed copy. The others (caches, statistics, indexes) are only
-# copied raw by Zerobyte jobs 16 and 17, like these ones too — except Zerobyte's own, which
-# lies outside both app roots: this dump is its only off-site copy.
+# copied raw by the Zerobyte K3s Data and Docker Data jobs, like these ones too. Zerobyte's
+# own is the exception: it lies outside both app roots, so this dump is its only off-site copy.
 SQLITE=(
     "zerobyte=/var/lib/zerobyte/data/zerobyte.db"
     "vaultwarden=/opt/k3s-data/vaultwarden/db.sqlite3"
@@ -45,7 +45,7 @@ SQLITE=(
     "speedtest-tracker=/opt/docker-data/speedtest-tracker/database.sqlite"
     "loandash=/opt/docker-data/loandash/loandash.db"
 )
-# Per dump: a stuck one must not run into job 13 at 02:00
+# Per dump: a stuck one must not run into the Backups job at 02:00
 DUMP_TIMEOUT="15m"
 # Kuma displays the URL with "?status=up&msg=OK&ping=" appended: keep only the part before "?"
 PUSH_URL="${PUSH_URL:-}"

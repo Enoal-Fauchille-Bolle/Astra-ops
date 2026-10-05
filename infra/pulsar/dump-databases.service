@@ -10,5 +10,5 @@ Type=oneshot
 EnvironmentFile=-/etc/default/dump-databases
 ExecStart=/usr/local/sbin/dump-databases
 Nice=10
-# Well past the ~10 s a run takes, and short of Zerobyte job 13 at 02:00
+# Well past the ~10 s a run takes, and short of the Zerobyte Backups job at 02:00
 TimeoutStartSec=50min
