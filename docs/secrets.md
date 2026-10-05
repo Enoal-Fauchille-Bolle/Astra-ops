@@ -21,7 +21,7 @@ Each of these services has a committed `ExternalSecret` (`templates/external-sec
 in its chart, `k3s/github-runners/external-secret.yaml` for the runners) that describes which
 keys to pull from Infisical and how to map them into a Kubernetes Secret. ArgoCD deploys
 the `ExternalSecret` object; ESO resolves it automatically against Infisical and creates
-the `Secret` — no manual intervention required.
+the `Secret`, with no manual intervention.
 
 ### What lives in git
 
@@ -39,7 +39,7 @@ the `Secret` — no manual intervention required.
 ### Adding a secret to a service
 
 1. Add the key/value in the Infisical UI (`infisical.lan` → project `astra-yrel` → env `prod`)
-2. Reference the key in the service's `ExternalSecret` and push — ArgoCD + ESO handle the rest
+2. Reference the key in the service's `ExternalSecret` and push; ArgoCD and ESO handle the rest
 
 ### Bootstrap after a K3s reinstall
 
@@ -86,9 +86,9 @@ kubectl apply -f regcred.yaml
 ## Layer A — Docker Compose
 
 Secrets for Docker Compose stacks are injected via Portainer's **Environment variables**
-UI — no `.env` file on disk, no repository changes required. Portainer stores them on
+UI: no `.env` file on disk, no repository changes required. Portainer stores them on
 Astra only: a value that must survive the loss of Astra needs a copy elsewhere (Zerobyte's
-`APP_SECRET`, for instance — [backup/restore.md](backup/restore.md), scenario C). Those
+`APP_SECRET`, for instance; see [backup/restore.md](backup/restore.md), scenario C). Those
 copies are in the official Bitwarden cloud: Zerobyte's `APP_SECRET`, and the notes
 `Astra – Homarr` (`SECRET_ENCRYPTION_KEY`) and `Astra – Speedtest` (`APP_KEY`).
 
