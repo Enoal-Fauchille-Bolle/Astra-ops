@@ -19,10 +19,6 @@ Open work only. Finished items move to [decisions.md](decisions.md).
       `mega-a`/`mega-c`/`mega-d` from the rclone remotes step of the disaster-recovery
       runbook ([restore.md](backup/restore.md), §9.3 step 7)
 
-### Storage
-
-- [ ] Decide the fate of LXC 102 (`wireguard`, stopped since 2026-05-04) in the vzdump job
-
 ### Disk layout
 
 - [ ] Delete the Portainer job (Backblaze) and its snapshots, then drop the unused mount

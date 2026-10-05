@@ -122,7 +122,7 @@ section holds the details; this table only puts them in order.
 | 01:00 daily    | Zerobyte jobs K3s Data and Docker Data → Backblaze                   | Layer 2 | §5.4                    |
 | 01:30 daily    | Proxmox configuration copied to `/mnt/data/backups/proxmox-configs/` | —       | §4.2                    |
 | 02:00 daily    | Zerobyte jobs Immich Library, Backups and Drive → Backblaze          | Layer 2 | §5.4                    |
-| 03:00 daily    | PBS snapshots Pulsar, AdGuard, Wireguard                             | Layer 1 | §4.4                    |
+| 03:00 daily    | PBS snapshots Pulsar, AdGuard, template 9000                         | Layer 1 | §4.4                    |
 | 04:00 daily    | PBS prune                                                            | Layer 1 | §4.4                    |
 | 04:00 daily    | Crafty writes Roots SMP's archive                                    | —       | §5.4                    |
 | 05:00 Saturday | PBS verify                                                           | Layer 1 | §4.4                    |
@@ -250,12 +250,13 @@ container because of the bind mount `mp0`, so the safety net before maintenance 
 
 ### 4.2 Scope
 
-| Guest     | ID  | Type | Included                                                                           |
-| --------- | --- | ---- | ---------------------------------------------------------------------------------- |
-| Pulsar    | 100 | VM   | ✅ OS disk `scsi0` and personal disk `scsi2` — cold disk `scsi1` set to `backup=0` |
-| AdGuard   | 101 | LXC  | ✅                                                                                 |
-| Wireguard | 102 | LXC  | ✅                                                                                 |
-| PBS       | 103 | LXC  | ❌ Excluded by design                                                              |
+| Guest               | ID   | Type        | Included                                                                           |
+| ------------------- | ---- | ----------- | ---------------------------------------------------------------------------------- |
+| Pulsar              | 100  | VM          | ✅ OS disk `scsi0` and personal disk `scsi2` — cold disk `scsi1` set to `backup=0` |
+| AdGuard             | 101  | LXC         | ✅                                                                                 |
+| Wireguard           | 102  | LXC         | ❌ Replaced by the Freebox's WireGuard VPN; stopped, to be deleted                 |
+| PBS                 | 103  | LXC         | ❌ Excluded by design                                                              |
+| `debian13-template` | 9000 | VM template | ✅                                                                                 |
 
 **Why Pulsar's cold disk is excluded.** `scsi1` (a raw LVM-thin volume on `vault-thin`) and
 the PBS datastore sit on the same Netac drive, in separate LVM volumes. A PBS copy of `scsi1`
@@ -322,7 +323,7 @@ PBS jobs only. The whole night, Zerobyte included, is in the
 
 | Time           | Job                | Description                                                        |
 | -------------- | ------------------ | ------------------------------------------------------------------ |
-| 03:00 daily    | Backup             | PBS snapshots Pulsar, AdGuard, Wireguard                           |
+| 03:00 daily    | Backup             | PBS snapshots Pulsar, AdGuard, template 9000                       |
 | 04:00 daily    | Prune              | Retention policy applied; old index entries dereferenced logically |
 | 05:00 Saturday | Verify             | `verify-weekly` re-reads the chunks and checks their checksums     |
 | 05:00 Sunday   | Garbage Collection | Orphaned data chunks physically deleted from disk                  |

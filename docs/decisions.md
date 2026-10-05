@@ -67,6 +67,8 @@ full measurements and checks are in the git history of this file and of
   original date, it was never on MEGA.
 - **2026-09-25 — Secrets copied by hand to the official Bitwarden cloud only.** Whether to
   add an automated encrypted copy is still open ([todo.md](todo.md)).
+- **2026-10-04 — LXC 102 (WireGuard) out of the nightly PBS backup.** The Freebox's
+  WireGuard VPN replaces it; the container is stopped and will be deleted later.
 - **Films are not backed up.** They can be downloaded again.
 
 ## Storage
