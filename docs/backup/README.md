@@ -96,6 +96,7 @@ graph TB
     subgraph CLOUD["Cloud — Layer 2"]
         B2[Backblaze B2 — every app directory, Immich, Crafty backups, backups, personal files]
         MEGA_A[MEGA Account A — frozen, purge ~2027-03-23]
+        MEGA_B[MEGA Account B — retired, purge ~2027-03-23]
         MEGA_C[MEGA Account C — frozen, purge ~2027-03-23]
         MEGA_D[MEGA Account D — frozen, purge ~2027-03-23]
     end
@@ -365,14 +366,14 @@ Two providers, with a clear split:
 - **MEGA** free accounts (20 GB each): small, slowly-changing data only. A full MEGA account
   fails **silently**, so nothing that grows is sent to MEGA.
 
-| Zerobyte repository            | Backend         | Holds                                                                                                                                      |
-| ------------------------------ | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Backblaze**                  | S3 (B2)         | Immich, Crafty backups, dumps and Proxmox configuration (Backups job), every app directory (K3s Data, Docker Data), personal files (Drive) |
-| **Mega A**                     | rclone `mega-a` | Homer, Criteri'Fresque, Crafty config, Docker Registry — **jobs disabled**, purge planned ~2027-03-23 ([todo.md](../todo.md))              |
-| **Mega C**                     | rclone `mega-c` | Filebrowser files — **job disabled**, purge planned ~2027-03-23 ([todo.md](../todo.md))                                                    |
-| **Mega D**                     | rclone `mega-d` | old Nous Deux snapshots only — **job disabled**, purge planned ~2027-03-23 ([todo.md](../todo.md))                                         |
-| Mega B                         | rclone `mega-b` | **retired**: removed from Zerobyte, left intact on MEGA, readable with `restic --no-lock`                                                  |
-| `test-backblaze`, `test-local` | —               | test repositories                                                                                                                          |
+| Zerobyte repository            | Backend         | Holds                                                                                                                                        |
+| ------------------------------ | --------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Backblaze**                  | S3 (B2)         | Immich, Crafty backups, dumps and Proxmox configuration (Backups job), every app directory (K3s Data, Docker Data), personal files (Drive)   |
+| **Mega A**                     | rclone `mega-a` | Homer, Criteri'Fresque, Crafty config, Docker Registry — **jobs disabled**, purge planned ~2027-03-23 ([todo.md](../todo.md))                |
+| **Mega C**                     | rclone `mega-c` | Filebrowser files — **job disabled**, purge planned ~2027-03-23 ([todo.md](../todo.md))                                                      |
+| **Mega D**                     | rclone `mega-d` | old Nous Deux snapshots only — **job disabled**, purge planned ~2027-03-23 ([todo.md](../todo.md))                                           |
+| Mega B                         | rclone `mega-b` | **retired**: removed from Zerobyte, left intact on MEGA, readable with `restic --no-lock`, purge planned ~2027-03-23 ([todo.md](../todo.md)) |
+| `test-backblaze`, `test-local` | —               | test repositories                                                                                                                            |
 
 **Tier 3 data (movies, Crafty server worlds, logs) receives no cloud backup.** Movies are
 re-downloadable. Crafty worlds reach the cloud indirectly, through the `.zip` archives Crafty
@@ -455,10 +456,10 @@ monthly** snapshots.
   backup and only for that job's tag (`forget --group-by tags --tag <short_id>`), so a
   disabled job's snapshots are never pruned. The Portainer job (Backblaze) gets deleted
   about **2026-12-13**, once Docker Data has built its own three months of history covering
-  the same path. `Mega A`, `Mega C` and `Mega D` are purged as a group instead, about
-  **2027-03-23**: removed from Zerobyte, their snapshots deleted on MEGA, and the per-app
-  mounts dropped from `docker-compose.yml`. `Mega B` is a separate, already-settled case:
-  kept as is, no purge date ([decisions.md](../decisions.md)).
+  the same path. The four MEGA repositories are purged together instead, about
+  **2027-03-23**: their snapshots deleted on MEGA, `Mega A`, `Mega C` and `Mega D` removed
+  from Zerobyte (`Mega B` already is), and the per-app mounts dropped from
+  `docker-compose.yml` ([decisions.md](../decisions.md)).
 - **Drive copies the personal disk whole** (no exclusion, no include filter), for the same
   reason as K3s Data and Docker Data: a folder added to `drive` is covered without touching
   Zerobyte. Zerobyte sees the disk read-only at `/data/drive` (volume `Drive`).

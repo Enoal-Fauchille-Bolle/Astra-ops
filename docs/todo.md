@@ -12,10 +12,10 @@ Open work only. Finished items move to [decisions.md](decisions.md).
 - [ ] **Fix Zerobyte → Discord notifications**: a message over ~5,970 characters loses its
       first 6,000 with HTTP 400: Shoutrrr does not count the title against Discord's
       6,000-character embed cap ([monitoring.md](monitoring.md)). Accepted as is for now
-- [ ] **Purge `Mega A`, `Mega C` and `Mega D`, about 2027-03-23**: remove the three
-      repositories from Zerobyte and delete their frozen snapshots on MEGA, then drop the
-      now-unused per-app mounts from `docker-compose.yml`. `Mega B` is a separate,
-      already-settled case (kept forever, see [decisions.md](decisions.md)). Once done, drop
+- [ ] **Purge `Mega A`, `Mega B`, `Mega C` and `Mega D`, about 2027-03-23**, all four on
+      the same day ([decisions.md](decisions.md)): delete their frozen snapshots on MEGA,
+      remove `Mega A`, `Mega C` and `Mega D` from Zerobyte (`Mega B` is already out), then
+      drop the now-unused per-app mounts from `docker-compose.yml`. Once done, drop
       `mega-a`/`mega-c`/`mega-d` from the rclone remotes step of the disaster-recovery
       runbook ([restore.md](backup/restore.md), §9.3 step 7)
 
@@ -29,7 +29,7 @@ Open work only. Finished items move to [decisions.md](decisions.md).
       then drop the `/data/media/photos` mount from `docker-compose.yml` and the empty host
       folder. Its snapshots hold the off-site history of the photos from before the move to
       `drive`. The Filebrowser Files job (`Mega C`) is **not** part of this cleanup: it is
-      handled by the `Mega A`/`Mega C`/`Mega D` purge above instead
+      handled by the MEGA purge above instead
 - [ ] Bring Termix (`/opt/ops/docker/termix/data`) under the app roots: it is outside them
       and has no off-site copy. Not urgent: Termix is a test, started by hand outside
       Portainer, no backup wanted yet
