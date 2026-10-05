@@ -13,7 +13,7 @@ full measurements and checks are in the git history of this file and of
   `scsi1`, and what an in-place restore does to an excluded disk is undocumented.
 - **Keep off Astra what a restore of Astra needs.** The B2 key, Zerobyte's restic password
   and the Obsidian LiveSync secrets are in the official Bitwarden cloud, and Zerobyte's
-  `APP_SECRET` is saved outside Astra too — Vaultwarden runs on Astra and goes down with it.
+  `APP_SECRET` is saved outside Astra too, because Vaultwarden runs on Astra and goes down with it.
   Since 2026-09-25 the same cloud also holds Infisical's bootstrap and service token, the
   AppFlowy and Immich secrets, and the Homarr and Speedtest keys
   ([secrets.md](secrets.md)).
@@ -82,7 +82,7 @@ full measurements and checks are in the git history of this file and of
   configs, photos, worlds) lives on the WD Blue with three copies: the disk, PBS, Backblaze.
   Replaceable data or copies (films, ISOs, lab VMs, Crafty archives, the PBS datastore) live
   on the Netac with no backup required. No hardware purchase (both M.2 slots taken, no room
-  for a SATA drive); no ZFS mirror — a dead disk is handled by restoring within hours.
+  for a SATA drive); no ZFS mirror, since a dead disk is handled by restoring within hours.
 - **2026-09-15 — Personal files on their own virtual disk, `drive`.** A dedicated 64G thin
   disk on the WD Blue (`scsi2`), not a folder of the system disk: a full `drive` must not
   stop the apps. Filled on 2026-09-20 with `rsync -a` as root to keep the `1000:1000` owner
@@ -96,18 +96,18 @@ full measurements and checks are in the git history of this file and of
   filesystem holding the PBS datastore, the Pulsar cold disk and the ISOs let any of them
   starve the others. Everything was staged on the WD Blue, the Netac wiped and repartitioned
   as VG `netac`: LV `pbs` (300G ext4, fixed, `/mnt/pbs-datastore`, `nofail` in `fstab`), LV
-  `files` (32G ext4, fixed, mounted at `/mnt/pve/vault` — kept that name and path so the
-  105–108 lab VMs' CD-ROM references needed no change — Proxmox storage `vault`, content
+  `files` (32G ext4, fixed, mounted at `/mnt/pve/vault`, the same name and path so the
+  105–108 lab VMs' CD-ROM references needed no change; Proxmox storage `vault`, content
   restricted to `iso,vztmpl,backup,snippets`), and a thin pool `thin` (Proxmox storage
   `vault-thin`) for Pulsar's cold disk. Chunk size forced to 64 KiB (`lvcreate -c 64k`) to
-  match the existing `pve/data` pool — LVM's own default for a pool this size picked 512 KiB
+  match the existing `pve/data` pool, since LVM's own default for a pool this size picked 512 KiB
   and warned about slow zeroing. ~100G left unallocated as reserve.
   **Incident, same day:** moving the cold disk from its temporary WD copy into the new thin
   pool (`qm disk move 100 scsi1 vault-thin`) physically wrote all 500G of the declared virtual
-  disk, not just the ~76G of real guest data — unlike the initial Netac→WD move, which had
+  disk, not just the ~76G of real guest data, unlike the initial Netac→WD move, which had
   correctly skipped empty regions from the source `.qcow2` file. This filled the pool to
   96.15%. Two `fstrim` attempts inside Pulsar (including one after `mount -o remount`)
-  reclaimed only ~57 MiB combined — ext4 most likely still believes it already reported that
+  reclaimed only ~57 MiB combined: ext4 most likely still believes it already reported that
   free space as trimmed from before the disk move, and a real unmount (not just a remount)
   would probably be needed to force a full re-trim, which was not attempted same-day since it
   would require briefly stopping Crafty, Zerobyte, Filebrowser Quantum and SFTPGo. Mitigated
@@ -115,7 +115,7 @@ full measurements and checks are in the git history of this file and of
 +100G netac/thin`), bringing real usage down to ~80.65%. See [monitoring.md](monitoring.md)
   for why Beszel could not have caught this on its own (thin pools have no file system to
   watch).
-  **Resolved 2026-09-23:** a real `umount /mnt/data` inside Pulsar was not enough — it
+  **Resolved 2026-09-23:** a real `umount /mnt/data` inside Pulsar was not enough: it
   returned OK, but no `EXT4-fs (sdb)` unmount/mount appeared in the kernel log, because 276
   processes still held the disk in their own mount namespaces, so ext4 kept its in-memory
   "already trimmed" state (the next `fstrim` freed 3.1 GiB, and the pool did not move). The
@@ -123,7 +123,7 @@ full measurements and checks are in the git history of this file and of
   `qm shutdown 100` + `qm start 100` from Astra cleared both; `fstrim -v /mnt/data` then
   trimmed 411.3 GiB and `thin` dropped from 80.65% to 14.32%. After any future live
   `qm disk move` onto a thin pool: stop/start the VM from Proxmox, then `fstrim`. The reserve
-  stays at ~672M — the 100G went into the pool.
+  stays at ~672M, because the 100G went into the pool.
 
 ## PBS (LXC 103)
 
@@ -131,7 +131,7 @@ full measurements and checks are in the git history of this file and of
 versions` prints the APT _candidate_, not the installed version: check with `dpkg`. The
   root disk was grown from 8G to 16G first, as the upgrade guide asks for 10G free.
 - **2026-09-12 — `nesting=1` on LXC 103.** Without it, every unit that asks systemd for
-  sandboxing died with `226/NAMESPACE` — `logrotate` had never run since install.
+  sandboxing died with `226/NAMESPACE`, so `logrotate` had never run since install.
 - **2026-09-13 — LXC 103 on the host's time zone.** Its jobs ran two hours late in UTC.
 - **2026-09-13 — Astra rebooted onto kernel `7.0.14-16-pve`.** Every guest came back on its
   own (`onboot: 1`).
@@ -166,9 +166,9 @@ Pulsar.
   mounts; the data-disk mount needs the empty `/mnt/data/.dashdot`.
 - **2026-09-15 — portracker without ptrace or `SYS_ADMIN` (`dfa6af3`).** The host PID
   namespace with `SYS_PTRACE` let it attach to any host process. It still lists every port,
-  but no longer names the program behind host ports — `sudo ss -tulpn` on Pulsar does.
+  but no longer names the program behind host ports (`sudo ss -tulpn` on Pulsar does).
 - **2026-09-15 — CrowdSec bans reach the containers.** NPM restores the visitor's address
-  behind Cloudflare, then the bouncer was hooked into `DOCKER-USER` — in that order, or the
+  behind Cloudflare, then the bouncer was hooked into `DOCKER-USER`, in that order, or the
   first ban would have cut every public site
   ([`docker/crowdsec/README.md`](../docker/crowdsec/README.md)).
 - **2026-10-05 — CrowdSec bans also block traffic through Cloudflare (`a272bc5`).** The
