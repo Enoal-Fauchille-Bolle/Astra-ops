@@ -6,7 +6,7 @@
 
 | Domain       | Scope             | Resolution                                         |
 | ------------ | ----------------- | -------------------------------------------------- |
-| `*.enoal.fr` | Public services   | Public DNS (internet-accessible via NAT)           |
+| `*.enoal.fr` | Public services   | Cloudflare DNS, most hosts proxied; NAT to Pulsar  |
 | `*.lan`      | Internal services | AdGuard Home local DNS (LXC 101 — `192.168.1.202`) |
 
 AdGuard Home acts as the local DNS server, resolving `.lan` hostnames to the Pulsar VM
