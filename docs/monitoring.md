@@ -3,19 +3,20 @@
 > Section numbers (§) refer to the [backup overview](backup/README.md); each numbered section there
 > is either in place or points to where it moved.
 
-| Component                              | Monitoring Method                                                                      | Alert Channel                                                                                      |
-| -------------------------------------- | -------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| Zerobyte job failures                  | Zerobyte built-in notifications                                                        | Discord webhook — ⚠️ **broken for long messages** (below)                                          |
-| PVE backup job (vzdump)                | PVE notifications, `default-matcher`                                                   | Email, **errors only**: target `mail-to-root` → root@pam's address, sent by Postfix through Resend |
-| PBS jobs (GC, verify, prune)           | PBS notifications, `default-matcher`                                                   | Email, **errors only**: SMTP target `resend` (configured 2026-09-09)                               |
-| Proxmox config copy                    | Uptime Kuma push monitor (§4.2)                                                        | Discord (`APS #monitoring`): `down` pushed on failure, or no push for 25 h                         |
-| Database dumps                         | Uptime Kuma push monitor **Database Dumps**, id 38 (§6)                                | Discord (`APS #monitoring`): `down` pushed on failure, naming the databases, or no push for 25 h   |
-| Disk usage — `vault` + `pbs-datastore` | Beszel agent on Astra, drop-in below                                                   | Discord (`APS #monitoring`, Beszel webhook): above 75 %                                            |
-| Disk usage — Pulsar sda                | Beszel agent on Pulsar                                                                 | Discord (Beszel): above 85 %                                                                       |
-| LXC 101 `adguard`                      | Beszel agent in the container                                                          | Discord (Beszel): disk or memory above 80 %                                                        |
-| AdGuard DNS answers                    | Uptime Kuma DNS monitor **AdGuard DNS**: resolves `beszel.lan` through `192.168.1.202` | Discord (`APS #monitoring`)                                                                        |
-| LXC 103 `pbs`                          | Beszel agent in the container                                                          | Discord (Beszel): disk above 80 %, memory above 80 % for 10 min                                    |
-| Cloud storage usage                    | MEGA web UI · B2 _Caps & Alerts_                                                       | Manual quarterly check · B2 spending cap                                                           |
+| Component                              | Monitoring Method                                                                                                                          | Alert Channel                                                                                      |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------- |
+| Zerobyte job failures                  | Zerobyte built-in notifications                                                                                                            | Discord webhook — ⚠️ **broken for long messages** (below)                                          |
+| PVE backup job (vzdump)                | PVE notifications, `default-matcher`                                                                                                       | Email, **errors only**: target `mail-to-root` → root@pam's address, sent by Postfix through Resend |
+| PBS jobs (GC, verify, prune)           | PBS notifications, `default-matcher`                                                                                                       | Email, **errors only**: SMTP target `resend` (configured 2026-09-09)                               |
+| Proxmox config copy                    | Uptime Kuma push monitor (§4.2)                                                                                                            | Discord (`APS #monitoring`): `down` pushed on failure, or no push for 25 h                         |
+| Database dumps                         | Uptime Kuma push monitor **Database Dumps**, id 38 (§6)                                                                                    | Discord (`APS #monitoring`): `down` pushed on failure, naming the databases, or no push for 25 h   |
+| CrowdSec bans copied to Cloudflare     | Uptime Kuma push monitor **CrowdSec Cloudflare Sync** ([`docker/crowdsec/README.md`](../docker/crowdsec/README.md#bans-behind-cloudflare)) | Discord (`APS #monitoring`): `down` pushed after five failed passes in a row, or no push for 5 min |
+| Disk usage — `vault` + `pbs-datastore` | Beszel agent on Astra, drop-in below                                                                                                       | Discord (`APS #monitoring`, Beszel webhook): above 75 %                                            |
+| Disk usage — Pulsar sda                | Beszel agent on Pulsar                                                                                                                     | Discord (Beszel): above 85 %                                                                       |
+| LXC 101 `adguard`                      | Beszel agent in the container                                                                                                              | Discord (Beszel): disk or memory above 80 %                                                        |
+| AdGuard DNS answers                    | Uptime Kuma DNS monitor **AdGuard DNS**: resolves `beszel.lan` through `192.168.1.202`                                                     | Discord (`APS #monitoring`)                                                                        |
+| LXC 103 `pbs`                          | Beszel agent in the container                                                                                                              | Discord (Beszel): disk above 80 %, memory above 80 % for 10 min                                    |
+| Cloud storage usage                    | MEGA web UI · B2 _Caps & Alerts_                                                                                                           | Manual quarterly check · B2 spending cap                                                           |
 
 > **PVE and PBS mail only failures since 2026-09-13.** Each `default-matcher` keeps a single
 > rule, `match-severity error`: every job success is `info`, every failure `error`, so success
@@ -72,10 +73,10 @@ Reorganised on 2026-09-25. The UI answers on `http://uptime.lan` only (LAN and V
 Ingress in [`k3s/uptimekuma/values.yaml`](../k3s/uptimekuma/values.yaml) keeps two paths
 public on `kuma-probe.enoal.fr`, and Traefik answers 404 on every other one:
 
-| Public path            | Used by                                                                    |
-| ---------------------- | -------------------------------------------------------------------------- |
-| `/api/badge/41/status` | UptimeRobot — monitor 41 is **Pulsar**, which must stay on the status page |
-| `/api/push/…`          | The push monitors: Proxmox config copy (Astra), database dumps (Pulsar)    |
+| Public path            | Used by                                                                                                    |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `/api/badge/41/status` | UptimeRobot — monitor 41 is **Pulsar**, which must stay on the status page                                 |
+| `/api/push/…`          | The push monitors: Proxmox config copy (Astra), database dumps (Pulsar), CrowdSec Cloudflare sync (Pulsar) |
 
 **Who watches Kuma: UptimeRobot**, free plan, one monitor **Uptime Kuma** on the badge URL,
 every 5 min, alerting on Discord. A `200` proves both that the house answers from the
@@ -84,13 +85,13 @@ alert when Pulsar is down, twice with Kuma's own alert.
 
 **Groups follow what fails together**, not how things are installed:
 
-| Group       | Holds                                                                                                                         | Retries                                                              |
-| ----------- | ----------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
-| `Core`      | What the rest depends on: `Internet (outbound)` (ping `1.1.1.1`), `Pulsar` (ping), `Traefik` (port 9080), AdGuard, NPM, Astra | 1; `Internet (outbound)` 2                                           |
-| `Public`    | Everything reached through Cloudflare → NPM → Traefik                                                                         | 3: that path hiccups and all its monitors fell together              |
-| `LAN Tools` | The `.lan` apps                                                                                                               | 1                                                                    |
-| `Bots`      | AzerBot, Bot Enoal                                                                                                            | 1                                                                    |
-| `Backups`   | The two push monitors, Zerobyte, PBS                                                                                          | 0 on push monitors, where each retry waits another 25 h; 1 otherwise |
+| Group       | Holds                                                                                                                         | Retries                                                                                                                        |
+| ----------- | ----------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `Core`      | What the rest depends on: `Internet (outbound)` (ping `1.1.1.1`), `Pulsar` (ping), `Traefik` (port 9080), AdGuard, NPM, Astra | 1; `Internet (outbound)` 2                                                                                                     |
+| `Public`    | Everything reached through Cloudflare → NPM → Traefik, and the push monitor **CrowdSec Cloudflare Sync**, every 5 min         | 3: that path hiccups and all its monitors fell together; 0 on CrowdSec Cloudflare Sync, which already waits five failed passes |
+| `LAN Tools` | The `.lan` apps                                                                                                               | 1                                                                                                                              |
+| `Bots`      | AzerBot, Bot Enoal                                                                                                            | 1                                                                                                                              |
+| `Backups`   | The two backup push monitors, Zerobyte, PBS                                                                                   | 0 on push monitors, where each retry waits another 25 h; 1 otherwise                                                           |
 
 **Tags answer three other questions**, and never repeat a group name:
 

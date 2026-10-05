@@ -89,7 +89,7 @@ Traffic proxied by Cloudflare reaches Pulsar from Cloudflare's addresses, so the
 bans only stop **direct** traffic (sites in DNS-only mode, such as `immich.enoal.fr`). On
 2026-09-15 that was 1 488 requests against 39 949 through Cloudflare.
 
-For the rest, the `cloudflare-sync` service runs
+For the rest, since 2026-10-05, the `cloudflare-sync` service runs
 [`cloudflare-sync/cloudflare_sync.py`](cloudflare-sync/cloudflare_sync.py) once a minute:
 it reads the active bans from the LAPI and, when they changed, writes them into the
 expression of the WAF custom rule _CrowdSec bans_ on `enoal.fr`, such as

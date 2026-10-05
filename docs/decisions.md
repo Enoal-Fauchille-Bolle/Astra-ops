@@ -173,3 +173,11 @@ Pulsar.
   behind Cloudflare, then the bouncer was hooked into `DOCKER-USER` — in that order, or the
   first ban would have cut every public site
   ([`docker/crowdsec/README.md`](../docker/crowdsec/README.md)).
+- **2026-10-05 — CrowdSec bans also block traffic through Cloudflare (`a272bc5`).** The
+  `cloudflare-sync` service writes CrowdSec's own bans into the WAF custom rule _CrowdSec
+  bans_ on `enoal.fr`, once a minute; a ban on a phone's 4G address showed Cloudflare's
+  block page. The Worker Bouncer failed to deploy on 2026-09-15, and an IP list, tried
+  first, locked every list write of the account from 2026-10-04 (`429`, code `10040`).
+  The community list stays on the firewall alone: it would not fit, and over 18 days it
+  would have stopped 97 attack attempts through NPM
+  ([`docker/crowdsec/README.md`](../docker/crowdsec/README.md#bans-behind-cloudflare)).

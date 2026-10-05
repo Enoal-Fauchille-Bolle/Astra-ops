@@ -80,20 +80,6 @@ possibly to Backblaze instead of Mega A, is to be decided later.
 The common risk: a container that holds host-level privileges turns a flaw in one small app
 into control of Pulsar, with every app, database and backup on it.
 
-- [ ] **CrowdSec: block traffic that comes through Cloudflare** — bans only stop direct
-      traffic today ([`docker/crowdsec/README.md`](../docker/crowdsec/README.md)).
-      Cloudflare Worker Bouncer tried on 2026-09-15, then abandoned and fully removed
-      (package, config, LAPI key, and everything it created at Cloudflare, checked through
-      the API). Volume fits the free plan (831 730 requests over 30 days, worst day ~42 000,
-      against 100 000). What stopped it: the deploy fails with `You need to enable Analytics
-Engine (10089)` although a dataset was created; the account had never deployed a
-      Worker, which reportedly must happen first (untested). Also found in the v0.0.18
-      source: every start and stop deletes and recreates the worker route, so a "Fail open"
-      set by hand in the dashboard would be lost at each restart. Only the bouncer's local
-      bans would fit anyway: 1 000 KV writes a day against 24 885 entries in the community
-      list. Other paths: an IP list plus a WAF custom rule (1 list, 10 000 items on Free;
-      the official `cs-cloudflare-bouncer` doing this was archived on 2026-09-02), or a
-      bouncer inside NPM
 - [ ] **Crafty out of `network_mode: host` and root** — it binds its ports on the host directly
       (8443 among them) as uid 0. Touches the sleep watcher of Roots SMP, which holds the
       server's port while it sleeps
