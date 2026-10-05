@@ -69,8 +69,8 @@ possibly to Backblaze instead of Mega A, is to be decided later.
 ## Security
 
 > Open work from the security audit of 2026-09-08, which rated each fix P1 (urgent) to P5.
-> P1 and P2 are done; what follows is P3 to P5 and the closing step. The audit report itself
-> stays outside this public repository.
+> P1 and P2 are done; what follows is P3 to P5. The audit report itself stays
+> outside this public repository.
 >
 > Items are checked only where the state was verified on the machines, not where a commit
 > merely exists.
@@ -92,9 +92,3 @@ into control of Pulsar, with every app, database and backup on it.
 ### P5 — Documentation
 
 - [ ] Rewrite the documentation to separate what is in place from what is planned
-
-### Closing — last step, after P3 to P5
-
-- [ ] Remove `/etc/sudoers.d/99-claude-audit` on Astra and on Pulsar. It gives `enoal`
-      password-less `sudo` (`NOPASSWD:ALL`) for Claude's sessions, kept on purpose for the
-      whole remediation
