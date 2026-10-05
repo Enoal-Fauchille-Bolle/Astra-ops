@@ -27,14 +27,14 @@ AdGuard Home acts as the local DNS server, resolving `.lan` hostnames to the Pul
 
 ### Firewalls
 
-The Freebox's IPv6 firewall is on. In IPv4 the box only lets in the ports it forwards, but
-in IPv6 each machine has its own public address, so without that option a machine's own
-firewall is the only filter. The option is all or nothing: it blocks every incoming IPv6
-connection and has no per-port rules. Nothing here needs incoming IPv6, since no DNS record
-points home over IPv6.
+The internet box's IPv6 firewall is on: to reproduce, turn it on in the box's settings. In
+IPv4 the box only lets in the ports it forwards, but in IPv6 each machine has its own public
+address, so without that option a machine's own firewall is the only filter. The option is
+all or nothing: it blocks every incoming IPv6 connection and has no per-port rules. Nothing
+here needs incoming IPv6, since no DNS record points home over IPv6.
 
 Each machine also filters on its own, so a box reset or replacement exposes nothing that
-should stay private. "LAN" below means `192.168.1.0/24`, and "VPN" the Freebox's WireGuard
+should stay private. "LAN" below means `192.168.1.0/24`, and "VPN" the box's WireGuard
 clients, `192.168.27.0/24`.
 
 | Machine           | Tool     | Open to everyone                      | LAN and VPN only                                |
