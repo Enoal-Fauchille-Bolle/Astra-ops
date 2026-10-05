@@ -5,7 +5,6 @@
 > (restore tested end to end on 2026-09-15) — see §12.
 > **Last updated:** 2026-09-23 (`Mega A`, `Mega C` and `Mega D` purge planned for
 > ~2027-03-23 instead of three separate 2026-12 dates — §5.2, §12)
-> **Language:** English (technical reference)
 
 ---
 
