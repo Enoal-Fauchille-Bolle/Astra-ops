@@ -7,8 +7,7 @@ full measurements and checks are in the git history of this file and of
 ## Rules that must not be undone
 
 - **Never mount `/mnt/data/backups` whole into an app.** It holds the database dumps and
-  the Proxmox configuration copy. Until 2026-09-14 both Filebrowser apps and SFTPGo did,
-  and the dumps could be downloaded from the Internet through `drive.enoal.fr`.
+  the Proxmox configuration copy, which any app mounting it would serve to its users.
 - **Restore Pulsar from PBS to a new VMID.** Snapshots taken after `backup=0` hold no
   `scsi1`, and what an in-place restore does to an excluded disk is undocumented.
 - **Keep off Astra what a restore of Astra needs.** The B2 key, Zerobyte's restic password
@@ -61,8 +60,6 @@ full measurements and checks are in the git history of this file and of
   `shutdown=0`).** The watcher already stops Roots SMP when empty, so the 04:00 archive
   usually copies a stopped server; `shutdown=1` would restart a sleeping server while the
   watcher holds its port. Compression saves 3.3G on the Netac.
-- **2026-09-15 — Passwords from the deleted Google export rotated.** The export survives in
-  PBS snapshots of VM 100 for up to ~6 months.
 - **2026-09-23 — `Mega A`, `Mega C` and `Mega D` left as is, purge planned for
   ~2027-03-23.** No migration of their frozen snapshots to Backblaze. Replaces the earlier
   `todo.md` dates (removing `Mega A` about 2026-12-13, revisiting `Mega D` about
