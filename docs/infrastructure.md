@@ -123,14 +123,14 @@ graph LR
     end
 ```
 
-> **The Netac holds the PBS datastore — every Layer 1 backup — next to the cold data.** Since
+> **The Netac holds the PBS datastore (every Layer 1 backup) next to the cold data.** Since
 > 2026-09-11 the cold disk itself is excluded from PBS (`backup=0`): a copy on the same drive
 > never survived its failure. Its irreplaceable content goes off-site through Layer 2 instead.
 > A single Netac failure still loses every PBS snapshot; this is a deliberate trade-off,
 > documented in [`backup/README.md` §2.3](backup/README.md#23-accepted-constraints). **Splitting
 > the Netac into LVM compartments (2026-09-22, below) does not change this**: the datastore and
 > the cold disk sit in separate logical volumes so neither can starve the other, but both still
-> live on the same physical drive — a Netac failure still takes both at once.
+> live on the same physical drive, so a Netac failure still takes both at once.
 
 ## Disks
 
@@ -143,7 +143,7 @@ Figures measured 2026-09-21 unless stated otherwise.
 | WD Blue SN580 1To | `WD Blue SN580 1TB` | `pve-root` + `local-lvm`  | Proxmox OS + VM/LXC virtual disks (production) |
 | Netac 1To         | `G932E1Q 1T`        | VG `netac` (3 LVs, below) | Pulsar cold disk + PBS datastore + ISOs        |
 
-> **Kernel names are not stable — found 2026-09-13.** Linux names NVMe drives in the order
+> **Kernel names are not stable (found 2026-09-13).** Linux names NVMe drives in the order
 > they answer at boot. Until then the WD Blue was `nvme0n1` and the Netac `nvme1n1`; on the
 > 2026-09-13 reboot they came up the other way round. Nothing broke: LVM finds `pve` and
 > `netac` by their own UUIDs regardless of kernel name. This document therefore names drives
@@ -171,8 +171,8 @@ Netac (954G — VG `netac`, split 2026-09-22, method A of the disk plan)
 
 The cold disk is a **raw LVM-thin volume** (not a `.qcow2` file): space freed inside Pulsar
 only returns to the `thin` pool once `fstrim` runs in the guest **and** the discard reaches
-the pool. This broke during the 2026-09-22 split — see the incident note in
-[`decisions.md`](decisions.md) — leaving the pool at ~80% real usage against ~15% real usage
+the pool. This broke during the 2026-09-22 split (see the incident note in
+[`decisions.md`](decisions.md)), leaving the pool at ~80% real usage against ~15% real usage
 inside the guest until a proper reclaim (unmount, not just remount) is done.
 
 Both M.2 slots are populated; only **two unused SATA ports** remain, and the case has no
