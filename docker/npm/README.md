@@ -56,9 +56,9 @@ It also sets which connections may send that header. NPM rewrites `ip_ranges.con
 six hours with Cloudflare's ranges and CloudFront's, and anyone can put a CloudFront
 distribution in front of the server. A list declared in a `server` block replaces the one
 inherited from `http` instead of adding to it, so the header is only believed when the
-connection comes from Cloudflare or a private network; a direct visitor keeps its own
-address. `IP_RANGES_FETCH_ENABLED: 'false'` does not help: it only skips the fetch at
-startup, the six-hour timer still runs. Cloudflare publishes its ranges at
+connection comes from Cloudflare; a direct visitor keeps its own address, LAN included.
+`IP_RANGES_FETCH_ENABLED: 'false'` does not help: it only skips the fetch at startup, the
+six-hour timer still runs. Cloudflare publishes its ranges at
 <https://www.cloudflare.com/ips/>; the file needs updating when they change.
 
 Put it in `server_proxy.conf`, not `http_top.conf`: NPM's `nginx.conf` already sets
