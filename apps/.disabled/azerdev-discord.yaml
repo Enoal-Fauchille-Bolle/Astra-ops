@@ -10,7 +10,7 @@ spec:
   source:
     repoURL: https://github.com/enoal-fauchille-bolle/astra-ops.git
     targetRevision: HEAD
-    path: k3s/azerdev-discord
+    path: k3s/.disabled/azerdev-discord
   destination:
     server: https://kubernetes.default.svc
     namespace: redirects

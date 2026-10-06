@@ -11,7 +11,8 @@ This repository uses the **App-of-Apps** pattern: a single root application defi
 
 - **Sync policy**: automated with `prune: true` and `selfHeal: true`
 - **Namespace creation**: via `CreateNamespace=true`
-- **Disabled apps**: placed in `apps/.disabled/`: present in the repo but not synced
+- **Disabled apps**: their Application manifest goes to `apps/.disabled/` and their
+  directory to `k3s/.disabled/`, so they stay in the repo without being synced
 
 ### Renovate
 
