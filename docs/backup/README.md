@@ -69,7 +69,6 @@ graph TB
             LVM --> DISK0[vm-100-disk-0 200G — Pulsar OS]
             LVM --> DISK4[vm-100-disk-1 64G — Pulsar personal disk]
             LVM --> DISK1[vm-101-disk-0 8G — AdGuard]
-            LVM --> DISK2[vm-102-disk-0 4G — Wireguard]
             LVM --> DISK3[vm-103-disk-0 16G — PBS]
         end
 
@@ -255,7 +254,6 @@ container because of the bind mount `mp0`, so the safety net before maintenance 
 | ------------------- | ---- | ----------- | ---------------------------------------------------------------------------------- |
 | Pulsar              | 100  | VM          | ✅ OS disk `scsi0` and personal disk `scsi2` — cold disk `scsi1` set to `backup=0` |
 | AdGuard             | 101  | LXC         | ✅                                                                                 |
-| Wireguard           | 102  | LXC         | ❌ Replaced by the Box's WireGuard VPN; stopped, to be deleted                     |
 | PBS                 | 103  | LXC         | ❌ Excluded by design                                                              |
 | `debian13-template` | 9000 | VM template | ✅                                                                                 |
 

@@ -176,7 +176,6 @@ WD Blue SN580 (931G)
     ├── vm-100-disk-0   200G  → Pulsar OS disk (= sda in Pulsar)
     ├── vm-100-disk-1    64G  → Pulsar personal disk `drive` (= sdc in Pulsar)
     ├── vm-101-disk-0     8G  → AdGuard
-    ├── vm-102-disk-0     4G  → Wireguard
     └── vm-103-disk-0    16G  → PBS
 
 Netac (954G — VG `netac`)

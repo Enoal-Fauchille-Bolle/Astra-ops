@@ -67,8 +67,6 @@ full measurements and checks are in the git history of this file and of
   original date, it was never on MEGA.
 - **2026-09-25 — Secrets copied by hand to the official Bitwarden cloud only.** Whether to
   add an automated encrypted copy is still open ([todo.md](todo.md)).
-- **2026-10-04 — LXC 102 (WireGuard) out of the nightly PBS backup.** The box's
-  WireGuard VPN replaces it; the container is stopped and will be deleted later.
 - **2026-10-05 — `Mega B` purged with `Mega A`, `Mega C` and `Mega D`, ~2027-03-23.**
   The four MEGA repositories go on the same day. Replaces the 2026-09-09 choice to keep
   `Mega B` on MEGA with no purge date. Its snapshots hold the only copy of the Immich
