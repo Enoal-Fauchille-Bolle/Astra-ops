@@ -165,7 +165,7 @@ spec:
             - name: SCANOPY_WEB_EXTERNAL_PATH
               value: "/app/static"
             - name: SCANOPY_PUBLIC_URL
-              value: "https://scanopy.enoal.fr"
+              value: "http://scanopy.lan"
             - name: SCANOPY_INTEGRATED_DAEMON_URL
               value: "http://scanopy-daemon:60073"
           ports:
