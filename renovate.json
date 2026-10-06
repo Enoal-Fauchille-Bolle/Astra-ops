@@ -25,6 +25,11 @@
       "overrideDatasource": "github-releases",
       "overridePackageName": "n8n-io/n8n",
       "extractVersion": "^n8n@(?<version>.+)$"
+    },
+    {
+      "description": "Skip the disabled apps in k3s/.disabled: nothing deploys them, so their updates are noise. Kept last so that it wins over the GHCR rule above.",
+      "matchFileNames": ["k3s/.disabled/**"],
+      "enabled": false
     }
   ],
   "docker-compose": {

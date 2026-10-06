@@ -23,6 +23,8 @@ This repository uses the **App-of-Apps** pattern: a single root application defi
 - Kubernetes manifest image references
 - Private GHCR images (`ghcr.io/enoal-fauchille-bolle/*`) via `GHCR_PAT` secret
 
+Apps in `k3s/.disabled/` are skipped.
+
 ### Helm migration
 
 Services remaining to migrate from raw manifests to Helm: `immich`, `n8n`, `scanopy`. Migrated services use this structure:
