@@ -178,6 +178,9 @@ ssh astra "sudo pct push 103 /tmp/disable-subscription-nag.sh /usr/local/sbin/di
 > `proxmox-config-backup.{sh,service,timer}` (same directory) needs both Astra **and** Pulsar
 > set up: a receiving account, a dedicated SSH key pair, the script and its systemd timer.
 > See `docs/backup/proxmox-config-copy.md`, _Reinstalling this mechanism from scratch_.
+>
+> `thin-pool-check.{sh,service,timer}` installs the same way on Astra alone, with its own
+> Kuma push URL: see [monitoring.md](monitoring.md), the note on `local-lvm` and `vault-thin`.
 
 ## Remote access
 

@@ -1,0 +1,10 @@
+[Unit]
+Description=Check that the thin pools of Astra cannot fill
+Documentation=https://github.com/Enoal-Fauchille-Bolle/Astra-ops/blob/main/docs/monitoring.md
+
+[Service]
+Type=oneshot
+# PUSH_URL=<Uptime Kuma push URL>, root-only, never committed. Optional: without it the
+# script runs but reports nothing, and the push monitor raises the alert.
+EnvironmentFile=-/etc/default/thin-pool-check
+ExecStart=/usr/local/sbin/thin-pool-check

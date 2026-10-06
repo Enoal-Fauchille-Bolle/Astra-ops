@@ -134,6 +134,12 @@ full measurements and checks are in the git history of this file and of
   `uptime.lan`; only a badge and the push paths stay public, on `kuma-probe.enoal.fr`, so
   UptimeRobot can still watch Kuma. A second, louder Discord channel was dropped: the phone
   cannot treat two channels differently, and no alert may wake anyone at night.
+- **2026-10-06 — The thin pools `local-lvm` and `vault-thin` get an alert.** `local-lvm`
+  had its volumes add up to 766G for 794G, and nothing would have said when one snapshot
+  more took it above. A script on Astra now pushes to Kuma every 5 min: `down` above 100 %
+  provisioned, 90 % real fill or 80 % metadata ([monitoring.md](monitoring.md)). The
+  snapshots `Before-Dotfiles` (VM 108) and `Before_update` (LXC 101) were deleted the same
+  day, bringing `local-lvm` down to 682G.
 
 ## Security
 

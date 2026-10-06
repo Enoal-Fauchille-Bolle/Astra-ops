@@ -36,10 +36,6 @@ Open work only. Finished items move to [decisions.md](decisions.md).
       Portainer, no backup wanted yet
 - [ ] Move the lab VMs to `vault-thin` (the thin pool on the Netac). Template 105 is
       undecided, and 106 is a linked clone of it
-- [ ] `local-lvm` is provisioned close to its size, and no alert watches it
-      ([monitoring.md](monitoring.md)). Either add an alert on provisioning, or free space:
-      the old snapshots of VMs 101 (`Before_update`) and 108 (`Before-Dotfiles`), or the lab
-      VMs (item above)
 - [ ] Later: a PBS 4 datastore on Backblaze (S3 backend) to restore whole VMs after losing
       Astra. It needs a 64–128 GiB local cache. The ~100G reserve meant for it went into the
       `thin` pool, so that space has to be found elsewhere. Support status and B2
