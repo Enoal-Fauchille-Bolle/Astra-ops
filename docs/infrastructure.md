@@ -41,11 +41,11 @@ Each machine also filters on its own, so a box reset or replacement exposes noth
 should stay private. "LAN" below means `192.168.1.0/24`, and "VPN" the box's WireGuard
 clients, `192.168.27.0/24`.
 
-| Machine           | Tool     | Open to everyone                      | LAN and VPN only                                       |
-| ----------------- | -------- | ------------------------------------- | ------------------------------------------------------ |
-| Pulsar            | UFW      | SSH (keys only), Minecraft and Crafty | Samba, k3s API `6443`, Roots SMP web plugins           |
-| LXC 101 `adguard` | nftables | nothing                               | DNS `53`, web UI `80`, SSH `22`, Beszel `45876`        |
-| LXC 103 `pbs`     | nftables | nothing                               | web UI and backup API `8007`, SSH `22`, Beszel `45876` |
+| Machine           | Tool     | Open to everyone           | LAN and VPN only                                               |
+| ----------------- | -------- | -------------------------- | -------------------------------------------------------------- |
+| Pulsar            | UFW      | SSH (keys only), Minecraft | Samba, k3s API `6443`, Crafty UI `8443`, Roots SMP web plugins |
+| LXC 101 `adguard` | nftables | nothing                    | DNS `53`, web UI `80`, SSH `22`, Beszel `45876`                |
+| LXC 103 `pbs`     | nftables | nothing                    | web UI and backup API `8007`, SSH `22`, Beszel `45876`         |
 
 The LAN-only rules are IPv4 only. No device reaches Samba, AdGuard or PBS over IPv6, and
 allowing the home IPv6 prefix would hard-code a prefix Free can change.
@@ -56,10 +56,10 @@ relays those ports through a process on the host, and UFW does apply. The k3s AP
 accept the pod network (`10.42.0.0/16`): pods reach it through the `kubernetes` service, and
 without that rule ArgoCD and every app that talks to the cluster lose it.
 
-Roots SMP's web plugins (Prism `4040`, squaremap `8098`, OPanel `8099`, BlueMap `8100`, Plan
-`8804`) bind on every interface. NPM serves them under `rootssmp-*` hostnames and reaches
-them through Pulsar's LAN address from its Docker network, `172.19.0.0/16`, so that network
-is allowed too.
+Crafty's UI (`8443`) and Roots SMP's web plugins (Prism `4040`, squaremap `8098`, OPanel
+`8099`, BlueMap `8100`, Plan `8804`) bind on every interface. NPM serves them by name
+(`crafty.enoal.fr`, `rootssmp-*`) and reaches them through Pulsar's LAN address from its
+Docker network, `172.19.0.0/16`, so that network is allowed too.
 
 ```sh
 sudo ufw allow from 192.168.1.0/24 to any port 6443 proto tcp comment "k3s API (LAN)"
@@ -67,11 +67,12 @@ sudo ufw allow from 192.168.27.0/24 to any port 6443 proto tcp comment "k3s API 
 sudo ufw allow from 10.42.0.0/16 to any port 6443 proto tcp comment "k3s API <- pods"
 sudo ufw allow from 192.168.1.0/24 to any app Samba comment "samba (LAN)"
 sudo ufw allow from 192.168.27.0/24 to any app Samba comment "samba (VPN Freebox)"
-for plugin in 4040:Prism 8098:squaremap 8099:OPanel 8100:BlueMap 8804:Plan; do
-  port=${plugin%%:*} name=${plugin#*:}
-  sudo ufw allow from 192.168.1.0/24 to any port "$port" proto tcp comment "$name SMP (LAN)"
-  sudo ufw allow from 192.168.27.0/24 to any port "$port" proto tcp comment "$name SMP (VPN Freebox)"
-  sudo ufw allow from 172.19.0.0/16 to any port "$port" proto tcp comment "$name SMP <- NPM"
+for app in "8443:Crafty UI" 4040:Prism 8098:squaremap 8099:OPanel 8100:BlueMap 8804:Plan; do
+  port=${app%%:*} name=${app#*:}
+  [ "$port" = 8443 ] || name="$name SMP"
+  sudo ufw allow from 192.168.1.0/24 to any port "$port" proto tcp comment "$name (LAN)"
+  sudo ufw allow from 192.168.27.0/24 to any port "$port" proto tcp comment "$name (VPN Freebox)"
+  sudo ufw allow from 172.19.0.0/16 to any port "$port" proto tcp comment "$name <- NPM"
 done
 ```
 

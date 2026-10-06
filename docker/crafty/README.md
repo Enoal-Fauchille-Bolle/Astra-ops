@@ -21,8 +21,8 @@ Crafty uses `network_mode: host`, so it binds its ports directly on Pulsar:
 It also runs as root. Taking it out of host networking and root is an open item in
 [`docs/todo.md`](../../docs/todo.md) (Security, P3).
 
-The SMP plugin ports are open to the LAN and the VPN only; NPM serves them by name. See
-[Firewalls](../../docs/infrastructure.md#firewalls).
+The admin UI and the SMP plugin ports are open to the LAN and the VPN only; NPM serves them
+by name (`crafty.enoal.fr` for the UI). See [Firewalls](../../docs/infrastructure.md#firewalls).
 
 ## Servers
 
