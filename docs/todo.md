@@ -70,9 +70,9 @@ Backblaze instead of Mega A, is to be decided later.
 The common risk: a container that holds host-level privileges turns a flaw in one small app
 into control of Pulsar, with every app, database and backup on it.
 
-- [ ] **Crafty out of `network_mode: host` and root**: it binds its ports on the host directly
-      (8443 among them) as uid 0. Touches the sleep watcher of Roots SMP, which holds the
-      server's port while it sleeps
+- [ ] **Crafty out of `network_mode: host`**: it binds its ports on the host directly (8443
+      among them). Only its launcher runs as root; Crafty itself runs as uid 1000. Touches the
+      sleep watcher of Roots SMP, which holds the server's port while it sleeps
 
 ### P4 — Reorganise VMIDs, IPs, tags and disks
 

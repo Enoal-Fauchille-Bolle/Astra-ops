@@ -18,7 +18,8 @@ Crafty uses `network_mode: host`, so it binds its ports directly on Pulsar:
 | 8100        | BlueMap 3D map (SMP)     |
 | 8804        | Plan player stats (SMP)  |
 
-It also runs as root. Taking it out of host networking and root is an open item in
+Only its launcher runs as root: Crafty and the Minecraft servers run as the `crafty` user
+(uid 1000). Taking it out of host networking is an open item in
 [`docs/todo.md`](../../docs/todo.md) (Security, P3).
 
 The admin UI and the SMP plugin ports are open to the LAN and the VPN only; NPM serves them
