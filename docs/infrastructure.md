@@ -37,13 +37,14 @@ Each machine also filters on its own, so a box reset or replacement exposes noth
 should stay private. "LAN" below means `192.168.1.0/24`, and "VPN" the box's WireGuard
 clients, `192.168.27.0/24`.
 
-| Machine           | Tool     | Open to everyone                      | LAN and VPN only                                |
-| ----------------- | -------- | ------------------------------------- | ----------------------------------------------- |
-| Pulsar            | UFW      | SSH (keys only), Minecraft and Crafty | Samba, k3s API `6443`, squaremap `8098`         |
-| LXC 101 `adguard` | nftables | nothing                               | DNS `53`, web UI `80`, SSH `22`, Beszel `45876` |
+| Machine           | Tool     | Open to everyone                      | LAN and VPN only                                       |
+| ----------------- | -------- | ------------------------------------- | ------------------------------------------------------ |
+| Pulsar            | UFW      | SSH (keys only), Minecraft and Crafty | Samba, k3s API `6443`, squaremap `8098`                |
+| LXC 101 `adguard` | nftables | nothing                               | DNS `53`, web UI `80`, SSH `22`, Beszel `45876`        |
+| LXC 103 `pbs`     | nftables | nothing                               | web UI and backup API `8007`, SSH `22`, Beszel `45876` |
 
-The LAN-only rules are IPv4 only. No device reaches Samba or AdGuard over IPv6, and allowing
-the home IPv6 prefix would hard-code a prefix Free can change.
+The LAN-only rules are IPv4 only. No device reaches Samba, AdGuard or PBS over IPv6, and
+allowing the home IPv6 prefix would hard-code a prefix Free can change.
 
 **Pulsar.** UFW does not govern the ports Docker publishes in IPv4: Docker writes its own
 rules ahead of UFW's, so NPM's `80`, `443` and `81` answer whatever UFW says. In IPv6, Docker
@@ -78,6 +79,11 @@ mv /etc/nftables.conf.new /etc/nftables.conf
 If nothing answers, wait two minutes: the timer reloads the previous file. As a last
 resort, `pct enter 101` on Astra opens a shell in the container, where `nft flush ruleset`
 opens everything again.
+
+**PBS.** Same layout and procedure with
+[`infra/pbs/nftables.conf`](../infra/pbs/nftables.conf) in LXC 103. Check the web UI, the
+`pbs-local` storage from Astra (`pvesm status --storage pbs-local`) and Beszel from Pulsar
+before stopping the rollback timer.
 
 ## Storage strategy
 

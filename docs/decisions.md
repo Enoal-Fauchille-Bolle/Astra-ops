@@ -170,3 +170,6 @@ Pulsar.
   box's IPv6 firewall is on, and each machine also filters on its own, so a box reset
   exposes nothing private. Only IPv4 is allowed: no device used them over IPv6
   ([infrastructure.md](infrastructure.md#firewalls)).
+- **2026-10-06 — PBS limited to the LAN and the VPN, like AdGuard.** Its web UI, backup
+  API, SSH and Beszel agent accept only IPv4 from the LAN and the VPN; every client already
+  used them that way ([infrastructure.md](infrastructure.md#firewalls)).
