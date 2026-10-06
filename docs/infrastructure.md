@@ -63,15 +63,15 @@ Docker network, `172.19.0.0/16`, so that network is allowed too.
 
 ```sh
 sudo ufw allow from 192.168.1.0/24 to any port 6443 proto tcp comment "k3s API (LAN)"
-sudo ufw allow from 192.168.27.0/24 to any port 6443 proto tcp comment "k3s API (VPN Freebox)"
+sudo ufw allow from 192.168.27.0/24 to any port 6443 proto tcp comment "k3s API (VPN Box)"
 sudo ufw allow from 10.42.0.0/16 to any port 6443 proto tcp comment "k3s API <- pods"
 sudo ufw allow from 192.168.1.0/24 to any app Samba comment "samba (LAN)"
-sudo ufw allow from 192.168.27.0/24 to any app Samba comment "samba (VPN Freebox)"
+sudo ufw allow from 192.168.27.0/24 to any app Samba comment "samba (VPN Box)"
 for app in "8443:Crafty UI" 4040:Prism 8098:squaremap 8099:OPanel 8100:BlueMap 8804:Plan; do
   port=${app%%:*} name=${app#*:}
   [ "$port" = 8443 ] || name="$name SMP"
   sudo ufw allow from 192.168.1.0/24 to any port "$port" proto tcp comment "$name (LAN)"
-  sudo ufw allow from 192.168.27.0/24 to any port "$port" proto tcp comment "$name (VPN Freebox)"
+  sudo ufw allow from 192.168.27.0/24 to any port "$port" proto tcp comment "$name (VPN Box)"
   sudo ufw allow from 172.19.0.0/16 to any port "$port" proto tcp comment "$name <- NPM"
 done
 ```

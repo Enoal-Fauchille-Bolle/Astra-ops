@@ -255,7 +255,7 @@ container because of the bind mount `mp0`, so the safety net before maintenance 
 | ------------------- | ---- | ----------- | ---------------------------------------------------------------------------------- |
 | Pulsar              | 100  | VM          | ✅ OS disk `scsi0` and personal disk `scsi2` — cold disk `scsi1` set to `backup=0` |
 | AdGuard             | 101  | LXC         | ✅                                                                                 |
-| Wireguard           | 102  | LXC         | ❌ Replaced by the Freebox's WireGuard VPN; stopped, to be deleted                 |
+| Wireguard           | 102  | LXC         | ❌ Replaced by the Box's WireGuard VPN; stopped, to be deleted                     |
 | PBS                 | 103  | LXC         | ❌ Excluded by design                                                              |
 | `debian13-template` | 9000 | VM template | ✅                                                                                 |
 
