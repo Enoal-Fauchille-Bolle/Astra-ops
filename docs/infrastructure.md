@@ -19,8 +19,12 @@ AdGuard Home acts as the local DNS server, resolving `.lan` hostnames to the Pul
 | 80          | TCP      | NPM (HTTP entry)           |
 | 443         | TCP      | NPM (HTTPS entry)          |
 | 81          | TCP      | NPM Admin UI               |
+| 4040        | TCP      | Prism SMP (block log)      |
 | 8098        | TCP      | squaremap SMP (web map)    |
+| 8099        | TCP      | OPanel SMP (admin panel)   |
+| 8100        | TCP      | BlueMap SMP (3D map)       |
 | 8443        | TCP      | Crafty Admin UI            |
+| 8804        | TCP      | Plan SMP (player stats)    |
 | 9000        | TCP      | Portainer                  |
 | 25500-25599 | TCP      | Minecraft servers (Crafty) |
 | 30022       | TCP      | SFTPGo SFTP (K3s NodePort) |
@@ -39,7 +43,7 @@ clients, `192.168.27.0/24`.
 
 | Machine           | Tool     | Open to everyone                      | LAN and VPN only                                       |
 | ----------------- | -------- | ------------------------------------- | ------------------------------------------------------ |
-| Pulsar            | UFW      | SSH (keys only), Minecraft and Crafty | Samba, k3s API `6443`, squaremap `8098`                |
+| Pulsar            | UFW      | SSH (keys only), Minecraft and Crafty | Samba, k3s API `6443`, Roots SMP web plugins           |
 | LXC 101 `adguard` | nftables | nothing                               | DNS `53`, web UI `80`, SSH `22`, Beszel `45876`        |
 | LXC 103 `pbs`     | nftables | nothing                               | web UI and backup API `8007`, SSH `22`, Beszel `45876` |
 
@@ -52,12 +56,23 @@ relays those ports through a process on the host, and UFW does apply. The k3s AP
 accept the pod network (`10.42.0.0/16`): pods reach it through the `kubernetes` service, and
 without that rule ArgoCD and every app that talks to the cluster lose it.
 
+Roots SMP's web plugins (Prism `4040`, squaremap `8098`, OPanel `8099`, BlueMap `8100`, Plan
+`8804`) bind on every interface. NPM serves them under `rootssmp-*` hostnames and reaches
+them through Pulsar's LAN address from its Docker network, `172.19.0.0/16`, so that network
+is allowed too.
+
 ```sh
 sudo ufw allow from 192.168.1.0/24 to any port 6443 proto tcp comment "k3s API (LAN)"
 sudo ufw allow from 192.168.27.0/24 to any port 6443 proto tcp comment "k3s API (VPN Freebox)"
 sudo ufw allow from 10.42.0.0/16 to any port 6443 proto tcp comment "k3s API <- pods"
 sudo ufw allow from 192.168.1.0/24 to any app Samba comment "samba (LAN)"
 sudo ufw allow from 192.168.27.0/24 to any app Samba comment "samba (VPN Freebox)"
+for plugin in 4040:Prism 8098:squaremap 8099:OPanel 8100:BlueMap 8804:Plan; do
+  port=${plugin%%:*} name=${plugin#*:}
+  sudo ufw allow from 192.168.1.0/24 to any port "$port" proto tcp comment "$name SMP (LAN)"
+  sudo ufw allow from 192.168.27.0/24 to any port "$port" proto tcp comment "$name SMP (VPN Freebox)"
+  sudo ufw allow from 172.19.0.0/16 to any port "$port" proto tcp comment "$name SMP <- NPM"
+done
 ```
 
 **AdGuard.** Its rules are [`infra/adguard/nftables.conf`](../infra/adguard/nftables.conf),
