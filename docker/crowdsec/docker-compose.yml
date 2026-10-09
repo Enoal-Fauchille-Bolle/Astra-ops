@@ -22,7 +22,7 @@ services:
 
   web-ui:
     # Dashboard to browse alerts and add or remove bans, served as crowdsec.lan
-    image: ghcr.io/theduffman85/crowdsec-web-ui:2026.10.2
+    image: ghcr.io/theduffman85/crowdsec-web-ui:2026.10.3
     container_name: crowdsec_web_ui
     restart: unless-stopped
     environment:
