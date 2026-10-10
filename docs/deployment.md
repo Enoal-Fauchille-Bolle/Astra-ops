@@ -185,6 +185,46 @@ ssh astra "sudo pct push 103 /tmp/disable-subscription-nag.sh /usr/local/sbin/di
 > `thin-pool-check.{sh,service,timer}` installs the same way on Astra alone, with its own
 > Kuma push URL: see [monitoring.md](monitoring.md), the note on `local-lvm` and `vault-thin`.
 
+### 8. Set up the UPS on Astra (NUT)
+
+An Eaton 3S 550 is plugged into Astra over USB. NUT (Network UPS Tools) reads it, shuts Astra
+down when the battery runs low and posts each power event to Discord. PeaNUT on Pulsar
+([`docker/peanut`](../docker/peanut)) shows the readings. These files are written by hand in
+`/etc/nut/` after a fresh install of Astra, because they hold a password and a webhook URL:
+
+| File                            | Content                                                                                                                                      |
+| ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ups.conf`                      | Section `[eaton3s]`: `driver = usbhid-ups`, `port = auto`, `ignorelb`, `override.battery.charge.low = 40`                                    |
+| `nut.conf`                      | `MODE=netserver`                                                                                                                             |
+| `upsd.conf`                     | `LISTEN 127.0.0.1 3493`, `LISTEN ::1 3493`, `LISTEN 192.168.1.200 3493`                                                                      |
+| `upsd.users`                    | One account with `upsmon master`, used by the automatic shutdown                                                                             |
+| `upsmon.conf`                   | `MONITOR eaton3s@localhost 1 <account> <password> master`, `SHUTDOWNCMD "/sbin/shutdown -h +0"`, `NOTIFYCMD "/usr/local/bin/nut-discord.sh"` |
+| `/usr/local/bin/nut-discord.sh` | Posts each event to a Discord webhook (the URL stays out of the repository)                                                                  |
+
+```sh
+sudo apt install nut
+sudo systemctl reload nut-server
+```
+
+`upsd -c reload` fails on this install (no PID file), so `systemctl reload` applies edits to
+`upsd.conf` and `upsd.users`. A change of `MODE` in `nut.conf` needs
+`sudo systemctl restart nut-server nut-monitor`. To check, run the first command below on
+Astra (it answers `OL` on mains power) and the second on Pulsar (it lists `eaton3s`):
+
+```sh
+upsc eaton3s@192.168.1.200 ups.status
+echo 'LIST UPS' | nc -w2 192.168.1.200 3493
+```
+
+> [!NOTE]
+> Reading needs no account, and Astra has no firewall, so port `3493` answers to the whole LAN
+> and VPN. Commands (beeper, cutting the outlets) need an account with `instcmds` rights, and
+> no account has them yet.
+>
+> PeaNUT connects to `192.168.1.200:3493` with the user and password fields **empty**. With a
+> user filled in, its connection test sends `LOGIN`, which NUT refuses to an account without
+> `upsmon` rights, and PeaNUT reports _Invalid credentials_.
+
 ## Remote access
 
 ### kubectl from your workstation
