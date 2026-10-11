@@ -237,6 +237,7 @@ astra-ops/
 | [Backups](docs/backup/README.md)                          | Backup strategy, data inventory, PBS and Zerobyte layers                          |
 | [Database dumps](docs/backup/database-dumps.md)           | Nightly consistent dumps of every database                                        |
 | [Proxmox config copy](docs/backup/proxmox-config-copy.md) | Nightly copy of the Proxmox and PBS configuration, and how to restore it          |
+| [UPS on Astra (NUT)](infra/astra/nut/README.md)           | UPS monitoring and automatic shutdown: files, accounts, settings, restore steps   |
 | [Restore runbooks](docs/backup/restore.md)                | Restore scenarios and restore testing                                             |
 | [To do](docs/todo.md)                                     | Open work: backups, storage, security hardening                                   |
 | [Decisions](docs/decisions.md)                            | Finished work and the reasons behind it                                           |

@@ -1,0 +1,18 @@
+# Restored to /etc/nut/upsd.users. Replace each CHANGE_ME with a new password, for example
+# the output of: openssl rand -hex 24
+# The trailing comment on each password line only silences the secret scan of the repository.
+# NUT reads it as a comment, so it can stay after the restore.
+#
+# enoal: administration by hand (beeper commands and variable changes).
+# upsmon: automatic shutdown, the account named on the MONITOR line of upsmon.conf.
+
+[enoal]
+    password = CHANGE_ME  # betterleaks:allow
+    actions = SET
+    instcmds = beeper.enable
+    instcmds = beeper.disable
+    instcmds = beeper.mute
+
+[upsmon]
+    password = CHANGE_ME  # betterleaks:allow
+    upsmon master

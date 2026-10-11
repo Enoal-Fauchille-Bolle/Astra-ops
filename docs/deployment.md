@@ -189,17 +189,20 @@ ssh astra "sudo pct push 103 /tmp/disable-subscription-nag.sh /usr/local/sbin/di
 
 An Eaton 3S 550 is plugged into Astra over USB. NUT (Network UPS Tools) reads it, shuts Astra
 down when the battery runs low and posts each power event to Discord. PeaNUT on Pulsar
-([`docker/peanut`](../docker/peanut)) shows the readings. These files are written by hand in
-`/etc/nut/` after a fresh install of Astra, because they hold a password and a webhook URL:
+([`docker/peanut`](../docker/peanut)) shows the readings. Copies of these files, with the
+passwords and the webhook URL replaced by `CHANGE_ME`, are in
+[`infra/astra/nut`](../infra/astra/nut), whose README gives the destinations, the accounts, the
+settings held by the UPS and the restore steps:
 
 | File                            | Content                                                                                                                                      |
 | ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
 | `ups.conf`                      | Section `[eaton3s]`: `driver = usbhid-ups`, `port = auto`, `ignorelb`, `override.battery.charge.low = 40`                                    |
 | `nut.conf`                      | `MODE=netserver`                                                                                                                             |
 | `upsd.conf`                     | `LISTEN 127.0.0.1 3493`, `LISTEN ::1 3493`, `LISTEN 192.168.1.200 3493`                                                                      |
-| `upsd.users`                    | One account with `upsmon master`, used by the automatic shutdown                                                                             |
+| `upsd.users`                    | Two accounts: `upsmon` (automatic shutdown, `upsmon master`) and `enoal` (beeper commands and variable changes)                              |
 | `upsmon.conf`                   | `MONITOR eaton3s@localhost 1 <account> <password> master`, `SHUTDOWNCMD "/sbin/shutdown -h +0"`, `NOTIFYCMD "/usr/local/bin/nut-discord.sh"` |
 | `/usr/local/bin/nut-discord.sh` | Posts each event to a Discord webhook (the URL stays out of the repository)                                                                  |
+| `99-nut-ups.rules`              | `/etc/udev/rules.d/`: lets the `nut` group open the USB device of the UPS                                                                    |
 
 ```sh
 sudo apt install nut
@@ -218,8 +221,8 @@ echo 'LIST UPS' | nc -w2 192.168.1.200 3493
 
 > [!NOTE]
 > Reading needs no account, and Astra has no firewall, so port `3493` answers to the whole LAN
-> and VPN. Commands (beeper, cutting the outlets) need an account with `instcmds` rights, and
-> no account has them yet.
+> and VPN. Commands need an account: `enoal` may run the three beeper commands and change
+> variables, and no account may cut the outlets.
 >
 > PeaNUT connects to `192.168.1.200:3493` with the user and password fields **empty**. With a
 > user filled in, its connection test sends `LOGIN`, which NUT refuses to an account without
