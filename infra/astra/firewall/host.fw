@@ -1,0 +1,4 @@
+[RULES]
+
+IN ACCEPT -source +management -p tcp -dport 3493 -log nolog # NUT (upsd, read by PeaNUT on Pulsar)
+IN Ping(ACCEPT) -source +management -log nolog # Ping from LAN and VPN

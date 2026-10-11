@@ -1,0 +1,7 @@
+[OPTIONS]
+
+enable: 1
+
+[IPSET management] # Allowed to use SSH, the web UI and SPICE
+192.168.1.0/24 # LAN
+192.168.27.0/24 # VPN Box

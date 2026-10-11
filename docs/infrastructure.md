@@ -41,16 +41,47 @@ Each machine also filters on its own, so a box reset or replacement exposes noth
 should stay private. "LAN" below means `192.168.1.0/24`, and "VPN" the box's WireGuard
 clients, `192.168.27.0/24`.
 
-| Machine           | Tool     | Open to everyone           | LAN and VPN only                                               |
-| ----------------- | -------- | -------------------------- | -------------------------------------------------------------- |
-| Pulsar            | UFW      | SSH (keys only), Minecraft | Samba, k3s API `6443`, Crafty UI `8443`, Roots SMP web plugins |
-| LXC 101 `adguard` | nftables | nothing                    | DNS `53`, web UI `80`, SSH `22`, Beszel `45876`                |
-| LXC 103 `pbs`     | nftables | nothing                    | web UI and backup API `8007`, SSH `22`, Beszel `45876`         |
+| Machine           | Tool             | Open to everyone           | LAN and VPN only                                                    |
+| ----------------- | ---------------- | -------------------------- | ------------------------------------------------------------------- |
+| Pulsar            | UFW              | SSH (keys only), Minecraft | Samba, k3s API `6443`, Crafty UI `8443`, Roots SMP web plugins      |
+| LXC 101 `adguard` | nftables         | nothing                    | DNS `53`, web UI `80`, SSH `22`, Beszel `45876`                     |
+| LXC 103 `pbs`     | nftables         | nothing                    | web UI and backup API `8007`, SSH `22`, Beszel `45876`              |
+| Astra (host)      | Proxmox firewall | nothing                    | SSH `22` (keys only), web UI `8006`, SPICE `3128`, NUT `3493`, ping |
 
-The LAN-only rules are IPv4 only. No device reaches Samba, AdGuard or PBS over IPv6, and
+The LAN-only rules are IPv4 only. No device reaches Samba, AdGuard, PBS or Astra over IPv6, and
 allowing the home IPv6 prefix would hard-code a prefix Free can change.
 
-**Astra.** SSH accepts keys only, root included:
+**Astra.** The Proxmox firewall filters the host itself. The guests' own firewall option
+stays off, so `firewall=1` on their network cards changes nothing for them.
+[`infra/astra/firewall/cluster.fw`](../infra/astra/firewall/cluster.fw) turns it on and
+fills the `management` IP set, which Proxmox lets through to SSH, the web UI, SPICE, VM
+consoles `5900-5999` and migrations `60000-60050`. By default Proxmox only puts the host's
+own network in that set, so without the VPN range, SSH from the VPN is cut.
+[`infra/astra/firewall/host.fw`](../infra/astra/firewall/host.fw) adds NUT and ping. The web
+UI's visitors come through NPM on Pulsar, which is in the LAN, and the Beszel agent connects
+out to the hub, so it needs no rule. `rpcbind` (port `111`, only used for NFS storage) is
+disabled. The default `pve-firewall` (iptables) runs the rules: `proxmox-firewall`
+(nftables) is still a tech preview.
+
+The service rereads its files every few seconds, so pause it before copying them:
+
+```sh
+scp infra/astra/firewall/*.fw astra:/tmp/
+ssh astra
+sudo systemctl stop pve-firewall
+sudo cp /tmp/cluster.fw /etc/pve/firewall/cluster.fw
+sudo cp /tmp/host.fw /etc/pve/nodes/astra/host.fw
+sudo pve-firewall compile                # prints the rules, applies nothing
+sudo systemd-run --on-active=180 --unit=fw-rollback pve-firewall stop
+sudo systemctl start pve-firewall
+# From the VPN: SSH, web UI, ping. From Pulsar: NUT, ping. If all answer:
+sudo systemctl stop fw-rollback.timer
+```
+
+If nothing answers, wait three minutes: the timer stops the firewall. As a last resort,
+`pve-firewall stop` on Astra's own screen and keyboard opens everything again.
+
+SSH accepts keys only, root included:
 [`infra/astra/sshd_config.d/10-keys-only.conf`](../infra/astra/sshd_config.d/10-keys-only.conf)
 goes in `/etc/ssh/sshd_config.d/`. `sshd_config` reads that folder before its own
 `PermitRootLogin yes`, and sshd keeps the first value it reads. Root keeps its key for the SSH

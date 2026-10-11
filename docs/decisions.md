@@ -182,3 +182,8 @@ Pulsar.
   `pbs-datastore` fills all week and peaked at 75.6 % just before it, which tripped the
   old alert every week. At 85 % the alert fires with about 47 GB still free
   ([monitoring.md](monitoring.md)).
+- **2026-10-12 — Astra limited to the LAN and the VPN.** Pulsar, the most exposed machine,
+  shares Astra's network, and root on Astra controls every guest and backup. SSH refuses
+  passwords since 2026-10-11, root included, and the Proxmox firewall now lets only the LAN
+  and the VPN reach SSH, the web UI, SPICE, NUT and ping; `rpcbind` is off
+  ([infrastructure.md](infrastructure.md#firewalls)).

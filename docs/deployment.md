@@ -220,8 +220,8 @@ echo 'LIST UPS' | nc -w2 192.168.1.200 3493
 ```
 
 > [!NOTE]
-> Reading needs no account, and Astra has no firewall, so port `3493` answers to the whole LAN
-> and VPN. Commands need an account: `enoal` may run the three beeper commands and change
+> Reading needs no account, so port `3493` answers to the whole LAN and VPN, the two ranges
+> Astra's firewall lets in ([infrastructure.md](infrastructure.md#firewalls)). Commands need an account: `enoal` may run the three beeper commands and change
 > variables, and no account may cut the outlets.
 >
 > PeaNUT connects to `192.168.1.200:3493` with the user and password fields **empty**. With a
