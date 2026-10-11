@@ -50,6 +50,18 @@ clients, `192.168.27.0/24`.
 The LAN-only rules are IPv4 only. No device reaches Samba, AdGuard or PBS over IPv6, and
 allowing the home IPv6 prefix would hard-code a prefix Free can change.
 
+**Astra.** SSH accepts keys only, root included:
+[`infra/astra/sshd_config.d/10-keys-only.conf`](../infra/astra/sshd_config.d/10-keys-only.conf)
+goes in `/etc/ssh/sshd_config.d/`. `sshd_config` reads that folder before its own
+`PermitRootLogin yes`, and sshd keeps the first value it reads. Root keeps its key for the SSH
+connections Proxmox makes to itself. The web UI's Shell button does not go through SSH, so it
+still opens a root shell when keys are lost. To apply and check:
+
+```sh
+sudo sshd -t && sudo systemctl reload ssh
+sudo sshd -T | grep -E '^(permitrootlogin|passwordauthentication) '
+```
+
 **Pulsar.** UFW does not govern the ports Docker publishes in IPv4: Docker writes its own
 rules ahead of UFW's, so NPM's `80`, `443` and `81` answer whatever UFW says. In IPv6, Docker
 relays those ports through a process on the host, and UFW does apply. The k3s API must also
