@@ -43,8 +43,8 @@ come back by then, the output returns `ups.delay.start` seconds later and Astra 
 
 ## Files
 
-Each file is a copy of the installed one, minus comments. `CHANGE_ME` marks each value to
-generate again.
+Each file is a copy of the installed one, with the comments of the configuration files left out.
+`CHANGE_ME` marks each value to generate again.
 
 | Repository file    | Destination on Astra                 | Owner and mode  |
 | ------------------ | ------------------------------------ | --------------- |
@@ -55,19 +55,33 @@ generate again.
 | `upsmon.conf`      | `/etc/nut/upsmon.conf`               | `root:nut` 640  |
 | `nut-discord.sh`   | `/usr/local/bin/nut-discord.sh`      | `root:root` 755 |
 | `99-nut-ups.rules` | `/etc/udev/rules.d/99-nut-ups.rules` | `root:root` 664 |
+| `nut-tui.sh`       | `/usr/local/bin/nut-tui`             | `root:root` 755 |
 
 ## Accounts
 
 | Account  | Purpose                                         | Rights                                                                   |
 | -------- | ----------------------------------------------- | ------------------------------------------------------------------------ |
 | `upsmon` | Automatic shutdown, named on the `MONITOR` line | `upsmon master`                                                          |
-| `enoal`  | Administration by hand                          | `SET`, and the commands `beeper.enable`, `beeper.disable`, `beeper.mute` |
+| `enoal`  | Administration, by hand or through the menu     | `SET`, and the commands `beeper.enable`, `beeper.disable`, `beeper.mute` |
 | none     | PeaNUT reading the measures from Pulsar         | none: reading needs no account                                           |
 
 Commands that cut the outlets (`load.off`, `load.off.delay`, `shutdown.stayoff`,
 `shutdown.return`, `driver.killpower`) are granted to no account, so a leaked password cannot
 power Astra and Pulsar off. The `upsmon` password lives only in `upsd.users` and `upsmon.conf`:
 a restore generates a new one and nothing else needs the old value.
+
+## Administration menu
+
+`nut-tui.sh` is a small `whiptail` menu on top of `upsc`, `upscmd` and `upsrw`. It shows the state
+of the UPS, mutes, disables or enables the beeper, and changes the two transfer voltages. It
+stores no password: `upscmd` and `upsrw` ask for the `enoal` password on the keyboard when an
+action needs it. The commands that cut the outlets are not in the menu.
+
+```sh
+scp infra/astra/nut/nut-tui.sh astra:/tmp/
+ssh astra "sudo install -o root -g root -m 755 /tmp/nut-tui.sh /usr/local/bin/nut-tui && rm /tmp/nut-tui.sh"
+ssh -t astra nut-tui
+```
 
 ## Restore from scratch
 
