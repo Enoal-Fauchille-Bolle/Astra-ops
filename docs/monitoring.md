@@ -12,7 +12,7 @@
 | Database dumps                          | Uptime Kuma push monitor **Database Dumps**, id 38 (§6)                                                                                    | Discord (`APS #monitoring`): `down` pushed on failure, naming the databases, or no push for 25 h   |
 | CrowdSec bans copied to Cloudflare      | Uptime Kuma push monitor **CrowdSec Cloudflare Sync** ([`docker/crowdsec/README.md`](../docker/crowdsec/README.md#bans-behind-cloudflare)) | Discord (`APS #monitoring`): `down` pushed after five failed passes in a row, or no push for 5 min |
 | Thin pools — `local-lvm` + `vault-thin` | Uptime Kuma push monitor **Thin Pools**, every 5 min (below)                                                                               | Discord (`APS #monitoring`): `down` pushed above the limits below, or no push for 10 min           |
-| Disk usage — `vault` + `pbs-datastore`  | Beszel agent on Astra, drop-in below                                                                                                       | Discord (`APS #monitoring`, Beszel webhook): above 75 %                                            |
+| Disk usage — `vault` + `pbs-datastore`  | Beszel agent on Astra, drop-in below                                                                                                       | Discord (`APS #monitoring`, Beszel webhook): above 85 %                                            |
 | Disk usage — Pulsar sda                 | Beszel agent on Pulsar                                                                                                                     | Discord (Beszel): above 85 %                                                                       |
 | LXC 101 `adguard`                       | Beszel agent in the container                                                                                                              | Discord (Beszel): disk or memory above 80 %                                                        |
 | AdGuard DNS answers                     | Uptime Kuma DNS monitor **AdGuard DNS**: resolves `beszel.lan` through `192.168.1.202`                                                     | Discord (`APS #monitoring`)                                                                        |
@@ -29,7 +29,7 @@
 > Astra only reports `/` until told otherwise; the drop-in
 > [`infra/astra/beszel-agent.service.d/extra-filesystems.conf`](../infra/astra/beszel-agent.service.d/extra-filesystems.conf)
 > adds `/mnt/pve/vault` and `/mnt/pbs-datastore` (the PBS vault's separate mount).
-> `pbs-datastore` is by far the fullest of the three, so in practice the 75 % rule watches it
+> `pbs-datastore` is by far the fullest of the three, so in practice the 85 % rule watches it
 > (`df -h / /mnt/pve/vault /mnt/pbs-datastore`). The alert message names the machine, not the
 > disk.
 

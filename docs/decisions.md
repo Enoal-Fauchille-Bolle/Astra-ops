@@ -177,3 +177,8 @@ Pulsar.
 - **2026-10-06 — PBS limited to the LAN and the VPN, like AdGuard.** Its web UI, backup
   API, SSH and Beszel agent accept only IPv4 from the LAN and the VPN; every client already
   used them that way ([infrastructure.md](infrastructure.md#firewalls)).
+- **2026-10-11 — Disk alert on Astra raised from 75 % to 85 %.** The PBS garbage
+  collection runs once a week (Sunday 05:00) and frees about 30 GiB at once, so
+  `pbs-datastore` fills all week and peaked at 75.6 % just before it, which tripped the
+  old alert every week. At 85 % the alert fires with about 47 GB still free
+  ([monitoring.md](monitoring.md)).
