@@ -1,4 +1,4 @@
-# Nginx Proxy Manager — 404 page and visitor addresses
+# Nginx Proxy Manager — 404 page, visitor addresses and origin pulls
 
 `404.html` is the page a visitor sees when they reach an address NPM does not serve: any
 unknown subdomain of `enoal.fr`, or the server's IP on port 80. It follows the look of the
@@ -76,6 +76,64 @@ docker exec nginx-proxy-manager sh -c 'nginx -t && nginx -s reload'
 To check: `grep -h '\[Client ' /opt/docker-data/npm/data/logs/proxy-host-*_access.log | tail`
 must show visitors' addresses, not Cloudflare's (`104.16.0.0/13`, `172.64.0.0/13`,
 `141.101.64.0/18`…).
+
+## Requests that skip Cloudflare
+
+A name proxied by Cloudflare can also be reached by sending the request to the box's
+public address, which would skip the WAF and the _CrowdSec bans_ rule. Authenticated
+Origin Pulls (AOP, zone-level) refuses that path: Cloudflare presents a client certificate
+signed by `aop-ca.pem` on every connection it opens to NPM, and an HTTPS request for a
+protected name that arrives without it gets **403**.
+
+- **Protected names**: `enoal.fr` and all its subdomains, except those in DNS-only mode
+  (`immich`, `registry`, `rootssmp`), whose traffic never goes through Cloudflare. A new
+  name is protected by default. **A new DNS-only name must be added to the
+  `map $host $aop_protected` list** of `http_top.conf`, or it answers 403 to everyone
+  outside the LAN and the VPN. The `.lan` hosts listen on port 80 only and are not
+  concerned.
+- **Exceptions**: connections from the LAN (`192.168.1.0/24`) and the VPN
+  (`192.168.27.0/24`). The check reads `$realip_remote_addr`, the address of the
+  connection itself, not `CF-Connecting-IP`, which any client can set.
+- **`optional`, not `on`**: `ssl_verify_client on` refuses during the TLS handshake,
+  before any rule runs, so the LAN and the VPN could not be let through (400). With
+  `optional` the handshake succeeds and the `if ($aop_deny)` of `server_proxy.conf`
+  decides.
+- **`ssl_client_certificate`, not `ssl_trusted_certificate`**: it sends the name of the
+  CA to clients, so a browser only offers certificates from that CA and shows no picker.
+- **Side effect**: every HTTPS host asks for a client certificate, so nginx answers **421**
+  when the `Host` header names another host than the one of the TLS handshake (SNI). That
+  also stops reaching a protected name through the handshake of an unprotected one.
+
+| File                | On Pulsar, in `/opt/docker-data/npm/data/nginx/custom/` | Role                                               |
+| ------------------- | ------------------------------------------------------- | -------------------------------------------------- |
+| `http_top.conf`     | `http_top.conf`, included at `http` level               | Asks for the certificate, computes `$aop_deny`     |
+| `server_proxy.conf` | `server_proxy.conf`, included in every proxy host       | `if ($aop_deny) { return 403; }` after the real IP |
+| `aop-ca.pem`        | `aop-ca.pem`                                            | CA certificate, public part only                   |
+
+| Certificate                      | Where                                                                         | Expires    |
+| -------------------------------- | ----------------------------------------------------------------------------- | ---------- |
+| CA `CN=Astra AOP origin-pull CA` | `aop-ca.pem` in NPM; its key in Vaultwarden                                   | 2031-10-14 |
+| Client certificate `CN=enoal.fr` | Cloudflare: SSL/TLS → Origin Server → Authenticated Origin Pulls → Zone-level | 2028-10-13 |
+
+The CA key only signs new client certificates, it plays no part in a restore: lost with
+Astra, a new CA does the same job. Cloudflare's _Zone-level Authenticated Origin Pulls
+Certificate Expiration Alert_ (Notifications) sends an email 30 and 14 days before the
+client certificate expires.
+
+**To renew the client certificate**, sign a new one with the same CA and upload it in the
+Zone-level part: Cloudflare uses the most recently deployed one. Delete the old one once
+the new one is active. NPM needs no change while the CA stays the same. **To replace the
+CA**, put the old and the new CA one after the other in `aop-ca.pem` and reload NPM, switch
+the certificate in Cloudflare, then remove the old CA.
+
+**To check**, from outside the LAN with the VPN off:
+`curl -s -o /dev/null -w '%{http_code}\n' --resolve vault.enoal.fr:443:<box public IP> https://vault.enoal.fr/`
+must print `403`; through Cloudflare, and from the LAN or the VPN, the same name answers
+`200`.
+
+**To undo**: remove the `if ($aop_deny)` block from `server_proxy.conf` and reload, which
+stops the refusal at once. Then `http_top.conf` can go too, never before: the `if` would
+name an unknown variable and `nginx -t` would fail.
 
 ## Fonts
 

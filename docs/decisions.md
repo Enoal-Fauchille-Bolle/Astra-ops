@@ -187,3 +187,10 @@ Pulsar.
   passwords since 2026-10-11, root included, and the Proxmox firewall now lets only the LAN
   and the VPN reach SSH, the web UI, SPICE, NUT and ping; `rpcbind` is off
   ([infrastructure.md](infrastructure.md#firewalls)).
+- **2026-10-18 — Names behind Cloudflare refuse requests that skip it.** NPM answers 403
+  to an HTTPS request for `enoal.fr` or a subdomain that arrives without Cloudflare's
+  client certificate (Authenticated Origin Pulls, zone-level, own CA), except from the LAN
+  and the VPN. The DNS-only names are left out. The settings sit in two central files
+  rather than in each host's Advanced tab, so they are versioned in one place. Four and a
+  half days of observation before the refusal: every request from Cloudflare carried the
+  certificate ([docker/npm/README.md](../docker/npm/README.md#requests-that-skip-cloudflare)).
