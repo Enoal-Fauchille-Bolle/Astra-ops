@@ -194,3 +194,11 @@ Pulsar.
   rather than in each host's Advanced tab, so they are versioned in one place. Four and a
   half days of observation before the refusal: every request from Cloudflare carried the
   certificate ([docker/npm/README.md](../docker/npm/README.md#requests-that-skip-cloudflare)).
+- **2026-10-20 — No SSH from Pulsar to Astra, AdGuard and PBS.** Pulsar is the machine
+  that serves the Internet, and nothing on it needs SSH towards the other three: no
+  configuration, scheduled task or monitor uses it. Their firewalls now refuse port `22`
+  from `192.168.1.201`, so a tool that tries fails at once. AdGuard and PBS answer with an
+  ICMP "port unreachable": Astra's bridge firewall drops the TCP reset of a container as
+  invalid, which left Pulsar waiting for a timeout. The Proxmox configuration copy at 01:30
+  runs the other way, from Astra to Pulsar, and is not affected
+  ([infrastructure.md](infrastructure.md#firewalls)).

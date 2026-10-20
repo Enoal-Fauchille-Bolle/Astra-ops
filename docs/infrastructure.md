@@ -41,12 +41,12 @@ Each machine also filters on its own, so a box reset or replacement exposes noth
 should stay private. "LAN" below means `192.168.1.0/24`, and "VPN" the box's WireGuard
 clients, `192.168.27.0/24`.
 
-| Machine           | Tool             | Open to everyone           | LAN and VPN only                                                    |
-| ----------------- | ---------------- | -------------------------- | ------------------------------------------------------------------- |
-| Pulsar            | UFW              | SSH (keys only), Minecraft | Samba, k3s API `6443`, Crafty UI `8443`, Roots SMP web plugins      |
-| LXC 101 `adguard` | nftables         | nothing                    | DNS `53`, web UI `80`, SSH `22`, Beszel `45876`                     |
-| LXC 103 `pbs`     | nftables         | nothing                    | web UI and backup API `8007`, SSH `22`, Beszel `45876`              |
-| Astra (host)      | Proxmox firewall | nothing                    | SSH `22` (keys only), web UI `8006`, SPICE `3128`, NUT `3493`, ping |
+| Machine           | Tool             | Open to everyone           | LAN and VPN only                                                                     |
+| ----------------- | ---------------- | -------------------------- | ------------------------------------------------------------------------------------ |
+| Pulsar            | UFW              | SSH (keys only), Minecraft | Samba, k3s API `6443`, Crafty UI `8443`, Roots SMP web plugins                       |
+| LXC 101 `adguard` | nftables         | nothing                    | DNS `53`, web UI `80`, SSH `22` (not from Pulsar), Beszel `45876`                    |
+| LXC 103 `pbs`     | nftables         | nothing                    | web UI and backup API `8007`, SSH `22` (not from Pulsar), Beszel `45876`             |
+| Astra (host)      | Proxmox firewall | nothing                    | SSH `22` (keys only, not from Pulsar), web UI `8006`, SPICE `3128`, NUT `3493`, ping |
 
 The LAN-only rules are IPv4 only. No device reaches Samba, AdGuard, PBS or Astra over IPv6, and
 allowing the home IPv6 prefix would hard-code a prefix Free can change.
@@ -57,11 +57,12 @@ stays off, so `firewall=1` on their network cards changes nothing for them.
 fills the `management` IP set, which Proxmox lets through to SSH, the web UI, SPICE, VM
 consoles `5900-5999` and migrations `60000-60050`. By default Proxmox only puts the host's
 own network in that set, so without the VPN range, SSH from the VPN is cut.
-[`infra/astra/firewall/host.fw`](../infra/astra/firewall/host.fw) adds NUT and ping. The web
-UI's visitors come through NPM on Pulsar, which is in the LAN, and the Beszel agent connects
-out to the hub, so it needs no rule. `rpcbind` (port `111`, only used for NFS storage) is
-disabled. The default `pve-firewall` (iptables) runs the rules: `proxmox-firewall`
-(nftables) is still a tech preview.
+[`infra/astra/firewall/host.fw`](../infra/astra/firewall/host.fw) adds NUT and ping, and
+refuses SSH from Pulsar: its rules run before the ones Proxmox adds for the `management` set,
+so a refusal there wins over the set. The web UI's visitors come through NPM on Pulsar,
+which is in the LAN, and the Beszel agent connects out to the hub, so it needs no rule.
+`rpcbind` (port `111`, only used for NFS storage) is disabled. The default `pve-firewall`
+(iptables) runs the rules: `proxmox-firewall` (nftables) is still a tech preview.
 
 The service rereads its files every few seconds, so pause it before copying them:
 
@@ -74,7 +75,7 @@ sudo cp /tmp/host.fw /etc/pve/nodes/astra/host.fw
 sudo pve-firewall compile                # prints the rules, applies nothing
 sudo systemd-run --on-active=180 --unit=fw-rollback pve-firewall stop
 sudo systemctl start pve-firewall
-# From the VPN: SSH, web UI, ping. From Pulsar: NUT, ping. If all answer:
+# From the VPN: SSH, web UI, ping. From Pulsar: NUT, ping, SSH refused. If all hold:
 sudo systemctl stop fw-rollback.timer
 ```
 
@@ -130,7 +131,7 @@ ssh adguard
 nft -c -f /etc/nftables.conf.new          # syntax check only
 systemd-run --on-active=120 --unit=nft-rollback nft -f /etc/nftables.conf
 nft -f /etc/nftables.conf.new
-# From another machine: DNS, web UI, SSH, then Beszel from Pulsar. If all answer:
+# From another machine: DNS, web UI, SSH. From Pulsar: Beszel, SSH refused. If all hold:
 systemctl stop nft-rollback.timer
 mv /etc/nftables.conf.new /etc/nftables.conf
 ```
