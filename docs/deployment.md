@@ -165,8 +165,9 @@ ssh astra "sudo install -o root -g root -m 755 /tmp/disable-subscription-nag.sh 
   sudo /usr/local/sbin/disable-subscription-nag"
 ```
 
-PBS (LXC 103) needs the same two files, but has no SSH of its own, so land them on Astra first,
-then use `pct push`/`pct exec` to reach inside the container:
+PBS (LXC 103) needs the same two files. It runs its own SSH server, but a freshly installed
+container has no SSH key for root yet, so land them on Astra first, then use
+`pct push`/`pct exec` to reach inside the container:
 
 ```bash
 scp infra/astra/disable-subscription-nag.sh astra:/tmp/

@@ -241,7 +241,8 @@ container because of the bind mount `mp0`, so the safety net before maintenance 
 > `proxmox-widget-toolkit` package (and the same `proxmoxlib.js`) as Astra's own PVE web UI,
 > so the same fix applies unchanged: `infra/astra/disable-subscription-nag.sh` and
 > `infra/astra/89no-subscription-nag`, pushed into the container with `pct push`/`pct exec`
-> (`docs/deployment.md` §7) instead of `scp`/`ssh`, since LXC 103 has no SSH of its own.
+> (`docs/deployment.md` §7) instead of `scp`/`ssh`: LXC 103 runs its own SSH server, but
+> `pct push` also works on a freshly installed container that has no SSH key yet.
 
 > **`pam_systemd` removed.** `/etc/pam.d/common-session` lacks the
 > `session optional pam_systemd.so` line, the usual workaround for logins that hang while
