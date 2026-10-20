@@ -159,6 +159,19 @@ sshd -t && systemctl restart ssh
 sshd -T | grep -E '^(permitrootlogin|passwordauthentication) '
 ```
 
+fail2ban in AdGuard bans an address after 5 failed SSH logins in 10 minutes.
+[`infra/adguard/fail2ban/sshd-journal-nftables.local`](../infra/adguard/fail2ban/sshd-journal-nftables.local)
+goes in `/etc/fail2ban/jail.d/`. It points the filter at `ssh.service`, the unit sshd logs
+under (the Debian filter reads `sshd.service` and saw nothing), and bans through nftables,
+since the container has no iptables. `flush ruleset` at the top of `nftables.conf` also
+removes fail2ban's table, so restart fail2ban after loading the firewall. To apply and check:
+
+```sh
+fail2ban-client -d | grep -E "'sshd', '(addjournalmatch|addaction)'"
+systemctl restart fail2ban
+fail2ban-client status sshd
+```
+
 ## Storage strategy
 
 Both drives are NVMe, with distinct roles:

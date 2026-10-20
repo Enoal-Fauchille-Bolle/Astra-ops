@@ -1,0 +1,9 @@
+# Installed as /etc/fail2ban/jail.d/sshd-journal-nftables.local in AdGuard. See docs/infrastructure.md#firewalls.
+# The container has nft but no iptables, so bans go through nftables.
+[DEFAULT]
+banaction = nftables
+banaction_allports = nftables[type=allports]
+
+# The Debian filter reads sshd.service, but sshd logs under ssh.service here.
+[sshd]
+filter = sshd[mode=%(mode)s, journalmatch='_SYSTEMD_UNIT=ssh.service + _COMM=sshd']
