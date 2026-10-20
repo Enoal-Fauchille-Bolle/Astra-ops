@@ -56,11 +56,13 @@
 > sudo systemctl start thin-pool-check.service && sudo journalctl -u thin-pool-check -n 3 -o cat
 > ```
 
-> **The agents in LXC 101 and 103 log `lookup beszel.lan on 1.1.1.1:53: no such host`.** Not a
-> failure: both containers resolve through `1.1.1.1`, which does not know `beszel.lan`, so the
-> hub falls back to reaching the agent over SSH on port 45876. Left as is: AdGuard must not
-> depend on itself to resolve. Beszel's _Status_ alert only proves the agent answers; the
-> Kuma DNS monitor proves AdGuard actually serves.
+> **The agents in LXC 101 and 103 reach the hub by address.** Both containers resolve through
+> `1.1.1.1`, which does not know `beszel.lan`, and AdGuard must not depend on itself to
+> resolve. A drop-in sets `HUB_URL=http://192.168.1.201:8090`, as on Astra:
+> [`infra/adguard/beszel-agent.service.d/hub-url.conf`](../infra/adguard/beszel-agent.service.d/hub-url.conf)
+> and [`infra/pbs/beszel-agent.service.d/hub-url.conf`](../infra/pbs/beszel-agent.service.d/hub-url.conf).
+> Beszel's _Status_ alert only proves the agent answers; the Kuma DNS monitor proves AdGuard
+> actually serves.
 
 > **⚠️ Zerobyte → Discord loses the start of long messages (HTTP 400).** Diagnosed from the
 > source of Zerobyte v0.42.0 and of Shoutrrr v0.17.0, the sender inside the image; not
