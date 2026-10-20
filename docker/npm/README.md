@@ -1,19 +1,20 @@
 # Nginx Proxy Manager — 404 page, visitor addresses and origin pulls
 
-`404.html` is the page a visitor sees when they reach an address NPM does not serve: any
-unknown subdomain of `enoal.fr`, or the server's IP on port 80. It follows the look of the
-portfolio at `enoal.fr` (same colours, same layout as its own 404), shows the requested
-address, and offers a link to `enoal.fr` plus a "Go back" button when there is a previous
-page. It is a single self-contained file: fonts and icon are embedded, nothing is fetched
-from another site.
+`404.html` is the page a visitor sees when they reach an unknown subdomain of `enoal.fr`.
+It follows the look of the portfolio at `enoal.fr` (same colours, same layout as its own
+404), shows the requested address, and offers a link to `enoal.fr` plus a "Go back" button
+when there is a previous page. It is a single self-contained file: fonts and icon are
+embedded, nothing is fetched from another site.
 
 ## Where it lives
 
 NPM keeps the page in its database, not in this repository. This file is the reference
 copy.
 
-1. **Settings → Default Site → Custom Page**: paste the whole content of `404.html`. NPM
-   saves it and writes it to `/opt/docker-data/npm/data/nginx/default_www/index.html`.
+1. **Settings → Default Site → Custom Page**: paste the whole content of `404.html` and
+   save. NPM writes it to `/opt/docker-data/npm/data/nginx/default_www/index.html`, then
+   switch the Default Site back to **404 Page** (see below). NPM only writes that file when
+   Custom Page is saved and does not delete it when the setting changes.
 2. **Proxy host 47 (`*.enoal.fr`) → Advanced**: reuses that file so that every unknown
    subdomain answers with a real 404 status and this page:
 
@@ -38,12 +39,21 @@ copy.
 To check after a change: `curl -sk -o /dev/null -w '%{http_code}\n' --resolve
 test.enoal.fr:443:192.168.1.201 https://test.enoal.fr/` must print `404`.
 
-## Known gap
+## Names outside `enoal.fr`
 
-On port 80, a name that matches no host (the bare IP, for instance) reaches NPM's Default
-Site, which serves the same page with a **200** status: the template NPM generates for a
-custom page (`try_files $uri /index.html`) sets no error code. Subdomains of `enoal.fr`
-are not affected, host 47 catches them first.
+On port 80, a name that matches no host reaches NPM's Default Site: an unknown `.lan` name
+(AdGuard sends every `*.lan` to Pulsar) or the bare IP. The Default Site is set to **404
+Page**, so they get nginx's plain 404 page with a **404** status.
+
+With Custom Page, they got the page above with a **200** status, because the template NPM
+generates for a custom page (`try_files $uri /index.html`) sets no error code. Uptime Kuma
+reads the status, not the page: a probe aimed at a mistyped `.lan` name stayed green.
+
+A catch-all host for `*.lan`, like host 47, is not possible: the NPM form refuses a
+wildcard that covers a whole top-level domain (`*.lan`, `*.com`).
+
+To check: `curl -s -o /dev/null -w '%{http_code}\n' http://nosuchname.lan` must print
+`404`, and a served name such as `http://portracker.lan` must still print `200`.
 
 ## Visitor addresses behind Cloudflare
 
