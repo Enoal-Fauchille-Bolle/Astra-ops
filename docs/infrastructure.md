@@ -149,8 +149,15 @@ SSH in AdGuard and PBS accepts keys only, like Astra:
 [`infra/adguard/sshd_config.d/10-keys-only.conf`](../infra/adguard/sshd_config.d/10-keys-only.conf)
 and [`infra/pbs/sshd_config.d/10-keys-only.conf`](../infra/pbs/sshd_config.d/10-keys-only.conf)
 go in `/etc/ssh/sshd_config.d/` of each container. Root is their only account and already
-logged in with a key, so the file closes passwords for any account added later. Apply and
-check with the same commands as on Astra, without `sudo`.
+logged in with a key, so the file closes passwords for any account added later. Both
+containers listen through `ssh.socket`, which holds port `22` for sshd: a `reload` makes
+sshd try to take the port back and exit with `Cannot bind any address`. Restart it instead,
+which keeps open sessions:
+
+```sh
+sshd -t && systemctl restart ssh
+sshd -T | grep -E '^(permitrootlogin|passwordauthentication) '
+```
 
 ## Storage strategy
 
