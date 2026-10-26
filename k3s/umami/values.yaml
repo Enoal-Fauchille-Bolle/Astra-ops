@@ -21,7 +21,7 @@ postgres:
 app:
   image:
     repository: ghcr.io/umami-software/umami
-    tag: "3.4.0"
+    tag: "3.4.1"
     pullPolicy: IfNotPresent
   replicaCount: 1
   env:
