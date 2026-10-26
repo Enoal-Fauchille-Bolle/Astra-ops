@@ -361,7 +361,12 @@ Two providers, with a clear split:
   goes here. Two safeguards: the account's spending cap (_Caps & Alerts_) must be raised
   before adding a large job, or the upload stops at the cap; and the bucket lifecycle rule
   `daysFromHidingToDeleting: 1` makes deleted data disappear the next day. Zerobyte's S3
-  connector has no path field, so one Zerobyte repository = one bucket.
+  connector has no path field, so one Zerobyte repository = one bucket. The application key
+  Zerobyte uses is restricted to this bucket, with the "Read and Write" preset of the
+  Backblaze web interface: no `writeKeys`, `deleteKeys`, `deleteBuckets` or `bypassGovernance`,
+  so a compromised Pulsar cannot create keys or delete the bucket. It keeps `deleteFiles`
+  (retention needs it), so it can still erase the backups. A second bucket would need its
+  own key.
 - **MEGA** free accounts (20 GB each): small, slowly-changing data only. A full MEGA account
   fails **silently**, so nothing that grows is sent to MEGA.
 
