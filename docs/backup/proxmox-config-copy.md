@@ -11,7 +11,7 @@ job ships them to Backblaze at 02:00, so no new Zerobyte volume was needed.
 | Script      | `infra/astra/proxmox-config-backup.sh` → `/usr/local/sbin/proxmox-config-backup` on Astra | stages the copy in `/run` (tmpfs), then rsyncs it to Pulsar with `--delete`        |
 | Timer       | `infra/astra/proxmox-config-backup.{service,timer}`                                       | daily at **01:30**, `Persistent=true` (catches up at boot)                         |
 | Destination | `/mnt/data/backups/proxmox-configs/` on Pulsar                                            | owned by `astra-configs`, directories `700`, files `600`                           |
-| Alerting    | Uptime Kuma push monitor **Proxmox Config Backup**                                        | `up` on success, `down` on any failure, alert on Discord if no push for 25 h (§10) |
+| Alerting    | Uptime Kuma push monitor **Proxmox Config Backup**                                        | `up` on success, `down` on any failure, alert on Discord if no push for 26 h (§10) |
 
 What the copy holds:
 

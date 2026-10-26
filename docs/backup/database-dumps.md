@@ -10,7 +10,7 @@ Live databases cannot be safely copied at the file level while running: doing so
 | Script      | `infra/pulsar/dump-databases.sh` → `/usr/local/sbin/dump-databases` on Pulsar (root, `755`) | dumps each database on its own, checks the result, then replaces the previous dump                       |
 | Timer       | `infra/pulsar/dump-databases.{service,timer}`                                               | daily at **01:00 Europe/Paris**, `Persistent=true` (catches up at boot)                                  |
 | Destination | `/mnt/data/backups/dumps/`                                                                  | root, directory `700`, files `600`; one file per database, replaced every night                          |
-| Alerting    | Uptime Kuma push monitor **Database Dumps** (id 38)                                         | `up` when every dump succeeds, `down` naming the failed ones, alert on Discord if no push for 25 h (§10) |
+| Alerting    | Uptime Kuma push monitor **Database Dumps** (id 38)                                         | `up` when every dump succeeds, `down` naming the failed ones, alert on Discord if no push for 26 h (§10) |
 
 The push URL lives in `/etc/default/dump-databases` (root, `600`), outside this repository.
 Its host is `https://kuma-probe.enoal.fr`, not the `http://uptime.lan` Kuma displays: Pulsar
