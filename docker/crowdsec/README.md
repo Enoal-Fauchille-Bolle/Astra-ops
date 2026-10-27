@@ -15,7 +15,7 @@ CrowdSec's configuration lives on Pulsar in `/opt/docker-data/crowdsec/config`, 
 ## Host configuration (not in this repository)
 
 `/etc/crowdsec/bouncers/crowdsec-firewall-bouncer.yaml` on Pulsar lists `DOCKER-USER` under
-`iptables_chains`, next to `INPUT` (since 2026-09-15). Docker-published ports, NPM's among
+`iptables_chains`, next to `INPUT`. Docker-published ports, NPM's among
 them, go through `FORWARD`, not `INPUT`: without `DOCKER-USER` the bans never reach the
 containers.
 
@@ -50,7 +50,7 @@ must be in place on Pulsar under `/opt/docker-data/crowdsec/config/`:
 too. Local addresses are never banned (`crowdsecurity/whitelists`), so a test from Pulsar
 itself produces no alert.
 
-The scenario starts in **simulation** (since 2026-10-01): its decisions show as `(simul)ban`
+The scenario starts in **simulation**: its decisions show as `(simul)ban`
 in `cscli decisions list` and block nothing. Once a week of them holds no player:
 
 ```sh
@@ -87,9 +87,9 @@ backed up with the rest of the directory.
 
 Traffic proxied by Cloudflare reaches Pulsar from Cloudflare's addresses, so the firewall
 bans only stop **direct** traffic (sites in DNS-only mode, such as `immich.enoal.fr`). On
-2026-09-15 that was 1 488 requests against 39 949 through Cloudflare.
+a day measured, that was 1 488 requests against 39 949 through Cloudflare.
 
-For the rest, since 2026-10-05, the `cloudflare-sync` service runs
+For the rest, the `cloudflare-sync` service runs
 [`cloudflare-sync/cloudflare_sync.py`](cloudflare-sync/cloudflare_sync.py) once a minute:
 it reads the active bans from the LAPI and, when they changed, writes them into the
 expression of the WAF custom rule _CrowdSec bans_ on `enoal.fr`, such as
@@ -102,7 +102,7 @@ It only writes the expression, so the rule's action and whether it is enabled st
 in the dashboard.
 
 **Why not a Cloudflare IP list**: the first version filled the list `crowdsec_bans`, which
-the rule referenced. From 2026-10-04 23:11, every write to the account's lists answered
+the rule referenced. Every write to the account's lists answered
 `429` with code `10040` ("you have been ratelimited"), from the dashboard too, still after
 eleven hours of tries spaced up to 30 minutes apart, and even on a list created the next
 morning. Cloudflare does not document that code; other accounts on its community forum
@@ -110,7 +110,7 @@ report the same lock lasting days.
 
 **Only CrowdSec's own bans are copied** (origins `crowdsec` and `cscli`), not the community
 list: its ~27 000 addresses would never fit in an expression, limited to 4 096 characters
-(about 250 IPv4 addresses). Measured over 2026-09-16 → 2026-10-04, the community list would
+(about 250 IPv4 addresses). Measured over 18 days, the community list would
 have stopped 1 754 of 1 207 055 requests through NPM, 1 657 of them crawlers and 97 attack
 attempts. The firewall bouncer still applies the whole community list to direct traffic.
 
