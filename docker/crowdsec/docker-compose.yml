@@ -42,7 +42,7 @@ services:
   cloudflare-sync:
     # Copies CrowdSec's own bans into the WAF custom rule "CrowdSec bans" on enoal.fr:
     # the firewall bans never see traffic proxied by Cloudflare
-    image: python:3.14.8-alpine3.24
+    image: python:3.15.2-alpine3.24
     container_name: crowdsec_cloudflare_sync
     restart: unless-stopped
     user: "65534:65534"
