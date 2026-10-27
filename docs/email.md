@@ -75,15 +75,16 @@ DNS records added by Resend:
 
 ### DNS authentication records
 
-| Type | Name     | Value                                             | Purpose                        |
-| ---- | -------- | ------------------------------------------------- | ------------------------------ |
-| TXT  | `@`      | `v=spf1 include:_spf.mx.cloudflare.net ~all`      | SPF — authorizes Cloudflare MX |
-| TXT  | `_dmarc` | `v=DMARC1; p=none; rua=mailto:<dmarcreport-addr>` | DMARC policy (monitoring mode) |
+| Type | Name     | Value                                                                                        | Purpose                                          |
+| ---- | -------- | -------------------------------------------------------------------------------------------- | ------------------------------------------------ |
+| TXT  | `@`      | `v=spf1 include:_spf.mx.cloudflare.net ~all`                                                 | SPF — authorizes Cloudflare MX                   |
+| TXT  | `_dmarc` | `v=DMARC1; p=quarantine; rua=mailto:<dmarcreport-addr>; ruf=mailto:<dmarcreport-addr>; fo=1` | DMARC policy (unauthenticated mail goes to spam) |
 
 > [!TIP]
-> DMARC is currently in `p=none` (monitoring) mode. Switch to `p=quarantine` or `p=reject`
-> once aggregate reports confirm all legitimate senders pass SPF/DKIM. Reports are parsed
-> by [dmarcreport.com](https://dmarcreport.com).
+> DMARC moved from `p=none` to `p=quarantine` on 2026-10-27, after aggregate reports and
+> test messages showed Gmail and Wallos passing DMARC through Resend.
+> Switch to `p=reject` once a few more weeks of reports show no legitimate sender failing.
+> Reports are parsed by [dmarcreport.com](https://dmarcreport.com).
 
 ### Gmail — sending as @enoal.fr
 
