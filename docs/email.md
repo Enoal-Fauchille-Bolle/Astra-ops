@@ -81,10 +81,9 @@ DNS records added by Resend:
 | TXT  | `_dmarc` | `v=DMARC1; p=quarantine; rua=mailto:<dmarcreport-addr>; ruf=mailto:<dmarcreport-addr>; fo=1` | DMARC policy (unauthenticated mail goes to spam) |
 
 > [!TIP]
-> DMARC moved from `p=none` to `p=quarantine` on 2026-10-27, after aggregate reports and
-> test messages showed Gmail and Wallos passing DMARC through Resend.
-> Switch to `p=reject` once a few more weeks of reports show no legitimate sender failing.
-> Reports are parsed by [dmarcreport.com](https://dmarcreport.com).
+> DMARC is in `p=quarantine`: mail that claims `@enoal.fr` without passing SPF or DKIM goes
+> to the recipient's spam. Switch to `p=reject` once aggregate reports show no legitimate
+> sender failing. Reports are parsed by [dmarcreport.com](https://dmarcreport.com).
 
 ### Gmail — sending as @enoal.fr
 

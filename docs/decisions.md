@@ -202,3 +202,8 @@ Pulsar.
   invalid, which left Pulsar waiting for a timeout. The Proxmox configuration copy at 01:30
   runs the other way, from Astra to Pulsar, and is not affected
   ([infrastructure.md](infrastructure.md#firewalls)).
+- **2026-10-27 — DMARC policy set to `quarantine`.** Cloudflare's security scan flagged the
+  `p=none` record. Every `@enoal.fr` sender goes through Resend: test messages from
+  Gmail and Wallos passed DMARC, and no legitimate sender failed in the aggregate reports.
+  `reject` follows after a few weeks of clean reports
+  ([email.md](email.md#dns-authentication-records)).
