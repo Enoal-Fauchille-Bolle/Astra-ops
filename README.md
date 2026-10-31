@@ -36,7 +36,7 @@ The infrastructure is split into two deployment layers:
 - **Layer A (Docker Compose)**: infrastructure and a few apps, deployed by Portainer from
   Git (Nginx Proxy Manager, Crafty, Zerobyte, CrowdSec, Beszel…).
 - **Layer B (Kubernetes with K3s)**: most application workloads, packaged as Helm charts or
-  raw manifests and deployed through ArgoCD, except Immich and n8n, which are applied by hand.
+  raw manifests and deployed through ArgoCD, except n8n, which is applied by hand.
 
 ---
 
@@ -198,7 +198,7 @@ astra-ops/
 | [github-runners](apps/arc-controller.yaml)       | GitHub Actions self-hosted runners (ARC)          | 🗄️ DevOps         | `github-runners`   | Helm (ARC)      | —                                                          | —           | ✅ Active   |
 | [homarr](docker/homarr)                          | Application dashboard / start page                | 📋 Dashboard      | —                  | Docker Compose  | `homarr.lan`                                               | 🔒 LAN only | ✅ Active   |
 | [homer](k3s/homer)                               | Application dashboard / start page                | 📋 Dashboard      | `dashboard`        | Helm            | `home.lan`, `homer.lan`, `home.enoal.fr`, `homer.enoal.fr` | 🌍 Public   | ✅ Active   |
-| [immich](k3s/immich)                             | Photo management (Server + ML + Postgres + Redis) | 🎬 Media          | `media`            | Raw (by hand)   | `immich.lan`, `immich.enoal.fr`, `photos.enoal.fr`         | 🌍 Public   | ✅ Active   |
+| [immich](k3s/immich)                             | Photo management (Server + ML + Postgres + Redis) | 🎬 Media          | `media`            | Helm            | `immich.lan`, `immich.enoal.fr`, `photos.enoal.fr`         | 🌍 Public   | ✅ Active   |
 | [infisical](k3s/infisical)                       | Secrets backend for ESO                           | 🔐 Security       | `security`         | Helm            | `infisical.lan`                                            | 🔒 LAN only | ✅ Active   |
 | [isponsorblocktv](docker/isponsorblocktv)        | SponsorBlock TV — YouTube ad skipping             | 🎬 Media          | —                  | Docker Compose  | —                                                          | —           | ✅ Active   |
 | [kiwix](k3s/.disabled/kiwix)                     | Offline content server (Wikipedia, etc.)          | 🎬 Media          | `media`            | Helm            | `kiwix.lan`                                                | 🔒 LAN only | ⏸️ Disabled |

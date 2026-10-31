@@ -2,11 +2,11 @@
 
 Secrets are **never** committed to this repository. Three mechanisms coexist today:
 
-| Mechanism                                                                                                                    | Used by                                                                                 |
-| ---------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
-| [External Secrets Operator](https://external-secrets.io) (ESO) pulling from a self-hosted [Infisical](https://infisical.com) | azerbot, botenoal, couchdb, docker-registry, github-runners, sftpgo, umami, vaultwarden |
-| A `secrets.yaml` filled by hand from a committed `.example` template, applied with `kubectl apply`                           | criteri-fresque, immich, and the disabled ntfy and scanopy                              |
-| Portainer's **Environment variables** for each stack                                                                         | every Docker Compose stack (Layer A)                                                    |
+| Mechanism                                                                                                                    | Used by                                                                                         |
+| ---------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| [External Secrets Operator](https://external-secrets.io) (ESO) pulling from a self-hosted [Infisical](https://infisical.com) | azerbot, botenoal, couchdb, docker-registry, github-runners, immich, sftpgo, umami, vaultwarden |
+| A `secrets.yaml` filled by hand from a committed `.example` template, applied with `kubectl apply`                           | criteri-fresque, and the disabled ntfy and scanopy                                              |
+| Portainer's **Environment variables** for each stack                                                                         | every Docker Compose stack (Layer A)                                                            |
 
 GHCR images also need a registry pull secret, created by hand (below).
 
@@ -64,13 +64,13 @@ ArgoCD deploys everything else automatically.
 For the services not on ESO yet, copy the template, fill it in, and apply it:
 
 ```bash
-cp k3s/<service>/secrets.example.yaml k3s/<service>/secrets.yaml   # immich, scanopy: 10-secrets.example.yaml
+cp k3s/<service>/secrets.example.yaml k3s/<service>/secrets.yaml   # scanopy: 10-secrets.example.yaml
 kubectl apply -f k3s/<service>/secrets.yaml
 ```
 
-The filled files are gitignored. Off Astra, the AppFlowy and Immich ones are in the official
-Bitwarden cloud (notes `Astra – AppFlowy secrets` and `Astra – Immich DB`). criteri-fresque's
-secrets have no copy off Astra, nor do those of the disabled ntfy and scanopy.
+The filled files are gitignored. Off Astra, the AppFlowy one is in the official Bitwarden
+cloud (note `Astra – AppFlowy secrets`). criteri-fresque's secrets have no copy off Astra,
+nor do those of the disabled ntfy and scanopy.
 
 ## Registry credentials
 

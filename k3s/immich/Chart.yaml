@@ -1,0 +1,6 @@
+apiVersion: v2
+name: immich
+description: Immich - Self-hosted photo management (server + machine learning + postgres + redis)
+type: application
+version: 0.1.0
+appVersion: "1.0.0"

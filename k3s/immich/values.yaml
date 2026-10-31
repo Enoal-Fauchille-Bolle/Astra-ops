@@ -1,0 +1,106 @@
+namespace: media
+
+config:
+  IMMICH_VERSION: "release"
+  DB_HOSTNAME: "immich-postgres"
+  REDIS_HOSTNAME: "immich-redis"
+
+server:
+  image:
+    repository: ghcr.io/immich-app/immich-server
+    tag: "v3.0.1"
+    pullPolicy: IfNotPresent
+  replicaCount: 1
+  env:
+    - name: IMMICH_MACHINE_LEARNING_URL
+      value: "http://immich-machine-learning:3003"
+  service:
+    port: 2283
+    targetPort: 2283
+  # `Directory` rather than `DirectoryOrCreate`: a missing path must stop the
+  # pod, so that Immich never starts on an empty library.
+  volume:
+    hostPath: /opt/k3s-data/immich/library/
+    mountPath: /usr/src/app/upload
+  resources:
+    requests:
+      cpu: 200m
+      memory: 1Gi
+    limits:
+      cpu: 500m
+      memory: 2Gi
+
+machineLearning:
+  image:
+    repository: ghcr.io/immich-app/immich-machine-learning
+    tag: "v3.0.1"
+    pullPolicy: IfNotPresent
+  replicaCount: 1
+  service:
+    port: 3003
+    targetPort: 3003
+  volume:
+    hostPath: /opt/k3s-data/immich/model-cache
+    mountPath: /cache
+  resources:
+    requests:
+      cpu: 100m
+      memory: 512Mi
+    limits:
+      cpu: 512m
+      memory: 2Gi
+
+postgres:
+  image:
+    repository: ghcr.io/immich-app/postgres
+    tag: "14-vectorchord0.4.3-pgvectors0.2.0"
+    pullPolicy: IfNotPresent
+  service:
+    port: 5432
+  volume:
+    hostPath: /opt/k3s-data/immich/postgres
+    mountPath: /var/lib/postgresql/data
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 300m
+      memory: 1Gi
+
+redis:
+  image:
+    repository: docker.io/valkey/valkey
+    tag: "9.1"
+    pullPolicy: IfNotPresent
+  args: ["--save", "60", "1"]
+  service:
+    port: 6379
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 100m
+      memory: 256Mi
+
+ingress:
+  enabled: true
+  hosts:
+    - immich.enoal.fr
+    - photos.enoal.fr
+    - immich.lan
+
+externalSecrets:
+  - name: immich-es
+    targetName: immich-secrets
+    targetTemplate:
+      engineVersion: v2
+      data:
+        DB_DATABASE_NAME: "immich"
+        DB_USERNAME: "postgres"
+        DB_PASSWORD: "{{ .dbPassword }}"
+    data:
+      - secretKey: dbPassword
+        remoteRef:
+          key: IMMICH_DB_PASSWORD

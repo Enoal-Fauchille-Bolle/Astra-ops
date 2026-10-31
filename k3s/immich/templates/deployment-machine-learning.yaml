@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: immich-machine-learning
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: immich-machine-learning
+spec:
+  replicas: {{ .Values.machineLearning.replicaCount }}
+  selector:
+    matchLabels:
+      app: immich-machine-learning
+  template:
+    metadata:
+      labels:
+        app: immich-machine-learning
+    spec:
+      containers:
+        - name: immich-machine-learning
+          image: "{{ .Values.machineLearning.image.repository }}:{{ .Values.machineLearning.image.tag }}"
+          imagePullPolicy: {{ .Values.machineLearning.image.pullPolicy }}
+          envFrom:
+            - secretRef:
+                name: immich-secrets
+            - configMapRef:
+                name: immich-config
+          volumeMounts:
+            - name: model-cache
+              mountPath: {{ .Values.machineLearning.volume.mountPath }}
+          resources:
+            {{- toYaml .Values.machineLearning.resources | nindent 12 }}
+      volumes:
+        - name: model-cache
+          hostPath:
+            path: {{ .Values.machineLearning.volume.hostPath }}
+            type: Directory

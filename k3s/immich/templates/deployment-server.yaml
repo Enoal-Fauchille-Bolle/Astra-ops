@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: immich-server
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: immich-server
+spec:
+  replicas: {{ .Values.server.replicaCount }}
+  # Stops the old server before starting the new one, so that two versions never
+  # share the database while migrations run.
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: immich-server
+  template:
+    metadata:
+      labels:
+        app: immich-server
+    spec:
+      containers:
+        - name: immich-server
+          image: "{{ .Values.server.image.repository }}:{{ .Values.server.image.tag }}"
+          imagePullPolicy: {{ .Values.server.image.pullPolicy }}
+          envFrom:
+            - secretRef:
+                name: immich-secrets
+            - configMapRef:
+                name: immich-config
+          env:
+            {{- toYaml .Values.server.env | nindent 12 }}
+          ports:
+            - containerPort: {{ .Values.server.service.targetPort }}
+              protocol: TCP
+          volumeMounts:
+            - name: library-data
+              mountPath: {{ .Values.server.volume.mountPath }}
+            - name: localtime
+              mountPath: /etc/localtime
+              readOnly: true
+          resources:
+            {{- toYaml .Values.server.resources | nindent 12 }}
+      volumes:
+        - name: library-data
+          hostPath:
+            path: {{ .Values.server.volume.hostPath }}
+            type: Directory
+        - name: localtime
+          hostPath:
+            path: /etc/localtime

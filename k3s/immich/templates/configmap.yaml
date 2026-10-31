@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: immich-config
+  namespace: {{ .Values.namespace }}
+data:
+  {{- toYaml .Values.config | nindent 2 }}

@@ -27,7 +27,7 @@ Apps in `k3s/.disabled/` are skipped.
 
 ### Helm migration
 
-Services remaining to migrate from raw manifests to Helm: `immich`, `n8n`, `scanopy`. Migrated services use this structure:
+Services remaining to migrate from raw manifests to Helm: `n8n`, `scanopy`. Migrated services use this structure:
 
 ```text
 k3s/<service>/
