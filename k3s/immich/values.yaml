@@ -8,7 +8,7 @@ config:
 server:
   image:
     repository: ghcr.io/immich-app/immich-server
-    tag: "v3.0.1"
+    tag: "v3.3.5"
     pullPolicy: IfNotPresent
   replicaCount: 1
   env:
@@ -33,7 +33,7 @@ server:
 machineLearning:
   image:
     repository: ghcr.io/immich-app/immich-machine-learning
-    tag: "v3.0.1"
+    tag: "v3.3.5"
     pullPolicy: IfNotPresent
   replicaCount: 1
   service:
