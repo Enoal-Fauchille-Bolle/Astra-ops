@@ -9,7 +9,9 @@ database dumps and the Proxmox configuration copy.
 
 Quantum's list of sources lives in `/opt/k3s-data/filebrowser-quantum/config.yaml` on
 Pulsar, and is read only at start-up. Change it **before** removing a mount, never after,
-or the app starts in error.
+or the app starts in error. The same file holds the database path (`server.database.path`,
+a SQLite file in the same directory) and `http.trustProxyHeaders: true`, which makes the
+app read the client address and protocol from the proxy headers.
 
 A new account's sidebar lists one source only: add the others with the pencil next to
 _Navigation_.

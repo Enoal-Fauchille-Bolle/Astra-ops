@@ -42,8 +42,8 @@ Not dumped, on purpose:
   `crafty_server_stats.sqlite`), indexes, CrowdSec, Scrutiny, ConvertX, Portracker and old
   copies. The K3s Data and Docker Data jobs copy them raw. Any dump can raise the alert, so the
   script only lists data worth one.
-- **Filebrowser Quantum**: no SQLite: its `database.db` is a BoltDB file, copied raw by the
-  K3s Data job.
+- **Filebrowser Quantum**: its `database.sqlite` is a SQLite file with no line in the script
+  yet, so the K3s Data job copies it raw.
 - **Redis** (Infisical, Homarr): caches and queues.
 - **CouchDB** (Obsidian notes, §9.5): the CouchDB documentation
   (_Maintenance → Backing up CouchDB_) states that copying `.couch` files while the server runs

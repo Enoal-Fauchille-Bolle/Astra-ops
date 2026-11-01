@@ -71,6 +71,10 @@ full measurements and checks are in the git history of this file and of
   The four MEGA repositories go on the same day. Replaces the 2026-09-09 choice to keep
   `Mega B` on MEGA with no purge date. Its snapshots hold the only copy of the Immich
   database dumps from July and August 2026, and go with it.
+- **2026-11-01 — Filebrowser Quantum 2.0.2 stores its data in SQLite.** The upgrade replaced
+  the BoltDB `database.db` with `database.sqlite`, imported once from the renamed
+  `database.db.old`. The file is still copied raw by the K3s Data job and has no line in
+  the dump script ([database-dumps.md](backup/database-dumps.md)).
 - **Films are not backed up.** They can be downloaded again.
 
 ## Storage
