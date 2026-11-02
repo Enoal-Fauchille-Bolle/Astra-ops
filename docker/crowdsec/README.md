@@ -50,13 +50,18 @@ must be in place on Pulsar under `/opt/docker-data/crowdsec/config/`:
 too. Local addresses are never banned (`crowdsecurity/whitelists`), so a test from Pulsar
 itself produces no alert.
 
-The scenario starts in **simulation**: its decisions show as `(simul)ban`
-in `cscli decisions list` and block nothing. Once a week of them holds no player:
+The scenario bans for real. To watch a change without blocking anyone, put it back in
+**simulation**: its decisions then show as `(simul)ban` in `cscli decisions list` and
+block nothing. To switch between the two:
 
 ```sh
+docker exec crowdsec cscli simulation enable enoal/crafty-watcher-malformed
 docker exec crowdsec cscli simulation disable enoal/crafty-watcher-malformed
 docker restart crowdsec
 ```
+
+A banned address is lifted from the [Web UI](#web-ui) or with
+`docker exec crowdsec cscli decisions delete --ip <address>`.
 
 After editing one of these files on Pulsar, copy it back to `local/` and restart the
 container. `cscli explain --log "<line>" --type crafty-watcher` shows how a line is handled.

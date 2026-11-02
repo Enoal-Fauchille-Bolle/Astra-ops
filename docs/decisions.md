@@ -216,3 +216,8 @@ Pulsar.
   configuration were not restored. Quantum's logs stay on `10.42.0.1` until a stable
   release has `http.trustedProxies`
   ([infrastructure.md](infrastructure.md#traefik-and-the-visitors-address)).
+- **2026-11-02 — The Minecraft proxy scenario bans for real.** After a month in simulation,
+  the addresses it had flagged were all hosting and transit ranges, hitting in bursts
+  at the same hours with packets no Minecraft client sends. A ban lasts 4 h and can be
+  lifted in the Web UI
+  ([docker/crowdsec/README.md](../docker/crowdsec/README.md#minecraft-proxy-scans)).
