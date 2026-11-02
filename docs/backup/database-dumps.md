@@ -25,13 +25,13 @@ owned by `enoal`, and root must not run a file a user account can edit.
 
 ## What is dumped
 
-| Dump                | Source                                                                                                                                                               | Engine                    | How                                                                                                                                                                                                                                  |
-| ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `umami.sql`         | deployment `analytics/umami-postgres`                                                                                                                                | PostgreSQL 16.14          | `pg_dump` inside the pod, as `$POSTGRES_USER` on `$POSTGRES_DB`                                                                                                                                                                      |
-| `infisical.sql`     | deployment `infisical/infisical-postgres`                                                                                                                            | PostgreSQL 16.14          | same                                                                                                                                                                                                                                 |
-| `uptimekuma.sql`    | deployment `monitoring/uptimekuma`, socket `/app/data/run/mariadb.sock`                                                                                              | embedded MariaDB 10.11.14 | `mariadb-dump -u root --single-transaction --databases kuma` — its tables are all InnoDB, so the dump is consistent without locking                                                                                                  |
-| `<app>.sqlite` × 12 | Vaultwarden, n8n, SFTPGo, ntfy `user.db`, Jellyfin, NPM, Homarr, Wallos, Crafty `crafty.sqlite`, Beszel `data.db`, Speedtest Tracker, Loandash — paths in the script | SQLite                    | Python's online backup API (no `sqlite3` binary on Pulsar), run as the file's owner                                                                                                                                                  |
-| `zerobyte.sqlite`   | `/var/lib/zerobyte/data/zerobyte.db`                                                                                                                                 | SQLite                    | same. Its only off-site copy: `/var/lib/zerobyte` lies outside both app roots, so the K3s Data and Docker Data jobs never see it. It keeps the 13 jobs, their exclusions and the repositories, which §9.3 otherwise rebuilds by hand |
+| Dump                | Source                                                                                                                                                                                    | Engine                    | How                                                                                                                                                                                                                                  |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `umami.sql`         | deployment `analytics/umami-postgres`                                                                                                                                                     | PostgreSQL 16.14          | `pg_dump` inside the pod, as `$POSTGRES_USER` on `$POSTGRES_DB`                                                                                                                                                                      |
+| `infisical.sql`     | deployment `infisical/infisical-postgres`                                                                                                                                                 | PostgreSQL 16.14          | same                                                                                                                                                                                                                                 |
+| `uptimekuma.sql`    | deployment `monitoring/uptimekuma`, socket `/app/data/run/mariadb.sock`                                                                                                                   | embedded MariaDB 10.11.14 | `mariadb-dump -u root --single-transaction --databases kuma` — its tables are all InnoDB, so the dump is consistent without locking                                                                                                  |
+| `<app>.sqlite` × 13 | Vaultwarden, n8n, SFTPGo, ntfy `user.db`, Jellyfin, Filebrowser Quantum, NPM, Homarr, Wallos, Crafty `crafty.sqlite`, Beszel `data.db`, Speedtest Tracker, Loandash — paths in the script | SQLite                    | Python's online backup API (no `sqlite3` binary on Pulsar), run as the file's owner                                                                                                                                                  |
+| `zerobyte.sqlite`   | `/var/lib/zerobyte/data/zerobyte.db`                                                                                                                                                      | SQLite                    | same. Its only off-site copy: `/var/lib/zerobyte` lies outside both app roots, so the K3s Data and Docker Data jobs never see it. It keeps the 13 jobs, their exclusions and the repositories, which §9.3 otherwise rebuilds by hand |
 
 Not dumped, on purpose:
 
@@ -42,8 +42,6 @@ Not dumped, on purpose:
   `crafty_server_stats.sqlite`), indexes, CrowdSec, Scrutiny, ConvertX, Portracker and old
   copies. The K3s Data and Docker Data jobs copy them raw. Any dump can raise the alert, so the
   script only lists data worth one.
-- **Filebrowser Quantum**: its `database.sqlite` is a SQLite file with no line in the script
-  yet, so the K3s Data job copies it raw.
 - **Redis** (Infisical, Homarr): caches and queues.
 - **CouchDB** (Obsidian notes, §9.5): the CouchDB documentation
   (_Maintenance → Backing up CouchDB_) states that copying `.couch` files while the server runs
@@ -84,8 +82,8 @@ A new app with a database needs a line in the script; the K3s Data and Docker Da
   database `kuma`. Its first line, `/*M!999999\- enable the sandbox mode */`, is only
   understood by recent MariaDB clients.
 - **SQLite:** stop the app, replace its database file with the copy (same owner and mode),
-  delete any leftover `-wal` and `-shm`, start the app. Six copies keep their original's WAL
-  flag (Beszel, Crafty, Jellyfin, Loandash, n8n, Vaultwarden), harmless in place; to read one
+  delete any leftover `-wal` and `-shm`, start the app. Seven copies keep their original's WAL
+  flag (Beszel, Crafty, Jellyfin, Loandash, n8n, Quantum, Vaultwarden), harmless in place; to read one
   elsewhere, open it with `?immutable=1`.
 
 **Tested end to end on 2026-09-15.** The Backups job's snapshot `fd07fcc1` (02:00), folder
