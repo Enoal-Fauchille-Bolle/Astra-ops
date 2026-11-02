@@ -172,6 +172,31 @@ systemctl restart fail2ban
 fail2ban-client status sshd
 ```
 
+### Traefik and the visitor's address
+
+NPM sends each request to Traefik on Pulsar (`192.168.1.201:9080`) with the visitor's
+address in `X-Forwarded-For`. The request crosses from Docker's network into K3s's, which
+rewrites its source address to `10.42.0.1` (Pulsar itself). Traefik keeps the forwarded
+headers only from addresses it trusts, so by default it replaces the visitor's address with
+`10.42.0.1`, and every app behind it sees that.
+
+[`infra/pulsar/traefik-config.yaml`](../infra/pulsar/traefik-config.yaml) trusts `10.42.0.1/32`
+on the `web` entry point, and nothing wider: a wider range would let any machine in it forge
+the address an app sees. It goes in `/var/lib/rancher/k3s/server/manifests/` on Pulsar, where
+K3s applies it and redeploys Traefik within seconds. To apply and check:
+
+```sh
+sudo install -m 644 -o root -g root traefik-config.yaml /var/lib/rancher/k3s/server/manifests/
+sudo k3s kubectl -n kube-system get deploy traefik -o jsonpath='{.spec.template.spec.containers[0].args}' | tr ',' '\n' | grep forwarded
+```
+
+The second command prints `--entryPoints.web.forwardedHeaders.trustedIPs=10.42.0.1/32`. An
+app that reads `X-Real-Ip` then gets the visitor's address. Keep backups of the file outside
+that folder: K3s reads every `.yaml` in it.
+
+Filebrowser Quantum 2.0.2 still logs `10.42.0.1`
+([`k3s/filebrowser-quantum/README.md`](../k3s/filebrowser-quantum/README.md)).
+
 ## Storage strategy
 
 Both drives are NVMe, with distinct roles:

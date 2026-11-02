@@ -211,3 +211,8 @@ Pulsar.
   Gmail and Wallos passed DMARC, and no legitimate sender failed in the aggregate reports.
   `reject` follows after a few weeks of clean reports
   ([email.md](email.md#dns-authentication-records)).
+- **2026-11-02 — Traefik trusts `10.42.0.1/32` only.** Behind NPM, every app saw
+  `10.42.0.1` instead of the visitor. The wide private ranges of an earlier, undocumented
+  configuration were not restored. Quantum's logs stay on `10.42.0.1` until a stable
+  release has `http.trustedProxies`
+  ([infrastructure.md](infrastructure.md#traefik-and-the-visitors-address)).

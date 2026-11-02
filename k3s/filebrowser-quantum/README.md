@@ -16,6 +16,17 @@ app read the client address and protocol from the proxy headers.
 A new account's sidebar lists one source only: add the others with the pencil next to
 _Navigation_.
 
+## Logs show 10.42.0.1 as the client
+
+With `http.trustProxyHeaders: true`, version 2.0.2 takes the **last** entry of
+`X-Forwarded-For`, which it assumes is the single trusted proxy's view of the visitor.
+Here two proxies sit in front (NPM, then Traefik) and Traefik appends the address it was
+contacted from, `10.42.0.1`, so that is what Quantum logs and rate-limits on, although
+Traefik passes the visitor's address in `X-Real-Ip`
+([`docs/infrastructure.md`](../../docs/infrastructure.md#traefik-and-the-visitors-address)).
+The `http.trustedProxies` setting, which skips known proxies from the right, exists only in
+the 2.1 betas. Revisit when it reaches a stable release.
+
 ## Runs as uid 1000
 
 The pod runs as uid/gid 1000 (the image's own `filebrowser` user), non-root, with no
