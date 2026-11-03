@@ -14,12 +14,27 @@ CrowdSec's configuration lives on Pulsar in `/opt/docker-data/crowdsec/config`, 
 
 ## Host configuration (not in this repository)
 
-`/etc/crowdsec/bouncers/crowdsec-firewall-bouncer.yaml` on Pulsar lists `DOCKER-USER` under
-`iptables_chains`, next to `INPUT`. Docker-published ports, NPM's among
-them, go through `FORWARD`, not `INPUT`: without `DOCKER-USER` the bans never reach the
-containers.
+`/etc/crowdsec/bouncers/crowdsec-firewall-bouncer.yaml` on Pulsar sets `mode: nftables`,
+with `nftables_hooks: [input, forward]` and `priority: -10` for both `ipv4` and `ipv6`. The
+bouncer then keeps its own tables, `ip crowdsec` and `ip6 crowdsec6`, with one chain per
+hook, ahead of the rules Docker, k3s and UFW write at priority 0:
 
-Bans added by hand with `cscli decisions add` land in the `crowdsec-blacklists-2` ipset.
+- `forward` covers the ports Docker publishes (NPM's among them) and the k3s services
+  (Traefik's LoadBalancer, the NodePorts), since kube-proxy and Docker redirect those to a
+  container before the filter runs. In `mode: iptables`, k3s accepts that traffic in
+  `FORWARD` before any chain the bouncer can hook into.
+- The rules drop every packet from a banned address, established connections included.
+
+Each origin gets its own set: `crowdsec-blacklists-CAPI` (community list),
+`crowdsec-blacklists-crowdsec` (local detections), `crowdsec-blacklists-cscli` (bans added
+by hand with `cscli decisions add`, created at the first one). To check a ban:
+
+```sh
+sudo nft list set ip crowdsec crowdsec-blacklists-cscli
+```
+
+Tested on 2026-11-03: with Pulsar's neighbour Astra banned, SSH, Beszel and the six k3s
+ports all stopped answering it.
 
 ## Depends on NPM restoring the visitor's address
 
