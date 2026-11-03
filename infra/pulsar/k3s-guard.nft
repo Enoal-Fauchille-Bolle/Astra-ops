@@ -1,0 +1,34 @@
+#!/usr/sbin/nft -f
+# /etc/k3s-guard.nft on Pulsar, loaded by k3s-guard.service. See docs/infrastructure.md#firewalls.
+#
+# kube-proxy rewrites the destination of a k3s port in prerouting and accepts the packet in
+# FORWARD, ahead of UFW's chains, so UFW cannot filter these ports. This table runs before
+# that rewrite (priority -110, ahead of dstnat at -100) and only looks at what comes in
+# from the LAN on ens18: NPM and Portainer reach Traefik and the Portainer agent from their
+# Docker bridges, and Kuma from the pod network, none of which go through ens18.
+#
+# Ports: 9080 and 9443 (Traefik LoadBalancer), 30553 and 32016 (the same, as NodePorts),
+# 30778 (Portainer agent NodePort), 30022 (SFTPGo NodePort, kept open to the LAN and VPN).
+
+# Declare then delete, so that loading the file again replaces the table instead of
+# failing or adding the rules twice. Leaves every other table alone.
+table inet k3s_guard
+delete table inet k3s_guard
+
+table inet k3s_guard {
+	set k3s_ports {
+		type inet_service
+		elements = { 9080, 9443, 30553, 32016, 30778, 30022 }
+	}
+
+	chain prerouting {
+		type filter hook prerouting priority -110; policy accept;
+
+		iifname "ens18" tcp dport 30022 ip saddr { 192.168.1.0/24, 192.168.27.0/24 } accept
+
+		# Logging and dropping are two rules: a single rule with a limit would only drop
+		# below the rate. Read with journalctl -k --grep k3s-guard
+		iifname "ens18" tcp dport @k3s_ports ct state new limit rate 6/minute log prefix "k3s-guard: "
+		iifname "ens18" tcp dport @k3s_ports counter drop
+	}
+}

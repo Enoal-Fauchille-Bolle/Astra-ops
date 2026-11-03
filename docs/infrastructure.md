@@ -14,20 +14,22 @@ AdGuard Home acts as the local DNS server, resolving `.lan` hostnames to the Pul
 
 ### Port allocation
 
-| Port        | Protocol | Service                    |
-| ----------- | -------- | -------------------------- |
-| 80          | TCP      | NPM (HTTP entry)           |
-| 443         | TCP      | NPM (HTTPS entry)          |
-| 81          | TCP      | NPM Admin UI               |
-| 4040        | TCP      | Prism SMP (block log)      |
-| 8098        | TCP      | squaremap SMP (web map)    |
-| 8099        | TCP      | OPanel SMP (admin panel)   |
-| 8100        | TCP      | BlueMap SMP (3D map)       |
-| 8443        | TCP      | Crafty Admin UI            |
-| 8804        | TCP      | Plan SMP (player stats)    |
-| 9000        | TCP      | Portainer                  |
-| 25500-25599 | TCP      | Minecraft servers (Crafty) |
-| 30022       | TCP      | SFTPGo SFTP (K3s NodePort) |
+| Port        | Protocol | Service                                     |
+| ----------- | -------- | ------------------------------------------- |
+| 80          | TCP      | NPM (HTTP entry)                            |
+| 443         | TCP      | NPM (HTTPS entry)                           |
+| 81          | TCP      | NPM Admin UI                                |
+| 4040        | TCP      | Prism SMP (block log)                       |
+| 8098        | TCP      | squaremap SMP (web map)                     |
+| 8099        | TCP      | OPanel SMP (admin panel)                    |
+| 8100        | TCP      | BlueMap SMP (3D map)                        |
+| 8443        | TCP      | Crafty Admin UI                             |
+| 8804        | TCP      | Plan SMP (player stats)                     |
+| 9000        | TCP      | Portainer                                   |
+| 9080, 9443  | TCP      | Traefik (K3s LoadBalancer, Pulsar only)     |
+| 25500-25599 | TCP      | Minecraft servers (Crafty)                  |
+| 30022       | TCP      | SFTPGo SFTP (K3s NodePort)                  |
+| 30778       | TCP      | Portainer agent (K3s NodePort, Pulsar only) |
 
 ### Firewalls
 
@@ -43,7 +45,7 @@ clients, `192.168.27.0/24`.
 
 | Machine           | Tool             | Open to everyone           | LAN and VPN only                                                                     |
 | ----------------- | ---------------- | -------------------------- | ------------------------------------------------------------------------------------ |
-| Pulsar            | UFW              | SSH (keys only), Minecraft | Samba, k3s API `6443`, Crafty UI `8443`, Roots SMP web plugins                       |
+| Pulsar            | UFW, nftables    | SSH (keys only), Minecraft | Samba, k3s API `6443`, Crafty UI `8443`, Roots SMP web plugins, SFTPGo `30022`       |
 | LXC 101 `adguard` | nftables         | nothing                    | DNS `53`, web UI `80`, SSH `22` (not from Pulsar), Beszel `45876`                    |
 | LXC 103 `pbs`     | nftables         | nothing                    | web UI and backup API `8007`, SSH `22` (not from Pulsar), Beszel `45876`             |
 | Astra (host)      | Proxmox firewall | nothing                    | SSH `22` (keys only, not from Pulsar), web UI `8006`, SPICE `3128`, NUT `3493`, ping |
@@ -119,6 +121,38 @@ for app in "8443:Crafty UI" 4040:Prism 8098:squaremap 8099:OPanel 8100:BlueMap 8
   sudo ufw allow from 172.19.0.0/16 to any port "$port" proto tcp comment "$name <- NPM"
 done
 ```
+
+UFW does not govern the k3s ports either: kube-proxy redirects them to a pod before the
+filter runs, and accepts the traffic in `FORWARD` ahead of UFW's chains. Those are Traefik's
+LoadBalancer `9080` and `9443`, the same as NodePorts `30553` and `32016`, the Portainer agent
+`30778` and SFTPGo `30022`. Only SFTPGo serves anyone outside Pulsar: NPM and Portainer reach
+the others from their Docker networks, Kuma from the pod network. The table `inet k3s_guard`,
+[`infra/pulsar/k3s-guard.nft`](../infra/pulsar/k3s-guard.nft), drops them at priority -110,
+before kube-proxy's redirection, when they come in through `ens18`, except `30022` from the
+LAN and the VPN. It logs up to six refusals a minute (`journalctl -k --grep k3s-guard`).
+[`infra/pulsar/k3s-guard.service`](../infra/pulsar/k3s-guard.service) loads it at boot,
+before k3s. CrowdSec's bans run ahead of k3s too
+([`docker/crowdsec/README.md`](../docker/crowdsec/README.md#host-configuration-not-in-this-repository)).
+
+Never enable `nftables.service` on Pulsar: its `/etc/nftables.conf` starts with
+`flush ruleset`, which would erase the rules of k3s, Docker, UFW and CrowdSec. The table
+replaces itself when loaded again and leaves the other tables alone. To change it:
+
+```sh
+scp infra/pulsar/k3s-guard.nft infra/pulsar/k3s-guard.service pulsar:/tmp/
+ssh pulsar
+sudo install -m 644 /tmp/k3s-guard.nft /etc/k3s-guard.nft
+sudo install -m 644 /tmp/k3s-guard.service /etc/systemd/system/k3s-guard.service
+sudo nft -c -f /etc/k3s-guard.nft         # syntax check only
+sudo systemd-run --on-active=10min --unit=rollback-k3s-guard nft delete table inet k3s_guard
+sudo nft -f /etc/k3s-guard.nft
+# From the LAN: 9080, 9443, 30553, 32016, 30778 refused, 30022 open. Sites, Kuma and the
+# Portainer agent still up. If all hold:
+sudo systemctl stop rollback-k3s-guard.timer
+sudo systemctl daemon-reload && sudo systemctl enable --now k3s-guard
+```
+
+Tested on 2026-11-03.
 
 **AdGuard.** Its rules are [`infra/adguard/nftables.conf`](../infra/adguard/nftables.conf),
 loaded at boot by the `nftables` service. They keep ICMP open in both versions: IPv6 needs

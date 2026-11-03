@@ -1,0 +1,13 @@
+[Unit]
+Description=Drop LAN traffic to the k3s ports only Pulsar's own containers use
+Documentation=https://github.com/Enoal-Fauchille-Bolle/Astra-ops/blob/main/infra/pulsar/k3s-guard.nft
+Before=k3s.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/sbin/nft -f /etc/k3s-guard.nft
+ExecStop=/usr/sbin/nft delete table inet k3s_guard
+
+[Install]
+WantedBy=multi-user.target

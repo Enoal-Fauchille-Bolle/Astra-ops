@@ -221,3 +221,9 @@ Pulsar.
   at the same hours with packets no Minecraft client sends. A ban lasts 4 h and can be
   lifted in the Web UI
   ([docker/crowdsec/README.md](../docker/crowdsec/README.md#minecraft-proxy-scans)).
+- **2026-11-03 — CrowdSec and a LAN filter cover the k3s ports.** kube-proxy accepts their
+  traffic ahead of UFW and of every iptables chain the bouncer can use. The bouncer runs in
+  its nftables mode, which filters before k3s, and the table `k3s_guard` drops the k3s ports
+  coming from the LAN, SFTPGo aside. Source ranges on the Kubernetes services were set
+  aside: they do not cover NodePorts
+  ([infrastructure.md](infrastructure.md#firewalls)).
