@@ -4,7 +4,7 @@
 services:
   homarr:
     container_name: homarr
-    image: ghcr.io/homarr-labs/homarr:v2.11.0
+    image: ghcr.io/homarr-labs/homarr:v2.11.1
     restart: unless-stopped
     volumes:
       - /opt/docker-data/homarr:/appdata
