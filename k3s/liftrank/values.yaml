@@ -1,0 +1,49 @@
+namespace: web
+
+image:
+  repository: ghcr.io/enoal-fauchille-bolle/liftrank
+  tag: 0.1.0
+  pullPolicy: IfNotPresent
+
+replicaCount: 1
+
+# One SQLite file: two pods must never write it at once
+strategy:
+  type: Recreate
+
+service:
+  port: 80
+  targetPort: 3000
+
+ingress:
+  enabled: true
+  hosts:
+    - liftrank.lan
+
+# Created by hand, owned by uid 1000 (the image's `node` user): see README.md
+volumes:
+  data:
+    hostPath: /opt/k3s-data/liftrank
+    hostPathType: Directory
+    mountPath: /data
+
+probes:
+  liveness:
+    path: /healthz
+    initialDelaySeconds: 10
+    periodSeconds: 10
+  readiness:
+    path: /healthz
+    initialDelaySeconds: 5
+    periodSeconds: 5
+
+resources:
+  requests:
+    cpu: 10m
+    memory: 256Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+imagePullSecrets:
+  - name: regcred-liftrank
