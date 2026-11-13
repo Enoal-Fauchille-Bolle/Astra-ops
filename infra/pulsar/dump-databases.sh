@@ -38,6 +38,7 @@ SQLITE=(
     "ntfy-user=/opt/k3s-data/ntfy/data/user.db"
     "jellyfin=/opt/k3s-data/jellyfin/config/data/jellyfin.db"
     "quantum=/opt/k3s-data/filebrowser-quantum/database.sqlite"
+    "liftrank=/opt/k3s-data/liftrank/liftrank.db"
     "npm=/opt/docker-data/npm/data/database.sqlite"
     "homarr=/opt/docker-data/homarr/db/db.sqlite"
     "wallos=/opt/docker-data/wallos/db/wallos.db"
