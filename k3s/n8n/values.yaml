@@ -1,0 +1,62 @@
+namespace: automation
+
+image:
+  repository: docker.n8n.io/n8nio/n8n
+  tag: 2.47.7
+  pullPolicy: IfNotPresent
+
+replicaCount: 1
+
+strategy:
+  type: Recreate
+
+podSecurityContext:
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 1000
+
+service:
+  port: 5678
+  targetPort: 5678
+
+ingress:
+  enabled: true
+  hosts:
+    - n8n.enoal.fr
+    - n8n.lan
+
+env:
+  - name: N8N_HOST
+    value: "n8n.enoal.fr"
+  - name: N8N_PORT
+    value: "5678"
+  - name: N8N_PROTOCOL
+    value: "https"
+  - name: NODE_ENV
+    value: "production"
+  - name: WEBHOOK_URL
+    value: "https://n8n.enoal.fr/"
+  - name: GENERIC_TIMEZONE
+    value: "Europe/Paris"
+  - name: TZ
+    value: "Europe/Paris"
+  - name: N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS
+    value: "true"
+
+volumes:
+  data:
+    hostPath: /opt/k3s-data/n8n/data
+    hostPathType: Directory
+    mountPath: /home/node/.n8n
+  files:
+    hostPath: /opt/k3s-data/n8n/files
+    hostPathType: Directory
+    mountPath: /files
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 380Mi
+  limits:
+    cpu: 200m
+    memory: 1Gi

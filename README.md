@@ -36,7 +36,7 @@ The infrastructure is split into two deployment layers:
 - **Layer A (Docker Compose)**: infrastructure and a few apps, deployed by Portainer from
   Git (Nginx Proxy Manager, Crafty, Zerobyte, CrowdSec, Beszel…).
 - **Layer B (Kubernetes with K3s)**: most application workloads, packaged as Helm charts or
-  raw manifests and deployed through ArgoCD, except n8n, which is applied by hand.
+  raw manifests and deployed through ArgoCD.
 
 ---
 
@@ -204,7 +204,7 @@ astra-ops/
 | [kiwix](k3s/.disabled/kiwix)                     | Offline content server (Wikipedia, etc.)          | 🎬 Media          | `media`            | Helm            | `kiwix.lan`                                                | 🔒 LAN only | ⏸️ Disabled |
 | [liftrank](k3s/liftrank)                         | Strength-training tracker with ranks              | 🌐 Web            | `web`              | Helm            | `liftrank.lan`                                             | 🔒 LAN only | ✅ Active   |
 | [loandash](docker/loandash)                      | Personal finances management tool                 | 🛠️ Utilities      | —                  | Docker Compose  | `loandash.lan`                                             | 🔒 LAN only | ✅ Active   |
-| [n8n](k3s/n8n)                                   | Workflow automation platform                      | 🗄️ DevOps         | `devops`           | Raw (by hand)   | `n8n.enoal.fr` (NPM: LAN clients only)                     | 🔒 LAN only | ✅ Active   |
+| [n8n](k3s/n8n)                                   | Workflow automation platform                      | 🗄️ DevOps         | `automation`       | Helm            | `n8n.enoal.fr` (NPM: LAN clients only)                     | 🔒 LAN only | ✅ Active   |
 | [npm](docker/npm)                                | Nginx Proxy Manager — reverse proxy + SSL         | 🐳 Infrastructure | —                  | Docker Compose  | `npm.lan`, 80/443/81                                       | 🔒 LAN only | ✅ Active   |
 | [ntfy](k3s/.disabled/ntfy)                       | Self-hosted push notification server              | 🔔 Notifications  | `notifications`    | Helm            | `ntfy.enoal.fr`                                            | 🌍 Public   | ⏸️ Disabled |
 | [peanut](docker/peanut)                          | UPS monitoring dashboard (reads NUT on Astra)     | 📊 Monitoring     | —                  | Docker Compose  | `192.168.1.201:8085`                                       | 🔒 LAN only | ✅ Active   |
