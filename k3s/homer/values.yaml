@@ -2,7 +2,7 @@ namespace: dashboard
 
 image:
   repository: docker.io/b4bz/homer
-  tag: v26.08.3
+  tag: v26.11.2
   pullPolicy: IfNotPresent
 
 replicaCount: 1
