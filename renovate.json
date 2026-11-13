@@ -13,6 +13,11 @@
       "commitMessageExtra": "{{currentVersion}} → {{newVersion}}"
     },
     {
+      "description": "The root package.json only pins Prettier, and {{parentDir}} is empty at the repository root",
+      "matchFileNames": ["package.json"],
+      "commitMessagePrefix": "⬆️ [Prettier]"
+    },
+    {
       "description": "Enable all private GHCR images",
       "matchDatasources": ["docker"],
       "matchPackageNames": ["ghcr.io/enoal-fauchille-bolle/**"],
