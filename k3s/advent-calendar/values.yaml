@@ -1,0 +1,71 @@
+namespace: web
+
+image:
+  repository: ghcr.io/enoal-fauchille-bolle/advent-calendar
+  tag: 0.1.0
+  pullPolicy: IfNotPresent
+
+replicaCount: 1
+
+# No state in the pod: logins are signed cookies, the content is read-only
+strategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxUnavailable: 0
+    maxSurge: 1
+
+service:
+  port: 80
+  targetPort: 3000
+
+ingress:
+  enabled: true
+  hosts:
+    - avent.enoal.fr
+
+envFrom:
+  - secretRef:
+      name: advent-calendar-secrets
+
+# Created by hand and filled from the laptop: see README.md
+volumes:
+  content:
+    hostPath: /opt/k3s-data/advent-calendar
+    hostPathType: Directory
+    mountPath: /content
+    readOnly: true
+
+probes:
+  liveness:
+    path: /healthz
+    initialDelaySeconds: 10
+    periodSeconds: 10
+  readiness:
+    path: /healthz
+    initialDelaySeconds: 5
+    periodSeconds: 5
+
+resources:
+  requests:
+    cpu: 10m
+    memory: 256Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+imagePullSecrets:
+  - name: regcred-advent-calendar
+
+externalSecrets:
+  - name: advent-calendar-es
+    targetName: advent-calendar-secrets
+    data:
+      - secretKey: ADVENT_PASSWORD_HASH
+        remoteRef:
+          key: ADVENT_PASSWORD_HASH
+      - secretKey: ADVENT_AUTHOR_PASSWORD_HASH
+        remoteRef:
+          key: ADVENT_AUTHOR_PASSWORD_HASH
+      - secretKey: ADVENT_SESSION_SECRET
+        remoteRef:
+          key: ADVENT_SESSION_SECRET

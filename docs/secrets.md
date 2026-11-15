@@ -2,11 +2,11 @@
 
 Secrets are **never** committed to this repository. Three mechanisms coexist today:
 
-| Mechanism                                                                                                                    | Used by                                                                                         |
-| ---------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| [External Secrets Operator](https://external-secrets.io) (ESO) pulling from a self-hosted [Infisical](https://infisical.com) | azerbot, botenoal, couchdb, docker-registry, github-runners, immich, sftpgo, umami, vaultwarden |
-| A `secrets.yaml` filled by hand from a committed `.example` template, applied with `kubectl apply`                           | criteri-fresque, and the disabled ntfy and scanopy                                              |
-| Portainer's **Environment variables** for each stack                                                                         | every Docker Compose stack (Layer A)                                                            |
+| Mechanism                                                                                                                    | Used by                                                                                                          |
+| ---------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| [External Secrets Operator](https://external-secrets.io) (ESO) pulling from a self-hosted [Infisical](https://infisical.com) | advent-calendar, azerbot, botenoal, couchdb, docker-registry, github-runners, immich, sftpgo, umami, vaultwarden |
+| A `secrets.yaml` filled by hand from a committed `.example` template, applied with `kubectl apply`                           | criteri-fresque, and the disabled ntfy and scanopy                                                               |
+| Portainer's **Environment variables** for each stack                                                                         | every Docker Compose stack (Layer A)                                                                             |
 
 GHCR images also need a registry pull secret, created by hand (below).
 
