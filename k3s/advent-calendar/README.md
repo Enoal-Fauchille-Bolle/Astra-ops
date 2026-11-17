@@ -45,7 +45,9 @@ These steps are done once, before the first sync.
    ```
 
 4. In Nginx Proxy Manager, add the proxy host `avent.enoal.fr` → `http://192.168.1.201:9080`
-   (Traefik) with a Let's Encrypt certificate and "Force SSL".
+   (Traefik) with a Let's Encrypt certificate and "Force SSL". Leave "Cache Assets" off:
+   it keeps its own copy of images under a key that ignores the login cookie, so the
+   photos of the days would be served without a login.
 
 ## Updating the content
 
