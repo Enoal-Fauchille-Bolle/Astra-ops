@@ -24,17 +24,27 @@ These steps are done once, before the first sync.
    sudo chmod -R a+rX /opt/k3s-data/advent-calendar
    ```
 
-2. Add three keys in Infisical (`infisical.lan` → project `astra-yrel` → env `prod`), read
+   Create the push folder, which the pod writes (subscriptions and the days already
+   sent). It must belong to uid 1000; like the content folder, the pod waits for it:
+
+   ```bash
+   sudo install -d -m 700 -o 1000 -g 1000 /opt/k3s-data/advent-calendar-state
+   ```
+
+2. Add four keys in Infisical (`infisical.lan` → project `astra-yrel` → env `prod`), read
    by the `ExternalSecret` in `values.yaml` ([secrets.md](../../docs/secrets.md)). The
-   hashes come from `pnpm make-hash` in the Advent-Calendar repository:
+   hashes come from `pnpm make-hash` and the VAPID key from `pnpm make-vapid`, in the
+   Advent-Calendar repository:
 
    | Key                           | Value                                                  |
    | ----------------------------- | ------------------------------------------------------ |
    | `ADVENT_PASSWORD_HASH`        | Hash of the shared password                            |
    | `ADVENT_AUTHOR_PASSWORD_HASH` | Hash of the author password, which opens every door    |
    | `ADVENT_SESSION_SECRET`       | At least 32 characters, from `openssl rand -base64 48` |
+   | `ADVENT_VAPID_PRIVATE_KEY`    | Signs the notifications; from `pnpm make-vapid`        |
 
-   Changing `ADVENT_SESSION_SECRET` logs everyone out.
+   Changing `ADVENT_SESSION_SECRET` logs everyone out. Changing `ADVENT_VAPID_PRIVATE_KEY`
+   stops notifications on each device until its next visit to the site.
 
 3. Create the pull secret named in `values.yaml` ([secrets.md](../../docs/secrets.md)):
 

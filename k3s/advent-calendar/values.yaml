@@ -2,12 +2,13 @@ namespace: web
 
 image:
   repository: ghcr.io/enoal-fauchille-bolle/advent-calendar
-  tag: 0.1.0
+  tag: 0.2.0
   pullPolicy: IfNotPresent
 
 replicaCount: 1
 
-# No state in the pod: logins are signed cookies, the content is read-only
+# Logins are signed cookies and the content is read-only; the only state is the push
+# folder, which two pods share during a rollout (one node) and use without conflict
 strategy:
   type: RollingUpdate
   rollingUpdate:
@@ -23,6 +24,11 @@ ingress:
   hosts:
     - avent.enoal.fr
 
+env:
+  # Contact for the push services, sent with each notification
+  - name: ADVENT_VAPID_SUBJECT
+    value: https://avent.enoal.fr
+
 envFrom:
   - secretRef:
       name: advent-calendar-secrets
@@ -34,6 +40,11 @@ volumes:
     hostPathType: Directory
     mountPath: /content
     readOnly: true
+  # Push subscriptions and the days already sent; written by the pod (uid 1000)
+  state:
+    hostPath: /opt/k3s-data/advent-calendar-state
+    hostPathType: Directory
+    mountPath: /state
 
 probes:
   liveness:
@@ -69,3 +80,6 @@ externalSecrets:
       - secretKey: ADVENT_SESSION_SECRET
         remoteRef:
           key: ADVENT_SESSION_SECRET
+      - secretKey: ADVENT_VAPID_PRIVATE_KEY
+        remoteRef:
+          key: ADVENT_VAPID_PRIVATE_KEY
