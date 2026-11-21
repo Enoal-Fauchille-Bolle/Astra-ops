@@ -4,7 +4,7 @@ logging:
   # Whether to enable logging, this does not disable the console output
   enable_logging: true
   # The log level: debug, info, warn, error
-  log_level: debug
+  log_level: info
   # The directory where logs will be stored
   log_dir: "logs"
   # Whether to use colors in the console output
