@@ -1,7 +1,7 @@
 # Advent-Calendar
 
 Password-protected advent calendar, served on `https://avent.enoal.fr` through Nginx Proxy
-Manager. The image is private: `ghcr.io/enoal-fauchille-bolle/advent-calendar`. The
+Manager. The image is public: `ghcr.io/enoal-fauchille-bolle/advent-calendar`. The
 surprises are files on Pulsar, never in git.
 
 ## First install, on Pulsar
@@ -46,15 +46,7 @@ These steps are done once, before the first sync.
    Changing `ADVENT_SESSION_SECRET` logs everyone out. Changing `ADVENT_VAPID_PRIVATE_KEY`
    stops notifications on each device until its next visit to the site.
 
-3. Create the pull secret named in `values.yaml` ([secrets.md](../../docs/secrets.md)):
-
-   ```bash
-   ../generate-regcred.sh web regcred-advent-calendar   # prompts for GitHub username + PAT
-   kubectl apply -f regcred.yaml
-   rm regcred.yaml
-   ```
-
-4. In Nginx Proxy Manager, add the proxy host `avent.enoal.fr` → `http://192.168.1.201:9080`
+3. In Nginx Proxy Manager, add the proxy host `avent.enoal.fr` → `http://192.168.1.201:9080`
    (Traefik) with a Let's Encrypt certificate and "Force SSL". Leave "Cache Assets" off:
    it keeps its own copy of images under a key that ignores the login cookie, so the
    photos of the days would be served without a login.

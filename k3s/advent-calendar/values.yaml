@@ -64,9 +64,6 @@ resources:
     cpu: 500m
     memory: 512Mi
 
-imagePullSecrets:
-  - name: regcred-advent-calendar
-
 externalSecrets:
   - name: advent-calendar-es
     targetName: advent-calendar-secrets
