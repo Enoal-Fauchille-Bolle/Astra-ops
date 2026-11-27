@@ -2,7 +2,7 @@ namespace: automation
 
 image:
   repository: docker.n8n.io/n8nio/n8n
-  tag: 2.48.7
+  tag: 2.49.8
   pullPolicy: IfNotPresent
 
 replicaCount: 1
