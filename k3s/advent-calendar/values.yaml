@@ -28,6 +28,9 @@ env:
   # Contact for the push services, sent with each notification
   - name: ADVENT_VAPID_SUBJECT
     value: https://avent.enoal.fr
+  # Full address of the site, so a shared link's card can show its picture
+  - name: ADVENT_PUBLIC_URL
+    value: https://avent.enoal.fr
 
 envFrom:
   - secretRef:
